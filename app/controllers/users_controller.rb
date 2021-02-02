@@ -1,17 +1,37 @@
 class UsersController < ApplicationController
+  skip_before_action :authenticate_user!#, :only => [:api, :do_stuff]
+
+
+  # Wird aufgerufen wenn man sich bei Spotify eingeloggt hat.
   def spotify
 
-    Rails.logger.info "hihi"
+    Rails.logger.info "spotify"
 
     spotify_user = RSpotify::User.new(request.env['omniauth.auth'])
-    # Now you can access user's private data, create playlists and much more
+    @user = User.from_omniauth(request.env['omniauth.auth'], spotify_user)
 
-    # Access private data
-    Rails.logger.info spotify_user.country #=> "US"
-    Rails.logger.info spotify_user.email   #=> "example@email.com"
+    if @user.persisted?
+      sign_in_and_redirect @user, event: :authentication #this will throw if @user is not activated
+      #set_flash_message(:notice, :success, kind: "Spotify") if is_navigational_format?
+    else
+      session["devise.spotify_data"] = request.env["omniauth.auth"].except("extra")
+      redirect_to new_user_registration_url
+    end
 
+
+    #spotify_user2 = RSpotify::User.new(JSON.parse @user.omniauth_auth)
+    #
+    #spotify_user.recently_played
+    #spotify_user2.recently_played
+
+    # # Now you can access user's private data, create playlists and much more
+    #
+    # # Access private data
+    # Rails.logger.info spotify_user.country #=> "US"
+    # Rails.logger.info spotify_user.email   #=> "example@email.com"
+    #
     # Create playlist in user's Spotify account
-    playlist = spotify_user.create_playlist!('my-awesome-playlist')
+    # playlist = spotify_user.create_playlist!('my-awesome-playlist')
 
     # # Add tracks to a playlist in user's Spotify account
     # tracks = RSpotify::Track.search('Know')
@@ -38,6 +58,10 @@ class UsersController < ApplicationController
     # spotify_user.top_tracks(time_range: 'short_term') #=> (Track array)
     #
     # # Check doc for more
+  end
+
+  def failure
+    Rails.logger.info "failure..."
 
 
   end

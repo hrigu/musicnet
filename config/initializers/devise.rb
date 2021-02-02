@@ -273,6 +273,13 @@ Devise.setup do |config|
   # up on your models and hooks.
   # config.omniauth :github, 'APP_ID', 'APP_SECRET', scope: 'user,public_repo'
 
+  client_id = Rails.application.credentials.dig(:spotify, :client_id)
+  client_secret = Rails.application.credentials.dig(:spotify, :client_secret)
+  config.omniauth :spotify,
+                  client_id, client_secret,
+                  scope: 'user-read-recently-played user-top-read user-read-playback-position user-read-email playlist-modify-public playlist-modify-private user-library-read user-library-modify'
+
+
   # ==> Warden configuration
   # If you want to use other strategies, that are not supported by Devise, or
   # change the failure app, you can configure them inside the config.warden block.
