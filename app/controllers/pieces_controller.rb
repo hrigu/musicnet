@@ -10,7 +10,9 @@ class PiecesController < ApplicationController
     #
     #me.recently_played
 
-    @playlists = @me.recently_played(limit: 50) #=> (Playlist array)
+    # Maximale Anzahl ist 50. Dann kommt ne Fehlermeldung
+    # Ist ein Array von Tracks
+    @recently_played_tracks = @me.recently_played(limit: 50) #=>
 
   end
 end

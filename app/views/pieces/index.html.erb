@@ -1,11 +1,10 @@
 
 <h1>Meine zuletzt gespielte Stücke</h1>
 
-Meine Playlists
 <ul>
-<% @playlists.each do |p| %>
+<% @recently_played_tracks.each do |p| %>
   <li>
-    <%= p.name %>
+    <%= l(Time.zone.parse(p.played_at)) %> | <%= p.context_type %> | <%= p.name %>, | <%= p.artists.map(&:name).join(", ") %>| <%= p.album.name %>  <%# p.album.genres.join(", ") Teuer!!%>
   </li>
 <% end %>
 </ul>
