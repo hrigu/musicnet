@@ -1,8 +1,8 @@
 Rails.application.routes.draw do
   devise_for :users, controllers: { omniauth_callbacks: 'users' }
 
-  root "pieces#index"
-  get "/pieces", to: "articles#index"
+  root "tracks#recently_played"
+  get "/tracks", to: "tracks#recently_played"
 
   #post '/auth/:provider/callback', to: 'sessions#create'
   #get '/auth/spotify/callback', to: 'users#spotify'

@@ -1,6 +1,6 @@
-class PiecesController < ApplicationController
+class TracksController < ApplicationController
 
-  def index
+  def recently_played
     #me = RSpotify::User.find('hrigu')
     @me = RSpotify::User.new(JSON.parse(current_user.spotify_user))
     #me = RSpotify::User.new(request.env['omniauth.auth'])
