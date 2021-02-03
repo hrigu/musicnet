@@ -22,7 +22,7 @@ ActiveRecord::Schema.define(version: 2021_02_01_210549) do
     t.datetime "updated_at", precision: 6, null: false
     t.string "provider"
     t.string "uid"
-    t.json "spotify_user"
+    t.json "spotify_user_data"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end

@@ -1,0 +1,143 @@
+# von Planik übernommen
+#
+en:
+  date:
+    formats:
+      # Use the strftime parameters for formats.
+      # When no format has been given, it uses default.
+      # You can provide other formats here if you like!
+      default: "%d.%m.%Y"
+      default_planik: "%d.%m.%Y"
+      default_with_week_name: "%a, %d.%m.%Y"
+      default_with_week_name_long: "%A, %d.%m.%Y"
+      with_week_and_month_name: "%A, den %d. %B %Y"
+      date_without_year: "%d.%m"    #12.08
+      date_without_year_and_month_as_name: "%e %B"  #9. November
+      short: "%b %d"
+      long: "%B %d, %Y"
+      planungssicht: "%a <br/> %d"
+      planungssicht_alternative: "%a <br/> %d.%m"
+      only_day_name: "%a"
+      month_and_year: "%B %Y"
+      month: "%B"
+    day_names: [Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday]
+    abbr_day_names: [Sun, Mon, Tue, Wed, Thu, Fri, Sat]
+
+    # Don't forget the nil at the beginning; there's no such thing as a 0th month
+    month_names: [~, January, February, March, April, May, June, July, August, September, October, November, December]
+    abbr_month_names: [~, Jan, Feb, Mar, Apr, May, June, July, Aug, Sept, Oct, Nov, Dec]
+    # Used in date_select and datetime_select.
+    order:
+      - :day
+      - :month
+      - :year
+
+  time:
+    formats:
+      default: "%a, %d. %b %Y (%H:%M:%S)" # %z    #Mo, 16. Dez 2013 (11:24:23)  wird so in sessions/new.html.erb gebraucht
+      default_planik: "%a, %d. %b %Y (%H:%M:%S)" # %z    #Mo, 16. Dez 2013 (11:24:23)  wird so in sessions/new.html.erb gebraucht
+      short: "%d. %b %H:%M"
+      without_seconds: "%a, %d. %b %Y (%H:%M)"    #Mo, 16. Dez 2013 (11:24)
+      date_with_day_name: "%a, %d. %b %Y"    #Mo, 16. Dez 2013
+      date_without_day_name: "%d. %b %Y"    #12. Dez 2013
+      date_without_year: "%d.%m"    #12.08
+      long: "%B %d, %Y %H:%M"
+      long_without_year: "%d.%m %H:%M" #12.08 02:00 1
+      time_only: "%H:%M"
+      time_only_without_uhr: "%H:%M"
+    am: "am"
+    pm: "pm"
+
+  number:
+    # Used in NumberHelper.number_to_delimited()
+    # These are also the defaults for 'currency', 'percentage', 'precision', and 'human'
+    format:
+      # Sets the separator between the units, for more precision (e.g. 1.0 / 2.0 == 0.5)
+      separator: "."
+      # Delimits thousands (e.g. 1,000,000 is a million) (always in groups of three)
+      delimiter: ","
+      # Number of decimals, behind the separator (the number 1 with a precision of 2 gives: 1.00)
+      precision: 3
+      # If set to true, precision will mean the number of significant digits instead
+      # of the number of decimal digits (1234 with precision 2 becomes 1200, 1.23543 becomes 1.2)
+      significant: false
+      # If set, the zeros after the decimal separator will always be stripped (eg.: 1.200 will be 1.2)
+      strip_insignificant_zeros: false
+
+    # Used in NumberHelper.number_to_currency()
+    currency:
+      format:
+        # Where is the currency sign? %u is the currency unit, %n the number (default: $5.00)
+        format: "%u%n"
+        unit: "$"
+        # These five are to override number.format and are optional
+        separator: "."
+        delimiter: ","
+        precision: 2
+        significant: false
+        strip_insignificant_zeros: false
+
+    # Used in NumberHelper.number_to_percentage()
+    percentage:
+      format:
+        # These five are to override number.format and are optional
+        # separator:
+        # precision:
+        # significant: false
+        # strip_insignificant_zeros: false
+        format: "%n%"
+
+    # Used in NumberHelper.number_to_rounded()
+    precision:
+      format:
+        # These five are to override number.format and are optional
+        # separator:
+        # precision:
+        # significant: false
+        # strip_insignificant_zeros: false
+
+    # Used in NumberHelper.number_to_human_size() and NumberHelper.number_to_human()
+    human:
+      format:
+        # These five are to override number.format and are optional
+        # separator:
+        precision: 3
+        significant: true
+        strip_insignificant_zeros: true
+      # Used in number_to_human_size()
+      storage_units:
+        # Storage units output formatting.
+        # %u is the storage unit, %n is the number (default: 2 MB)
+        format: "%n %u"
+        units:
+          byte:
+            one:   "Byte"
+            other: "Bytes"
+          kb: "KB"
+          mb: "MB"
+          gb: "GB"
+          tb: "TB"
+      # Used in NumberHelper.number_to_human()
+      decimal_units:
+        format: "%n %u"
+        # Decimal units output formatting
+        # By default we will only quantify some of the exponents
+        # but the commented ones might be defined or overridden
+        # by the user.
+        units:
+          # femto: Quadrillionth
+          # pico: Trillionth
+          # nano: Billionth
+          # micro: Millionth
+          # mili: Thousandth
+          # centi: Hundredth
+          # deci: Tenth
+          # ten:
+          #   one: Ten
+          #   other: Tens
+          # hundred: Hundred
+          thousand: Thousand
+          million: Million
+          billion: Billion
+          trillion: Trillion
+          quadrillion: Quadrillion

@@ -5,11 +5,11 @@ class User < ApplicationRecord
          :recoverable, :rememberable, :validatable,
          :omniauthable, omniauth_providers: %i[spotify]
 
-  def self.from_omniauth(auth, spotify_user)
+  def self.from_omniauth(auth, spotify_user_data)
     where(provider: auth.provider, uid: auth.uid).first_or_create do |user|
       user.email = auth.info.email
       user.password = Devise.friendly_token[0, 20]
-      user.spotify_user = spotify_user.to_json
+      user.spotify_user_data = spotify_user_data
       #user.name = auth.info.name # assuming the user model has a name
       #user.username = auth.info.nickname # assuming the user model has a username
       #user.image = auth.info.image # assuming the user model has an image
@@ -18,6 +18,10 @@ class User < ApplicationRecord
       # user.skip_confirmation!
       #
     end
+  end
+
+  def spotify_user
+    @spotify_user ||=  RSpotify::User.new(JSON.parse(spotify_user_data))
   end
 
 
