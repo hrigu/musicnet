@@ -3,6 +3,7 @@ Rails.application.routes.draw do
 
   root "tracks#recently_played"
   get "/tracks", to: "tracks#recently_played"
+  get "/playlists", to: "playlists#my_playlists"
 
   #post '/auth/:provider/callback', to: 'sessions#create'
   #get '/auth/spotify/callback', to: 'users#spotify'

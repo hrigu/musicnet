@@ -4,7 +4,14 @@
 <ul>
 <% @recently_played_tracks.each do |p| %>
   <li>
-    <%= l(Time.zone.parse(p.played_at)) %> | <%= p.context_type %> | <%= p.name %>, | <%= p.artists.map(&:name).join(", ") %>| <%= p.album.name %>  <%# p.album.genres.join(", ") Teuer!!%>
+    <%= l(Time.zone.parse(p.played_at)) %> |
+    <%# p.context_type %>
+    <%= p.popularity %>  |
+    <%= p.name %>, |
+    <%= p.artists.map(&:name).join(", ") %>|
+    <%= p.album.name %>  |
+    <%# p.album.genres.join(", ") Teuer!!%>
+
   </li>
 <% end %>
 </ul>
