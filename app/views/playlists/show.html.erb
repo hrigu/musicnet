@@ -6,9 +6,8 @@
 
   <% @tracks_enhanced.each do |t| %>
     <li>
-      <%= track = t[:track]
-
-          track.name %> |
+      <% track = t[:track] %>
+      <%= link_to track.name, track_path(track.id) %> |
       <%= l(t[:added_at]) %> |
       <%# p.context_type %>
       <%# p.popularity %>  |
