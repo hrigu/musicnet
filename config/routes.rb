@@ -4,7 +4,12 @@ Rails.application.routes.draw do
   root "tracks#index"
 
 
-  resources :playlists, only: [:index, :show]
+
+  resources :playlists, only: [:index, :show] do
+    collection do
+      get 'fetch_all'
+    end
+  end
 
   resources :tracks, only: [:index, :show]
   #post '/auth/:provider/callback', to: 'sessions#create'

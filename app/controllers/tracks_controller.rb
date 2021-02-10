@@ -6,6 +6,7 @@ class TracksController < ApplicationController
 
   def show
     id = params[:id]
-    @track = RSpotify::Track.find ([id]).first
+    @track = Track.find(id)
+    #@spotify_track = RSpotify::Track.find ([@track.spotify_id]).first
   end
 end

@@ -4,15 +4,14 @@
 
 <ul>
 
-  <% @tracks_enhanced.each do |t| %>
+  <% @tracks.each do |track| %>
     <li>
-      <% track = t[:track] %>
-      <%= link_to track.name, track_path(track.id) %> |
-      <%= l(t[:added_at]) %> |
+      <%= link_to track.track.name, track_path(track.track.id) %> |
+      <%= l(track.added_at) %> |
       <%# p.context_type %>
-      <%# p.popularity %>  |
-      <%= track.artists.map(&:name).join(", ") %>|
-      <%= track.album.name %>  |
+      <%= track.track.popularity %>  |
+      <%= track.track.artists.map(&:name).join(", ") %>|
+      <%= track.track.album.name %>  |
       <%# p.album.genres.join(", ") Teuer!!%>
     </li>
   <% end %>

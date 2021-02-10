@@ -1,18 +1,23 @@
 <h1><%= @track.name %></h1>
 <p>
-  <div> aus: <%= @track.album.name %></div>
-  <div> Künstler: <%= @track.artists.map(&:name).join(", ") %></div>
-  <div> Gespielt am: <%= @track.played_at %></div>
-  <div> <a href="<%= @track.external_urls["spotify"] %>"> Spotify</a> </div>
+  <div> aus: <%= @track.album.name %> | <%= @track.album.release_date ? l(@track.album.release_date) : nil%></div>
+  <div> Künstler: <%= @track.album.artists.map(&:name).join(", ") %></div>
+  <div> <a href="<%= @track.url%>"> Spotify</a> </div>
 
 </p>
 <ul>
-  <li> Acousticness: <%= @track.audio_features.acousticness  %>   </li>
-  <li> Analysis URL: <%= @track.audio_features.analysis_url  %>   </li>
-  <li> Danceability: <%= @track.audio_features.danceability  %>   </li>
-  <li> Energy: <%= @track.audio_features.energy  %>   </li>
-  <li> Mode: <%= @track.audio_features.mode == 1 ? "Major" : "Minor"  %>   </li>
-  <li> time_signature: <%= @track.audio_features.time_signature %>   </li>
-  <li> Tempo: BPM <%= @track.audio_features.tempo %>  </li>
+  <li> Acousticness: <%= @track.af.acousticness  %>   </li>
+  <li> Analysis URL: <%= @track.af.analysis_url  %>   </li>
+  <li> Danceability: <%= @track.af.danceability  %>   </li>
+  <li> Energy: <%= @track.af.energy  %>   </li>
+  <li> Mode: <%= @track.af.mode == 1 ? "Major" : "Minor"  %>   </li>
+  <li> time_signature: <%= @track.af.time_signature %>   </li>
+  <li> Tempo: BPM <%= @track.af.tempo %>  </li>
 
+</ul>
+
+<ul>
+  <% @track.playlist_tracks.each do |pt| %>
+    <li> <%= link_to pt.playlist.name, playlist_path(pt.playlist.id) %> | <%= l(pt.added_at) %>  </li>
+  <% end %>
 </ul>
