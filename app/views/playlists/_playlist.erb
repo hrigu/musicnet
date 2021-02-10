@@ -1,4 +1,4 @@
 <li>
-  <%= playlist.name %> | <%= playlist.public ? "öffentlich" : "privat" %>| <%= playlist.total %> | <%= playlist.owner.id %>
+  <%= link_to playlist.name, playlist_path(playlist.id) %> | <%= playlist.public ? "öffentlich" : "privat" %>| <%= playlist.total %> | <%= playlist.owner.id %>
 </li>
 

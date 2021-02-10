@@ -1,0 +1,20 @@
+
+<h1><%= @playlist.name %></h1>
+
+
+<ul>
+
+  <% @tracks_enhanced.each do |t| %>
+    <li>
+      <%= track = t[:track]
+
+          track.name %> |
+      <%= l(t[:added_at]) %> |
+      <%# p.context_type %>
+      <%# p.popularity %>  |
+      <%= track.artists.map(&:name).join(", ") %>|
+      <%= track.album.name %>  |
+      <%# p.album.genres.join(", ") Teuer!!%>
+    </li>
+  <% end %>
+</ul>
