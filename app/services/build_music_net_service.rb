@@ -34,14 +34,16 @@ class BuildMusicNetService
       album = build_album(spot_track.album)
       artists = build_artists spot_track.artists
 
+      popularity = spot_track.popularity
+      audio_features = spot_track.audio_features
       #album
       track = Track.create!(
         spotify_id: spot_track.id,
         name: spot_track.name,
         url: spot_track.external_urls["spotify"],
         duration_ms: spot_track.duration_ms,
-        popularity: spot_track.popularity,
-        audio_features: spot_track.audio_features.to_json,
+        popularity: popularity,
+        audio_features: audio_features.to_json,
         album: album,
         artists: artists
       )
@@ -59,7 +61,9 @@ class BuildMusicNetService
 
     unless album.present?
       artists = build_artists spot_album.artists
-      album = Album.create!(spotify_id: spot_album.id, name: spot_album.name, release_date: spot_album.release_date, popularity: spot_album.popularity, url: spot_album.external_urls["spotify"], artists: artists)
+      popularity = spot_album.popularity
+      release_date = spot_album.release_date
+      album = Album.create!(spotify_id: spot_album.id, name: spot_album.name, release_date: release_date, popularity: popularity, url: spot_album.external_urls["spotify"], artists: artists)
     end
     album
   end
@@ -70,7 +74,8 @@ class BuildMusicNetService
       Rails.logger.info "   build_artists: #{spot_artist.name}"
       artist = Artist.find_by(spotify_id: spot_artist.id)
       unless artist.present?
-        artist = Artist.create!(spotify_id: spot_artist.id, name: spot_artist.name, popularity: spot_artist.popularity)
+        popularity = artist.popularity
+        artist = Artist.create!(spotify_id: spot_artist.id, name: spot_artist.name, popularity: popularity)
       end
       artists << artist
     end
