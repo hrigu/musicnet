@@ -3,8 +3,6 @@ Rails.application.routes.draw do
 
   root "tracks#index"
 
-
-
   resources :playlists, only: [:index, :show] do
     collection do
       get 'fetch_all'
@@ -12,6 +10,7 @@ Rails.application.routes.draw do
   end
 
   resources :tracks, only: [:index, :show]
+  resources :artists, only: [:index, :show]
   #post '/auth/:provider/callback', to: 'sessions#create'
   #get '/auth/spotify/callback', to: 'users#spotify'
 

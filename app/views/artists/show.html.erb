@@ -1,0 +1,33 @@
+<h1><%= @artist.name %></h1>
+
+<h2>Albums</h2>
+<table class="table">
+  <thead>
+  <tr>
+    <th scope="col">Name</th>
+    <th scope="col">Release date</th>
+    <th scope="col">Popularität</th>
+    <th scope="col">Tracks </th>
+    <th scope="col">URL</th>
+    <th scope="col">Künstler</th>
+    <%# p.album.genres.join(", ") Teuer!!%>
+  </tr>
+  </thead>
+  <tbody>
+  <% @artist.albums.each do |album| %>
+    <tr>
+      <th scope="row"><%= album.name %></th>
+      <td> <%= if album.release_date.present? then l(album.release_date) end %> </td>
+      <td><%= album.popularity %></td>
+      <td>
+        <% album.tracks.each do |t| %>
+        <%= link_to t.name, track_path(t.id) %>
+        <% end %>
+      </td>
+
+      <td> <a href="<%= album.url%>">zu Spotify</a>  </td>
+      <td> <%= album.artists.map(&:name).join(", ") %></td>
+    </tr>
+  <% end %>
+  </tbody>
+</table>
