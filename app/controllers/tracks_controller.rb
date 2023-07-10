@@ -1,7 +1,7 @@
 class TracksController < ApplicationController
 
-  def index
-    @recently_played_tracks = current_user.spotify_user.recently_played(limit: 50) #=>
+  def recently_played_index
+    @tracks = current_user.spotify_user.recently_played(limit: 50) #=>
   end
 
   def show

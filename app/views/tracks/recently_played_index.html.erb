@@ -2,7 +2,7 @@
 <h1>Meine zuletzt gespielten Stücke</h1>
 
 <ul>
-<% @recently_played_tracks.each do |p| %>
+<% @tracks.each do |p| %>
   <li>
     <%= l(Time.zone.parse(p.played_at)) %> |
     <%# p.context_type %>

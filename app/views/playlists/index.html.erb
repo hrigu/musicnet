@@ -9,6 +9,6 @@
   </tr>
   </thead>
   <tbody>
-  <%= render partial: 'playlist', collection: @playlists %> <%# der Shorthand render @playlists geht nicht, da playlist "is not an ActiveModel-compatible object. It must implement :to_partial_path."  %>
+  <%= render @playlists %>
   </tbody>
 </table>

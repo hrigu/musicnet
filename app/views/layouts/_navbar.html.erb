@@ -8,8 +8,13 @@
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
         <li class="nav-item">
-          <%= link_to('Tracks', tracks_path, class: "nav-link") %>
+          <%= link_to('Zuletzt gespielt', recently_played_index_tracks_path, class: "nav-link") %>
+        </li>
+        <li class="nav-item">
           <%= link_to('Playlists', playlists_path, class: "nav-link") %>
+        </li>
+        <li class="nav-item">
+          <%= link_to('Artists', artists_path, class: "nav-link") %>
         </li>
         <li class="nav-item">
           <%= link_to('Fetch', fetch_all_playlists_path, class: "nav-link") %>
