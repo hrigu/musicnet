@@ -7,6 +7,9 @@ Rails.application.routes.draw do
     collection do
       get 'fetch_all'
     end
+    member do
+      get :download
+    end
   end
 
   resources :tracks, only: [:index, :show] do
