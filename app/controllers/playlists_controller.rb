@@ -11,9 +11,7 @@ class PlaylistsController < ApplicationController
   def show
     id = params[:id]
     @playlist = Playlist.find(id)
-    @tracks = @playlist.playlist_tracks.includes(track: {album: :artists})
-    #tracks.sort!{|t| t[:added_at]}
-    #@tracks_enhanced = tracks_enhanced
+    @playlist_tracks = @playlist.playlist_tracks.includes(track: { album: :artists})
   end
 
 end
