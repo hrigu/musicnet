@@ -1,18 +1,26 @@
 
 <h1><%= @playlist.name %></h1>
 
-
-<ul>
-
+<table class="table">
+  <thead>
+  <tr>
+    <th scope="col">Name</th>
+    <th scope="col">hinzugefügt</th>
+    <th scope="col">Popularität</th>
+    <th scope="col">Künstler</th>
+    <th scope="col">Albumname</th>
+    <%# p.album.genres.join(", ") Teuer!!%>
+  </tr>
+  </thead>
+  <tbody>
   <% @tracks.each do |track| %>
-    <li>
-      <%= link_to track.track.name, track_path(track.track.id) %> |
-      <%= l(track.added_at) %> |
-      <%# p.context_type %>
-      <%= track.track.popularity %>  |
-      <%= track.track.artists.map(&:name).join(", ") %>|
-      <%= track.track.album.name %>  |
-      <%# p.album.genres.join(", ") Teuer!!%>
-    </li>
+    <tr>
+      <th scope="row"><%= link_to track.track.name, track_path(track.track.id) %> </th>
+      <td> <%= l(track.added_at) %> </td>
+      <td><%= track.track.popularity %></td>
+      <td> <%= track.track.artists.map(&:name).join(", ") %></td>
+      <td> <%= track.track.album.name %></td>
+    </tr>
   <% end %>
-</ul>
+  </tbody>
+</table>

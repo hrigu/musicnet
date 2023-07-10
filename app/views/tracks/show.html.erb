@@ -5,16 +5,17 @@
   <div> <a href="<%= @track.url%>"> Spotify</a> </div>
 
 </p>
-<ul>
-  <li> Acousticness: <%= @track.af.acousticness  %>   </li>
-  <li> Analysis URL: <%= @track.af.analysis_url  %>   </li>
-  <li> Danceability: <%= @track.af.danceability  %>   </li>
-  <li> Energy: <%= @track.af.energy  %>   </li>
-  <li> Mode: <%= @track.af.mode == 1 ? "Major" : "Minor"  %>   </li>
-  <li> time_signature: <%= @track.af.time_signature %>   </li>
-  <li> Tempo: BPM <%= @track.af.tempo %>  </li>
-
-</ul>
+<% if @track.af.present? %>
+  <ul>
+    <li> Acousticness: <%= @track.af.acousticness  %>   </li>
+    <li> Analysis URL: <%= @track.af.analysis_url  %>   </li>
+    <li> Danceability: <%= @track.af.danceability  %>   </li>
+    <li> Energy: <%= @track.af.energy  %>   </li>
+    <li> Mode: <%= @track.af.mode == 1 ? "Major" : "Minor"  %>   </li>
+    <li> time_signature: <%= @track.af.time_signature %>   </li>
+    <li> Tempo: BPM <%= @track.af.tempo %>  </li>
+  </ul>
+<% end %>
 
 <ul>
   <% @track.playlist_tracks.each do |pt| %>

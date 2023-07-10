@@ -1,4 +1,5 @@
-<li>
-  <%= link_to playlist.name, playlist_path(playlist.id) %> | <%= playlist.public ? "öffentlich" : "privat" %>| <%= playlist.tracks.count %>
-</li>
-
+<tr>
+  <th scope="row"><%= link_to playlist.name, playlist_path(playlist.id) %> </th>
+  <td><%= playlist.public ? "öffentlich" : "privat" %></td>
+  <td><%= playlist.tracks.count  %></td>
+</tr>
