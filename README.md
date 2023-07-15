@@ -6,6 +6,11 @@
 * downgrade auf Ruby 2.6, da 3.0 mit rspotify nicht funktionerte
 * devise
 
-spotdl --save-file xyz.spotdl --user-auth --format m4a https://open.spotify.com/playlist/5D4VeR8RbSChUMm9KeVtYy
 spotdl sync --save-file Africa.spotdl  --format m4a https://open.spotify.com/playlist/06nwKHMAuDIvjY4k15sSOi
-spotdl --save-file Africa.spotdl --user-auth --format m4a https://open.spotify.com/playlist/06nwKHMAuDIvjY4k15sSOi
+
+
+Tables
+playlists <-->> playlist_tracks <<--> tracks 
+artists <-->> artists_tracks <<--> tracks
+artists <-->> albums_artists <<--> albums
+users               

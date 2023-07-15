@@ -19,7 +19,7 @@ class PlaylistsController < ApplicationController
     @playlist = Playlist.find(id)
     service = DownloadPlaylistService.new(current_user, @playlist)
     service.download
-    @playlists = Playlist.all
+    @playlists = Playlist.includes(playlist_tracks: :track).all
 
     render :index
   end

@@ -5,17 +5,17 @@ class DownloadPlaylistService
 
   end
 
+  # lädt die Songs der @playlist runter und speichert sie unter downloads/[playlist_name]
   def download
-    current_dir = Dir.pwd
+    current_dir = __dir__
     Rails.logger.info "DownloadPlaylistService#download: current_dir = #{current_dir}"
-    path = "downloads/#{@playlist.name}"
+    path = "#{current_dir}/../../downloads/#{@playlist.name}"
     Dir.chdir current_dir
     FileUtils.mkdir_p(path)
     Dir.chdir path
-    wasGood = system( build_command )
-    Rails.logger.info(wasGood)
+    result = system( build_command )
+    Rails.logger.info(result)
     Dir.chdir current_dir
-
   end
 
   private
@@ -33,7 +33,7 @@ class DownloadPlaylistService
     playlist_url = "https://open.spotify.com/playlist/#{@playlist.spotify_id}" unless playlist_url
     #cmd = "spotdl #{o[:main_option]} #{o[:save_file]}  #{o[:format]} #{playlist_url}"
 
-    cmd = "spotdl #{o[:save_file]} #{o[:user_auth]} #{o[:format]} #{playlist_url}"
+    cmd = "spotdl #{o[:main_option]} #{playlist_url} #{o[:save_file]} #{o[:user_auth]} #{o[:format]}"
     Rails.logger.info cmd
     cmd
 
