@@ -30,7 +30,8 @@ gem 'bootsnap'#, '>= 1.4.4', require: false
 
 gem 'bootstrap'#, '~> 5.0.0.beta1'
 gem 'rspotify'            # https://github.com/guilhermesad/rspotify
-gem 'omniauth-spotify'
+gem 'omniauth-spotify'    # Stellt die 'Spotify' Omniauth Strategie for Devise zur Verfügung. Siehe config/initializers/devise.rb
+gem 'omniauth-rails_csrf_protection' # 2023-08-26 nötig, damit das Einloggen via Omniauth funktioniert.
 
 gem 'devise'
 
@@ -50,6 +51,7 @@ group :development do
   gem 'listen'#, '~> 3.3'
   # Spring speeds up development by keeping your application running in the background. Read more: https://github.com/rails/spring
   gem 'spring'
+  gem 'pry-rails'
 end
 
 group :test do
