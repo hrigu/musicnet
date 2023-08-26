@@ -5,7 +5,7 @@ class PlaylistsController < ApplicationController
   end
 
   def index
-    @playlists = Playlist.all
+    @playlists = Playlist.order(:name)
   end
 
   def show
