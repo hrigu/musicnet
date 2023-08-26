@@ -1,16 +1,41 @@
-# README
-* Rails 6.1
-* gem 'bootstrap V5',
-* gem 'rspotify'
-* EDITOR="vi" bin/rails credentials:edit
-* downgrade auf Ruby 2.6, da 3.0 mit rspotify nicht funktionerte
-* devise
+# Musicnet
+Holt Playlists, Tracks etc des eingeloggten Benutzers und kann die Tracks runterladen
 
-spotdl sync --save-file Africa.spotdl  --format m4a https://open.spotify.com/playlist/06nwKHMAuDIvjY4k15sSOi
+## Spotify
+### Spotify API: 
+https://developer.spotify.com/documentation/web-api
+
+### Spoty
+Die Spotify App welche die Credentials enthält, damit diese Webpapp überhaupt auf die API zugreifen kann.
+https://developer.spotify.com/dashboard/61f2f8a2eb7340e89e33723785125ca5
+###
+Die Client ID und Client Secret sind dort hinterlegt.
+
+### Ruby Wrapper: rspotify
+https://github.com/guilhermesad/rspotify
 
 
-Tables
+### Login 
+
+# Architektur
+
+## Tools
+### spotdl
+Ein Command-Line Tool welches Tracks runterlädt.
+https://github.com/spotDL/spotify-downloader
+
+In Python geschrieben.
+
+
+## Tables
 playlists <-->> playlist_tracks <<--> tracks 
 artists <-->> artists_tracks <<--> tracks
 artists <-->> albums_artists <<--> albums
-users               
+users          
+
+
+## Anderes
+
+### Credentials
+Die CLient-ID und Client-Secret von Spotify sind als Credentials in der RailsApp hinterlegt und eingebacken.
+So hat man Zugriff: Rails.application.credentials.dig(:spotify, :client_id)
