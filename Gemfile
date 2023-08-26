@@ -29,7 +29,7 @@ gem 'jbuilder'#, '~> 2.7'
 gem 'bootsnap'#, '>= 1.4.4', require: false
 
 gem 'bootstrap'#, '~> 5.0.0.beta1'
-gem 'rspotify'#, '~> 2.11.1'
+gem 'rspotify'            # https://github.com/guilhermesad/rspotify
 gem 'omniauth-spotify'
 
 gem 'devise'
