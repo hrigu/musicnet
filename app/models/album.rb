@@ -1,6 +1,7 @@
 class Album < ApplicationRecord
+  # Die Tracks des Albums, die in mindestens einer Playlist vorhanden sind
   has_many :tracks
-  has_and_belongs_to_many :artists
-
+  # Die Künstler welche auf den Tracks
+  has_many :artists, through: :tracks
 
 end

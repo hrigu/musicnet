@@ -10,31 +10,23 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_02_10_162530) do
-
+ActiveRecord::Schema[7.0].define(version: 2021_02_10_162530) do
   create_table "albums", force: :cascade do |t|
     t.string "spotify_id"
     t.string "name"
     t.string "url"
     t.date "release_date"
     t.integer "popularity"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
-  end
-
-  create_table "albums_artists", id: false, force: :cascade do |t|
-    t.integer "album_id", null: false
-    t.integer "artist_id", null: false
-    t.index ["album_id"], name: "index_albums_artists_on_album_id"
-    t.index ["artist_id"], name: "index_albums_artists_on_artist_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "artists", force: :cascade do |t|
     t.string "spotify_id"
     t.string "name"
     t.integer "popularity"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "artists_tracks", id: false, force: :cascade do |t|
@@ -47,9 +39,9 @@ ActiveRecord::Schema.define(version: 2021_02_10_162530) do
   create_table "playlist_tracks", force: :cascade do |t|
     t.integer "playlist_id", null: false
     t.integer "track_id", null: false
-    t.datetime "added_at"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "added_at", precision: nil
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["playlist_id"], name: "index_playlist_tracks_on_playlist_id"
     t.index ["track_id"], name: "index_playlist_tracks_on_track_id"
   end
@@ -60,8 +52,8 @@ ActiveRecord::Schema.define(version: 2021_02_10_162530) do
     t.string "name"
     t.string "url"
     t.boolean "public"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "tracks", force: :cascade do |t|
@@ -72,8 +64,8 @@ ActiveRecord::Schema.define(version: 2021_02_10_162530) do
     t.integer "popularity"
     t.json "audio_features"
     t.integer "album_id", null: false
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["album_id"], name: "index_tracks_on_album_id"
   end
 
@@ -81,10 +73,10 @@ ActiveRecord::Schema.define(version: 2021_02_10_162530) do
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
     t.string "reset_password_token"
-    t.datetime "reset_password_sent_at"
-    t.datetime "remember_created_at"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "reset_password_sent_at", precision: nil
+    t.datetime "remember_created_at", precision: nil
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.string "provider"
     t.string "uid"
     t.json "spotify_user_data"

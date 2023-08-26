@@ -6,5 +6,11 @@ class CreatePlaylistTracks < ActiveRecord::Migration[6.1]
       t.datetime :added_at
       t.timestamps
     end
+
+    # create_join_table :tracks, :playlists do |t|
+    #   t.index :track_id
+    #   t.index :playlist_id
+    # end
+
   end
 end

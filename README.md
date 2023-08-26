@@ -28,14 +28,25 @@ In Python geschrieben.
 
 
 ## Tables
-playlists <-->> playlist_tracks <<--> tracks 
-artists <-->> artists_tracks <<--> tracks
-artists <-->> albums_artists <<--> albums
+```
+playlists <-->> playlist_tracks <<--> tracks <<---> albums
+                                       ^
+                                       |
+                                       |
+                                 artists_tracks (join table)
+                                       |
+                                       |
+                                     artists    
 users          
-
+```
 
 ## Anderes
 
 ### Credentials
 Die CLient-ID und Client-Secret von Spotify sind als Credentials in der RailsApp hinterlegt und eingebacken.
 So hat man Zugriff: Rails.application.credentials.dig(:spotify, :client_id)
+
+### Zugriff auf private Infos in Spotify
+ * omniauth :spotify Strategie in Devise einbinden
+ * 2023-08-26 Funktionierte nicht mehr: Fehlermeldung "omniauth: Attack prevented by OmniAuth::AuthenticityTokenProtection"
+   * Lösung: gem omniauth-rails_csrf_protection einbinden.  

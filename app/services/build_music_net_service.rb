@@ -30,7 +30,7 @@ class BuildMusicNetService
     end
   end
 
-  # Fèr jedes
+  # Für jedes
   def build_track(playlist, spot_playlist, spot_track)
     Rails.logger.info " build_track: #{spot_track.name}"
     track = Track.find_by(spotify_id: spot_track.id)

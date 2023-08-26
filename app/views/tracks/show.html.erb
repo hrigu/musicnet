@@ -1,14 +1,22 @@
 <h1><%= @track.name %></h1>
-<p>
 <div> aus: <%= @track.album.name %> | <%= @track.album.release_date ? l(@track.album.release_date) : nil %></div>
-<div> Künstler:
-  <% @track.album.artists.each do |a| %>
-    <%= link_to(a.name, artist_path(a.id)) %>
-  <% end %>
-</div>
-<div><a href="<%= @track.url %>">zu Spotify</a></div>
+<div><a href="<%= @track.url %>">Track in Spotify hören</a></div>
+<br>
+  <table class="table caption-top">
+    <caption>Künstler</caption>
+    <thead>
+    <tr>
+      <th scope="col">Name</th>
+      <th scope="col">Bekanntheit</th>
+      <th scope="col">Anzahl Tracks</th>
+    </tr>
+    </thead>
+    <tbody>
+    <%= render @track.album.artists %>
+    </tbody>
+  </table>
 
-</p>
+
 <% if @track.af.present? %>
   <ul>
     <li> Acousticness: <%= @track.af.acousticness %>   </li>
@@ -21,8 +29,18 @@
   </ul>
 <% end %>
 
-<ul>
-  <% @track.playlist_tracks.each do |pt| %>
-    <li> <%= link_to pt.playlist.name, playlist_path(pt.playlist.id) %> | <%= l(pt.added_at) %>  </li>
-  <% end %>
-</ul>
+
+<table class="table caption-top">
+  <caption>Playlists die diesen Track enthalten</caption>
+  <thead>
+  <tr>
+    <th scope="col">Name</th>
+    <th scope="col">Sichtbarkeit</th>
+    <th scope="col">Anzahl Tracks</th>
+    <th scope="col">Download</th>
+  </tr>
+  </thead>
+  <tbody>
+  <%= render @track.playlists %> <%# magischerweise weiss Rails wie rendern. Nämlich mit playlists/_playlist.erb %>
+  </tbody>
+</table>

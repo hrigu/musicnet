@@ -1,8 +1,9 @@
 class Track < ApplicationRecord
   belongs_to :album
-
   has_and_belongs_to_many :artists
   has_many :playlist_tracks
+
+  # Die Playlist die diesen Track enthlten
   has_many :playlists, through: :playlist_tracks
 
   def af

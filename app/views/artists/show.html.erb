@@ -1,12 +1,14 @@
 <h1><%= @artist.name %></h1>
 
-<h2>Alben</h2>
-<table class="table">
+
+
+<table class="table caption-top">
+  <caption>Alben</caption>
   <thead>
   <tr>
     <th scope="col">Name</th>
     <th scope="col">Release date</th>
-    <th scope="col">Popularität</th>
+    <th scope="col">Bekanntheit</th>
     <th scope="col">Tracks</th>
     <th scope="col">URL</th>
     <th scope="col">Künstler</th>
@@ -39,11 +41,12 @@
 </table>
 
 
-<h2>Tracks</h2>
-<table class="table">
+<table class="table caption-top">
+  <caption>Tracks</caption>
   <thead>
   <tr>
     <th scope="col">Name</th>
+    <th scope="col">Bekanntheit</th>
     <th scope="col">Playlists</th>
   </tr>
   </thead>
@@ -51,6 +54,9 @@
   <% @artist.tracks.each do |track| %>
     <tr>
       <th scope="row"><%= link_to(track.name, track_path(track.id)) %></th>
+      <td>
+        <%= track.popularity %>
+      </td>
       <td>
         <% track.playlist_tracks.each do |pt| %>
           <%= link_to pt.playlist.name, playlist_path(pt.playlist.id) %>
