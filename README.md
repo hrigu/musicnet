@@ -8,6 +8,8 @@ Wenn ich die Überschrift "Name" der Playlisttabelle klicke, bekomme ich im GUI 
 Ich habe auch noch ein simples ActionCable gemäss https://docs.stimulusreflex.com/appendices/troubleshooting.html vorgeschlagen, um zu schauen, ob actioncable funktioniert.
 Ohne Erfolg. Ich breche ab
 
+Stimulus funktioniert hingegen grundsätzlich. Jedenfalls funktioniert das Beispiel in hello_controller.js
+
 ## Spotify
 ### Spotify API: 
 https://developer.spotify.com/documentation/web-api
