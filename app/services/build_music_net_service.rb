@@ -62,10 +62,10 @@ class BuildMusicNetService
     Album.find_or_create_by!(spotify_id: spot_album.id) do |a|
       popularity = try_fetch(spot_album, :popularity) # spot_album.popularity
       release_date = try_fetch(spot_album, :release_date) # spot_album.release_date
-      a.name = spot_album.name,
-        a.release_date = release_date,
-        a.popularity = popularity,
-        a.url = spot_album.external_urls["spotify"]
+      a.name = spot_album.name
+      a.release_date = release_date
+      a.popularity = popularity
+      a.url = spot_album.external_urls["spotify"]
     end
   end
 
@@ -73,10 +73,9 @@ class BuildMusicNetService
     artists = []
     spot_artists.each do |spot_artist|
       Rails.logger.info "   build_artists: #{spot_artist.name}"
-      artist = Artist.find_by(spotify_id: spot_artist.id)
-      unless artist.present?
-        popularity = try_fetch(spot_artist, :popularity)
-        artist = Artist.create!(spotify_id: spot_artist.id, name: spot_artist.name, popularity: popularity)
+      artist = Artist.find_or_create_by!(spotify_id: spot_artist.id) do |a|
+        a.name = spot_artist.name
+        a.popularity = try_fetch(spot_artist, :popularity)
       end
       artists << artist
     end
