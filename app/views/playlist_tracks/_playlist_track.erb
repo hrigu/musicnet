@@ -1,0 +1,13 @@
+<%# Repräsentiert eine Playlist Track Eintrag in der Tabelle der Playlist %>
+<tr>
+  <th scope="row"><%= link_to playlist_track.track.name, track_path(playlist_track.track.id) %> </th>
+  <td> <%= l(playlist_track.added_at, format: :short) %> </td>
+  <td><%= playlist_track.track.popularity %></td>
+  <td>
+    <% playlist_track.track.artists.each do |a| %>
+      <%= link_to a.name, artist_path(a.id) %>
+    <% end %>
+  </td>
+  <td> <%= playlist_track.track.album.name %></td>
+  <td> <%= l playlist_track.track.album.release_date %></td>
+</tr>
