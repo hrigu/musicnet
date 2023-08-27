@@ -1,6 +1,13 @@
 # Musicnet
 Holt Playlists, Tracks etc des eingeloggten Benutzers und kann die Tracks runterladen
 
+## Aktuell
+Implementierung der Sortierung der Tabellen. Dabei wollte ich das mit Stimulus-Flex machen, bin aber gestrandet. Etwas Grundlegendes mit Action Cable funktionierte nicht.
+Ich ging nach diesem Tutuorial aus: https://www.colby.so/posts/a-sortable-table-with-rails-and-stimulusreflex. 
+Wenn ich die Überschrift "Name" der Playlisttabelle klicke, bekomme ich im GUI den JS-Fehler "The ActionCable channel subscription for StimulusReflex was rejected.'"
+Ich habe auch noch ein simples ActionCable gemäss https://docs.stimulusreflex.com/appendices/troubleshooting.html vorgeschlagen, um zu schauen, ob actioncable funktioniert.
+Ohne Erfolg. Ich breche ab
+
 ## Spotify
 ### Spotify API: 
 https://developer.spotify.com/documentation/web-api
