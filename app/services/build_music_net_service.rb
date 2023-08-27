@@ -5,6 +5,11 @@ class BuildMusicNetService
 
   # Erstellt die ganze Modellstruktur aus allen Playlists, die der Owner erstellt hat.
   def build
+    Album.delete_all
+    Artist.delete_all
+    Playlist.delete_all
+    Track.delete_all
+
     spotify_playlists = fetch_all_playlists_from_spotify
     spotify_playlists.each do |spot_playlist|
       next if spot_playlist.owner.id != @current_user.spotify_user.id
@@ -93,6 +98,12 @@ class BuildMusicNetService
       offset += limit
     end
     playlists.flatten!
+    playlists.select! do |p|
+      name = p.name.downcase
+      name.include?("fusion")
+    end
+    Rails.logger.info("Anzahl Playlists: #{playlists.length}" )
+    playlists
   end
 
   def try_fetch(object, attribute)
