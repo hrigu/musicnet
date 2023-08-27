@@ -6,6 +6,27 @@ class Track < ApplicationRecord
   # Die Playlist die diesen Track enthlten
   has_many :playlists, through: :playlist_tracks
 
+  # Audiofeatures
+  # - acousticness
+  # - danceability
+  # - duration_ms
+  # - energy
+  # - instrumentalness
+  # - liveness
+  # - loudness
+  # - speechiness
+  # - tempo
+  # - time_signature
+  # - speechiness
+  # - valence
+  #
+  # - mode
+  # - analysis_url
+  # - key
+  # - href
+  # - id
+  # - type
+  # - uri
   def af
     @af ||= audio_features.present? ? JSON.parse(audio_features, object_class: OpenStruct) : nil
   end
