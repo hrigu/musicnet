@@ -1,28 +1,14 @@
 <h1><%= @artist.name %></h1>
 
-<table class="table caption-top">
-  <caption>Tracks</caption>
-  <thead>
-  <tr>
-    <th scope="col">Name</th>
-    <th scope="col">Dauer</th>
-    <th scope="col">Bekanntheit</th>
-    <th scope="col">Künstler</th>
-    <th scope="col">Album Name</th>
-    <th scope="col">Playlists</th>
-  </tr>
-  </thead>
-  <tbody>
-    <%= render @artist.tracks %>
-  </tbody>
-</table>
+<%= render 'tracks/tracks', tracks: @artist.tracks %>
+
 
 <table class="table caption-top">
   <caption>Alben</caption>
   <thead>
   <tr>
     <th scope="col">Name</th>
-    <th scope="col">Release date</th>
+    <th scope="col">Release Date</th>
     <th scope="col">Bekanntheit</th>
     <th scope="col">Tracks</th>
     <th scope="col">URL</th>
