@@ -13,7 +13,7 @@ class Track < ApplicationRecord
   # Siehe @RSpotify::Audiofeatures
   # - acousticness
   # - danceability
-  # - duration_ms
+  # - mode  1: Dur, 0 Minor
   # - energy
   # - instrumentalness
   # - liveness
@@ -21,10 +21,9 @@ class Track < ApplicationRecord
   # - speechiness
   # - tempo
   # - time_signature
-  # - speechiness
   # - valence
   #
-  # - mode
+  # - duration_ms
   # - analysis_url
   # - key
   # - href
