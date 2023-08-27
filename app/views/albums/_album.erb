@@ -1,0 +1,20 @@
+<%# Repräsentiert einen Eintrag in der Tabelle %>
+<tr>
+  <th scope="row"><%= album.name %></th>
+  <td> <%= if album.release_date.present? then
+             l(album.release_date)
+           end %> </td>
+  <td><%= album.popularity %></td>
+  <td>
+    <% album.tracks.each do |t| %>
+      <%= link_to t.name, track_path(t.id) %>
+    <% end %>
+  </td>
+
+  <td><a href="<%= album.url %>">zu Spotify</a></td>
+  <td>
+    <% album.artists.each do |a| %>
+      <%= link_to(a.name, artist_path(a.id)) %>
+    <% end %>
+  </td>
+</tr>

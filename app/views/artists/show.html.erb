@@ -1,6 +1,21 @@
 <h1><%= @artist.name %></h1>
 
-
+<table class="table caption-top">
+  <caption>Tracks</caption>
+  <thead>
+  <tr>
+    <th scope="col">Name</th>
+    <th scope="col">Dauer</th>
+    <th scope="col">Bekanntheit</th>
+    <th scope="col">Künstler</th>
+    <th scope="col">Album Name</th>
+    <th scope="col">Playlists</th>
+  </tr>
+  </thead>
+  <tbody>
+    <%= render @artist.tracks %>
+  </tbody>
+</table>
 
 <table class="table caption-top">
   <caption>Alben</caption>
@@ -16,54 +31,7 @@
   </tr>
   </thead>
   <tbody>
-  <% @artist.albums.each do |album| %>
-    <tr>
-      <th scope="row"><%= album.name %></th>
-      <td> <%= if album.release_date.present? then
-                 l(album.release_date)
-               end %> </td>
-      <td><%= album.popularity %></td>
-      <td>
-        <% album.tracks.each do |t| %>
-          <%= link_to t.name, track_path(t.id) %>
-        <% end %>
-      </td>
-
-      <td><a href="<%= album.url %>">zu Spotify</a></td>
-      <td>
-        <% album.artists.each do |a| %>
-          <%= link_to(a.name, artist_path(a.id)) %>
-        <% end %>
-      </td>
-    </tr>
-  <% end %>
+  <%= render @artist.albums %>
   </tbody>
 </table>
 
-
-<table class="table caption-top">
-  <caption>Tracks</caption>
-  <thead>
-  <tr>
-    <th scope="col">Name</th>
-    <th scope="col">Bekanntheit</th>
-    <th scope="col">Playlists</th>
-  </tr>
-  </thead>
-  <tbody>
-  <% @artist.tracks.each do |track| %>
-    <tr>
-      <th scope="row"><%= link_to(track.name, track_path(track.id)) %></th>
-      <td>
-        <%= track.popularity %>
-      </td>
-      <td>
-        <% track.playlist_tracks.each do |pt| %>
-          <%= link_to pt.playlist.name, playlist_path(pt.playlist.id) %>
-        <% end %>
-      </td>
-    </tr>
-
-  <% end %>
-  </tbody>
-</table>

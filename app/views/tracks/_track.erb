@@ -1,0 +1,27 @@
+<%# Repräsentiert einen Eintrag in der Tabelle %>
+<tr>
+  <th scope="row"><%= link_to(track.name, track_path(track.id)) %></th>
+  <td>
+    <%= track.dauer %>
+  </td>
+  <td>
+    <%= track.popularity %>
+  </td>
+  <td>
+    <% track.artists.each do |a| %>
+      <%= link_to a.name, artist_path(a.id) %>
+    <% end %>
+  </td>
+  <td>
+    <%= track.album.name %>
+  </td>
+  <td>
+    <%= l track.album.release_date %>
+  </td>
+
+  <td>
+    <% track.playlist_tracks.each do |pt| %>
+      <%= link_to pt.playlist.name, playlist_path(pt.playlist.id) %>
+    <% end %>
+  </td>
+</tr>
