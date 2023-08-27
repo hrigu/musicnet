@@ -6,7 +6,11 @@ class Track < ApplicationRecord
   # Die Playlist die diesen Track enthlten
   has_many :playlists, through: :playlist_tracks
 
-  # Audiofeatures
+  def dauer
+    Time.at(duration_ms / 1000).utc.strftime("%M:%S")
+  end
+
+  # Siehe @RSpotify::Audiofeatures
   # - acousticness
   # - danceability
   # - duration_ms
