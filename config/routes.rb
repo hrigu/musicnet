@@ -16,6 +16,9 @@ Rails.application.routes.draw do
     collection do
       get :recently_played_index
     end
+    member do
+      get :play
+    end
   end
   resources :artists, only: [:index, :show]
   #post '/auth/:provider/callback', to: 'sessions#create'
