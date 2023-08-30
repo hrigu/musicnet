@@ -21,7 +21,9 @@
 
   <td>
     <% track.playlist_tracks.each do |pt| %>
-      <%= link_to pt.playlist.name, playlist_path(pt.playlist.id) %>
+      <%= link_to playlist_path(pt.playlist.id) do %>
+        <span class="badge <%= pt.playlist.color_class %>"><%= pt.playlist.short_name %></span>
+      <% end %>
     <% end %>
   </td>
 </tr>

@@ -11,4 +11,15 @@
   </td>
   <td> <%= playlist_track.track.album.name %></td>
   <td> <%= l playlist_track.track.album.release_date if playlist_track.track.album.release_date %></td>
+
+  <td>
+    <% playlist_track.track.playlist_tracks.each do |pt| %>
+      <% unless pt.id == playlist_track.id %>
+        <%= link_to playlist_path(pt.playlist.id) do %>
+          <span class="badge <%= pt.playlist.color_class %>"><%= pt.playlist.short_name %></span>
+        <% end %>
+      <% end %>
+    <% end %>
+  </td>
+
 </tr>
