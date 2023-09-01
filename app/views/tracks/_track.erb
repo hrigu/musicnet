@@ -8,6 +8,13 @@
     <%= track.popularity %>
   </td>
   <td>
+    <%= track.energy %>
+  </td>
+  <td>
+    <%= track.tempo %>
+  </td>
+
+  <td>
     <% track.artists.each do |a| %>
       <%= link_to a.name, artist_path(a.id) %>
     <% end %>
