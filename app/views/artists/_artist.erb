@@ -3,4 +3,11 @@
   <th scope="row"><%= link_to artist.name, artist_path(artist.id) %> </th>
   <td><%= artist.popularity %> </td>
   <td><%= artist.tracks.length %> </td>
+  <td>
+    <%artist.playlists_of_the_tracks.each do |playlist| %>
+      <%= link_to playlist_path(playlist.id) do %>
+        <span class="badge <%= playlist.color_class %>"><%= playlist.short_name %></span>
+      <% end %>
+  <% end %>
+  </td>
 </tr>

@@ -2,7 +2,7 @@
 <tr>
   <th scope="row"><%= link_to playlist_track.track.name, track_path(playlist_track.track.id) %> </th>
   <td> <%= playlist_track.track.dauer %> </td>
-  <td> <%= l(playlist_track.added_at, format: :short) %> </td>
+  <td> <%= l(playlist_track.added_at.to_date) %> </td>
   <td><%= playlist_track.track.popularity %></td>
   <td>
     <% playlist_track.track.artists.each do |a| %>
@@ -21,5 +21,12 @@
       <% end %>
     <% end %>
   </td>
+  <td>
+    <%= link_to playlist_track.track.url, target: '_blank' do %>
+      <%= image_tag("spotify_icon.png", size: "24") %>
+    <% end %>
+    <%#= link_to "spielen", play_track_path(track), remote: true %>
+  </td>
+
 
 </tr>

@@ -5,10 +5,10 @@ class BuildMusicNetService
 
   # Erstellt die ganze Modellstruktur aus allen Playlists, die der Owner erstellt hat.
   def build
-    Album.delete_all
-    Artist.delete_all
-    Playlist.delete_all
-    Track.delete_all
+    PlaylistTrack.delete_all
+    #Track.delete_all
+    #Album.delete_all
+    #Artist.delete_all
 
     spotify_playlists = fetch_all_playlists_from_spotify
     spotify_playlists.each do |spot_playlist|

@@ -26,9 +26,11 @@
       <% end %>
     <% end %>
   </td>
-<!--
+
   <td>
-    <%#= #link_to "spielen", play_track_path(track), remote: true %>
+    <%= link_to track.url, target: '_blank' do %>
+      <%= image_tag("spotify_icon.png", size: "24") %>
+    <% end %>
+    <%#= link_to "spielen", play_track_path(track), remote: true %>
   </td>
--->
 </tr>

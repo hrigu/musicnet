@@ -4,4 +4,9 @@ class Artist < ApplicationRecord
 
   # Alle Alben der Tracks in welchen der Künstler mitwirkt
   has_many :albums, -> { distinct }, through: :tracks
+
+
+  def playlists_of_the_tracks
+    Playlist.distinct.joins(playlist_tracks: {track: :artists}).where(artists: {id: id})
+  end
 end
