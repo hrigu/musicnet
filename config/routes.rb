@@ -32,4 +32,9 @@ Rails.application.routes.draw do
     end
   end
 
+  #http://0.0.0.0:3001/api-docs/index.html
+  mount Rswag::Ui::Engine => '/api-docs'
+  mount Rswag::Api::Engine => '/api-docs'
+
+
 end

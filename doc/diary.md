@@ -17,5 +17,9 @@ token = current_user.api_tokens.create!
 - Nun kann ich das JSON so abfragen: `curl -X GET "http://0.0.0.0:3001/api/v1/home/index" -H "Authorization: Bearer mySecretToken"`
 - Einen [Integrationstest geschrieben](../test/integration/api_welcome_page_test.rb)
 
+- Dann die Dokumenation nach [dieser Anleitung](https://blog.corsego.com/learn-openapi-swagger-rswag)
+ - Der Pfad des swagger.yaml ist im Unterschied zur Anleitung im public Ordner
+ - Auf die Authentisierung im routes.rb habe ich verzichtet
+ - Die erste Endpoint-Dok mit ChatGPT gemacht...
 
 Mehr dazu [hier](api.md)

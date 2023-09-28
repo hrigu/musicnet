@@ -22,10 +22,10 @@ module Musicnet
 
     # config.eager_load_paths << Rails.root.join("extras")
 
-    ## Was macht das hier?
-    #client_id = Rails.application.credentials.dig(:spotify, :client_id)
-    #client_secret = Rails.application.credentials.dig(:spotify, :client_secret)
-    #RSpotify.authenticate(client_id, client_secret)
+    ## Damit ich mich bei Spotify einloggen kann...
+    client_id = Rails.application.credentials.dig(:spotify, :client_id)
+    client_secret = Rails.application.credentials.dig(:spotify, :client_secret)
+    RSpotify.authenticate(client_id, client_secret)
 
   end
 end

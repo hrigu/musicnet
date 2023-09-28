@@ -229,6 +229,11 @@ GEM
       addressable (~> 2.8.0)
       omniauth-oauth2 (>= 1.6)
       rest-client (~> 2.0.2)
+    rswag-api (2.10.1)
+      railties (>= 3.1, < 7.1)
+    rswag-ui (2.10.1)
+      actionpack (>= 3.1, < 7.1)
+      railties (>= 3.1, < 7.1)
     ruby2_keywords (0.0.5)
     sass-rails (6.0.0)
       sassc-rails (~> 2.1, >= 2.1.1)
@@ -302,6 +307,8 @@ DEPENDENCIES
   rack-mini-profiler
   rails
   rspotify
+  rswag-api
+  rswag-ui
   sass-rails
   spring
   sqlite3
