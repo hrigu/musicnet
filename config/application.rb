@@ -21,10 +21,11 @@ module Musicnet
     config.time_zone = "Bern"
 
     # config.eager_load_paths << Rails.root.join("extras")
-    #
-    client_id = Rails.application.credentials.dig(:spotify, :client_id)
-    client_secret = Rails.application.credentials.dig(:spotify, :client_secret)
-    RSpotify.authenticate(client_id, client_secret)
+
+    ## Was macht das hier?
+    #client_id = Rails.application.credentials.dig(:spotify, :client_id)
+    #client_secret = Rails.application.credentials.dig(:spotify, :client_secret)
+    #RSpotify.authenticate(client_id, client_secret)
 
   end
 end

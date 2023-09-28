@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2021_02_10_162530) do
+ActiveRecord::Schema[7.0].define(version: 2023_09_28_150218) do
   create_table "albums", force: :cascade do |t|
     t.string "spotify_id"
     t.string "name"
@@ -19,6 +19,15 @@ ActiveRecord::Schema[7.0].define(version: 2021_02_10_162530) do
     t.integer "popularity"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "api_tokens", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.boolean "active"
+    t.text "token"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_api_tokens_on_user_id"
   end
 
   create_table "artists", force: :cascade do |t|
@@ -84,6 +93,7 @@ ActiveRecord::Schema[7.0].define(version: 2021_02_10_162530) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
+  add_foreign_key "api_tokens", "users"
   add_foreign_key "playlist_tracks", "playlists", on_delete: :cascade
   add_foreign_key "playlist_tracks", "tracks", on_delete: :cascade
   add_foreign_key "tracks", "albums", on_delete: :cascade
