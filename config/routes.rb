@@ -21,8 +21,15 @@ Rails.application.routes.draw do
     end
   end
   resources :artists, only: [:index, :show]
-  #post '/auth/:provider/callback', to: 'sessions#create'
-  #get '/auth/spotify/callback', to: 'users#spotify'
 
-  # For details on the DSL available within this file, see https://guides.rubyonrails.org/routing.html
+
+  namespace :api do
+    namespace :v1 do
+      defaults format: :json do
+        get "home/index", to: "home#index" # /api/v1/home/index
+      end
+
+    end
+  end
+
 end
