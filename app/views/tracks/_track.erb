@@ -25,7 +25,9 @@
   <td>
     <%= l track.album.release_date if track.album.release_date %>
   </td>
-
+  <td><%=
+    track.playlists.length  # Hier nicht count. Wir haben die playlists schon. Ansonsten 1:n Problem
+  %></td>
   <td>
     <% track.playlist_tracks.each do |pt| %>
       <%= link_to playlist_path(pt.playlist.id) do %>

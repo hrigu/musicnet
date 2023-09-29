@@ -1,7 +1,7 @@
 class PlaylistsController < ApplicationController
 
   def fetch_all
-    BuildMusicNetService.new(current_user).build
+    @info = BuildMusicNetService.new(current_user).build
   end
 
   def index
