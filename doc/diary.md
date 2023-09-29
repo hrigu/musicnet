@@ -1,4 +1,13 @@
 # Diary
+## 2023-09-29
+Rspec Tests der API. Diese dann swaggerized: `rake rswag:specs:swaggerize`
+
+
+Die Swagger Dokumentation ist dann (api-docs/index.html)[http://0.0.0.0:3001/api-docs/index.html]
+Siehe 
+- (rswag)[https://github.com/rswag/rswag#rswag]
+- (tutorial)[https://blog.corsego.com/learn-openapi-swagger-rswag]
+
 
 ## 2023-09-28
 API begonnen, nach [dieser Anleitung](https://blog.corsego.com/rails-api-bearer-authentication)
