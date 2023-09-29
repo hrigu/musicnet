@@ -16,9 +16,16 @@ paths:
       - Playlist
       security:
       - bearerAuth: []
+      parameters:
+      - name: order
+        in: query
+        description: Sortierung. Wird nicht verwendet
+        required: false
+        schema:
+          type: string
       responses:
         '200':
-          description: playlists found
+          description: Retrieves all Playlists
           content:
             application/json:
               schema:
@@ -30,6 +37,8 @@ paths:
                       type: integer
                     name:
                       type: string
+                    hihi:
+                      type: boolean
   "/api/v1/playlists/{id}":
     get:
       summary: Retrieves a playlist
@@ -48,6 +57,17 @@ paths:
           description: playlist found
           content:
             application/json:
+              examples:
+                dunkel:
+                  value:
+                    id: 1
+                    name: DARKK
+                    public: true
+                hell:
+                  value:
+                    id: 1
+                    name: BRIGHT
+                    public: false
               schema:
                 type: object
                 properties:

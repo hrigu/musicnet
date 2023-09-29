@@ -9,19 +9,31 @@ RSpec.describe 'api/v1/playlists', type: :request do
       tags 'Playlist'
       # 2) Apply the security globally to all operations
       security [bearerAuth: []]
+      # Ein Query Parameter (wird aktuell nicht ausgewertet)
+      parameter name: :order, in: :query, type: :string,
+                description: "Sortierung. Wird nicht verwendet",
+                required: false
 
       produces 'application/json'
-      response '200', 'playlists found' do
+      response '200', 'Retrieves all Playlists' do
         schema type: :array,
                items: {
                  type: :object, properties: {
                    id: { type: :integer },
                    name: { type: :string },
+                   hihi: {type: :boolean} # gibt es nicht. Damit ein Fehler geworfen wird, verwende swagger_strict_schema_validation: true
                  }
                }
+        let(:order) {"hoho"}
         let(:api_token) {api_tokens(:one)}
         let(:Authorization) { "Token token=#{api_token.token}" }
-        run_test!
+        let(:playlist) { playlists(:dark) }
+        run_test! do |response|
+          # Mit Custom Abfragen
+          content = JSON.parse(response.body)
+          expect(content.length).to be(1)
+          expect(content.first["name"]).to eql(playlist.name)
+        end #swagger_strict_schema_validation: true  #vcr: true
       end
 
     end
@@ -43,6 +55,16 @@ RSpec.describe 'api/v1/playlists', type: :request do
           },
           required: ['id', 'name', 'public']
         )
+        example 'application/json', :dunkel, {
+          id: 1,
+          name: 'DARKK',
+          public: true
+        }
+        example 'application/json', :hell, {
+          id: 1,
+          name: 'BRIGHT',
+          public: false
+        }
         let(:id) { playlists(:dark).id }
         let(:api_token) {api_tokens(:one)}
         let(:Authorization) { "Token token=#{api_token.token}" }
