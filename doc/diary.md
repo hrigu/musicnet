@@ -1,13 +1,15 @@
 # Diary
 ## 2023-09-29
 Rspec Tests der API. Diese dann swaggerized: `rake rswag:specs:swaggerize`
-
-
 Die Swagger Dokumentation ist dann (api-docs/index.html)[http://0.0.0.0:3001/api-docs/index.html]
 Siehe 
-- (rswag)[https://github.com/rswag/rswag#rswag]
-- (tutorial)[https://blog.corsego.com/learn-openapi-swagger-rswag]
+- [rswag](https://github.com/rswag/rswag#rswag)
+- [tutorial](https://blog.corsego.com/learn-openapi-swagger-rswag)
 
+[Problem] Wenn ich das Spec für eine API aufrufen möchte ohne authorisierung (Diese habe ich ausgschaltet), funktioniert das zwar "blutt",
+aber nicht wenn das Spec mit swagger annotiert ist. Es kommt: `Response body: {"error":"You need to sign in or sign up before continuing."}`
+Siehe [spec](../spec/requests/api/v1/playlists_spec.rb)
+-> Lösung: Falscher Pfad korrigiert :(
 
 ## 2023-09-28
 API begonnen, nach [dieser Anleitung](https://blog.corsego.com/rails-api-bearer-authentication)

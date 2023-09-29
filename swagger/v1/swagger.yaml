@@ -3,12 +3,19 @@ openapi: 3.0.1
 info:
   title: Musicnet
   version: v1
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
 paths:
-  "/playlists":
+  "/api/v1/playlists":
     get:
       summary: retrieves playlists
       tags:
       - Playlist
+      security:
+      - bearerAuth: []
       responses:
         '200':
           description: playlists found
@@ -16,13 +23,44 @@ paths:
             application/json:
               schema:
                 type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+  "/api/v1/playlists/{id}":
+    get:
+      summary: Retrieves a playlist
+      tags:
+      - Playlist
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: playlist found
+          content:
+            application/json:
+              schema:
+                type: object
                 properties:
                   id:
                     type: integer
                   name:
                     type: string
+                  public:
+                    type: boolean
+                required:
+                - id
+                - name
+                - public
 servers:
-- url: https://{defaultHost}
+- url: http://{defaultHost}
   variables:
     defaultHost:
-      default: www.example.com
+      default: 0.0.0.0:3001

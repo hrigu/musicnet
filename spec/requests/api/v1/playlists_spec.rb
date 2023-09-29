@@ -4,26 +4,34 @@ RSpec.describe 'api/v1/playlists', type: :request do
   fixtures :api_tokens
   fixtures :playlists
 
-  path '/playlists' do
+  path '/api/v1/playlists' do
     get 'retrieves playlists' do
       tags 'Playlist'
+      # 2) Apply the security globally to all operations
+      #security [bearerAuth: []]
+
       produces 'application/json'
       response '200', 'playlists found' do
         schema type: :array,
-               properties: {
-                 id: { type: :integer },
-                 name: { type: :string },
+               items: {
+                 type: :object, properties: {
+                   id: { type: :integer },
+                   name: { type: :string },
+                 }
                }
+        #let(:api_token) {api_tokens(:one)}
+        #let(:Authorization) { "HTTP_AUTHORIZATION: Token token=#{api_token.token}" }
         run_test!
       end
 
     end
   end
 
-  path "/playlists/{id}" do
+  path "/api/v1/playlists/{id}" do
     get 'Retrieves a playlist' do
       tags 'Playlist'
       produces 'application/json'
+      parameter name: :id, in: :path, type: :string
       response '200', 'playlist found' do
         schema(
           type: :object,
