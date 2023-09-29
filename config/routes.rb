@@ -27,6 +27,7 @@ Rails.application.routes.draw do
     namespace :v1 do
       defaults format: :json do
         get "home/index", to: "home#index" # /api/v1/home/index
+        resources :playlists, only: [:index, :show]
       end
 
     end

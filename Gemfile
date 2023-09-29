@@ -68,5 +68,9 @@ gem "rswag-ui"
 # make API requests from Swagger UI
 gem "rswag-api"
 
+group :development, :test do
+  gem 'rswag-specs'
+end
+
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 #gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw, :jruby]

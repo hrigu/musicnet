@@ -41,3 +41,4 @@ yarn-debug.log*
 .idea
 /config/credentials/development.key
 /downloads
+/identifier.sqlite

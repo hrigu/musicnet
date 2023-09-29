@@ -1,0 +1,8 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+dark:
+  spotify_id: "spotify_id_1"
+  snapshot_id: "keine_ahnung"
+  name: "Fusion Dark"
+  url: null
+  public: false
