@@ -2,10 +2,10 @@
 
 one:
   user: one
-  active: false
-  token: MyText
+  active: true
+  token: mein_geheimes_token
 
 two:
   user: two
-  active: false
-  token: MyText
+  active: true
+  token: mein_anderes_geheime_token

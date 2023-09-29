@@ -57,4 +57,9 @@ Rails.application.configure do
 
   # Annotate rendered view with file names.
   # config.action_view.annotate_rendered_view_with_filenames = true
+
+  # Damit die verschlüsselten Attribute in Fixtures funktionieren (api_tokens.token)
+  # https://edgeguides.rubyonrails.org/active_record_encryption.html#fixtures
+  config.active_record.encryption.encrypt_fixtures = true
+
 end
