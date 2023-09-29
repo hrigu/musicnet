@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 #
 class Api::V1::BaseController < ActionController::Base
+
   rescue_from ActiveRecord::RecordNotFound, with: :handle_not_found
 
   before_action :authenticate

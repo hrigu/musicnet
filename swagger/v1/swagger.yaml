@@ -1,0 +1,28 @@
+---
+openapi: 3.0.1
+info:
+  title: Musicnet
+  version: v1
+paths:
+  "/playlists":
+    get:
+      summary: retrieves playlists
+      tags:
+      - Playlist
+      responses:
+        '200':
+          description: playlists found
+          content:
+            application/json:
+              schema:
+                type: array
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+servers:
+- url: https://{defaultHost}
+  variables:
+    defaultHost:
+      default: www.example.com

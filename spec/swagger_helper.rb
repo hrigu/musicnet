@@ -3,6 +3,7 @@
 require 'rails_helper'
 
 RSpec.configure do |config|
+
   # Specify a root folder where Swagger JSON files are generated
   # NOTE: If you're using the rswag-api to serve API descriptions, you'll need
   # to ensure that it's configured to serve Swagger from the same folder
@@ -18,7 +19,7 @@ RSpec.configure do |config|
     'v1/swagger.yaml' => {
       openapi: '3.0.1',
       info: {
-        title: 'API V1',
+        title: 'Musicnet',
         version: 'v1'
       },
       paths: {},
