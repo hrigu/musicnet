@@ -27,15 +27,14 @@ gem 'jbuilder'#, '~> 2.7'
 
 # Reduces boot times through caching; required in config/boot.rb
 gem 'bootsnap'#, '>= 1.4.4', require: false
-
 gem 'bootstrap'#, '~> 5.0.0.beta1'
+
 gem 'rspotify'            # https://github.com/guilhermesad/rspotify
+
 gem 'omniauth-spotify'    # Stellt die 'Spotify' Omniauth Strategie for Devise zur Verfügung. Siehe config/initializers/devise.rb
 gem 'omniauth-rails_csrf_protection' # 2023-08-26 nötig, damit das Einloggen via Omniauth funktioniert.
 
 gem 'devise'
-
-
 
 group :development, :test do
   # Call 'byebug' anywhere in the code to stop execution and get a debugger console
@@ -60,6 +59,7 @@ group :test do
   #gem 'selenium-webdriver'
   # Easy installation and use of web drivers to run system tests with browsers
   #gem 'webdrivers'
+  gem "rspec-rails"
 end
 
 # API Stuff
