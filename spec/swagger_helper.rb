@@ -22,13 +22,21 @@ RSpec.configure do |config|
         title: 'Musicnet',
         version: 'v1'
       },
-      paths: {},
+      components: {
+        securitySchemes: {
+          bearerAuth: {           # arbitrary name for the security scheme
+            type: :http,
+            scheme: :bearer, #bearerFormat: :JWT   # optional, arbitrary value for documentation purposes
+          }
+        }
+      },
+    paths: {},
       servers: [
         {
-          url: 'https://{defaultHost}',
+          url: 'http://{defaultHost}',
           variables: {
             defaultHost: {
-              default: 'www.example.com'
+              default: '0.0.0.0:3001'
             }
           }
         }

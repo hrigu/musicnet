@@ -3,7 +3,7 @@
 class Api::V1::PlaylistsController < Api::V1::BaseController
 
   # Vorübergehend, damit ich die Tests besser schreiben kann
-  skip_before_action :authenticate
+  #skip_before_action :authenticate
 
   def index
     @playlists = Playlist.order(:name)

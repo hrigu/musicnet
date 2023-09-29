@@ -35,6 +35,8 @@ paths:
       summary: Retrieves a playlist
       tags:
       - Playlist
+      security:
+      - bearerAuth: []
       parameters:
       - name: id
         in: path

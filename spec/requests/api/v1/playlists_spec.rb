@@ -8,7 +8,7 @@ RSpec.describe 'api/v1/playlists', type: :request do
     get 'retrieves playlists' do
       tags 'Playlist'
       # 2) Apply the security globally to all operations
-      #security [bearerAuth: []]
+      security [bearerAuth: []]
 
       produces 'application/json'
       response '200', 'playlists found' do
@@ -19,8 +19,8 @@ RSpec.describe 'api/v1/playlists', type: :request do
                    name: { type: :string },
                  }
                }
-        #let(:api_token) {api_tokens(:one)}
-        #let(:Authorization) { "HTTP_AUTHORIZATION: Token token=#{api_token.token}" }
+        let(:api_token) {api_tokens(:one)}
+        let(:Authorization) { "Token token=#{api_token.token}" }
         run_test!
       end
 
@@ -31,6 +31,7 @@ RSpec.describe 'api/v1/playlists', type: :request do
     get 'Retrieves a playlist' do
       tags 'Playlist'
       produces 'application/json'
+      security [bearerAuth: []]
       parameter name: :id, in: :path, type: :string
       response '200', 'playlist found' do
         schema(
@@ -43,6 +44,8 @@ RSpec.describe 'api/v1/playlists', type: :request do
           required: ['id', 'name', 'public']
         )
         let(:id) { playlists(:dark).id }
+        let(:api_token) {api_tokens(:one)}
+        let(:Authorization) { "Token token=#{api_token.token}" }
         run_test!
       end
     end
@@ -52,7 +55,7 @@ RSpec.describe 'api/v1/playlists', type: :request do
     it "liefert alle Playlists" do
       api_token = api_tokens(:one)
       playlist = playlists(:dark)
-      get api_v1_playlists_path #, headers: { HTTP_AUTHORIZATION: "Token token=#{api_token.token}" }
+      get api_v1_playlists_path, headers: { HTTP_AUTHORIZATION: "Token token=#{api_token.token}" }
       expect(response).to have_http_status(:success)
       expect(response.body).to include(playlist.name)
     end
