@@ -4,7 +4,7 @@
       "name": "PlaylistResource",
       "type": "playlists",
       "graphql_entrypoint": "playlists",
-      "description": null,
+      "description": "Die Playlist",
       "attributes": {
         "id": {
           "type": "integer_id",
@@ -16,7 +16,7 @@
           "type": "string",
           "readable": true,
           "writable": true,
-          "description": null
+          "description": "huhu"
         },
         "public": {
           "type": "boolean",

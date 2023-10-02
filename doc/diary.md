@@ -1,7 +1,11 @@
 # Diary
+## 2023-10-02
+V2 der API mit [graphiti](https://www.graphiti.dev/) erstellt. Ist eine Implementation der [json:api](https://jsonapi.org/) Spez.
+Vandal läuft unter [api/v2/vandal](http://0.0.0.0:3001/api/v2/vandal). Das schema.json mit dem ganzen Beschriebe der Dokumentation wird ins public/api/v2/schemal.json generiert. (Wenn man die Tests laufen lässt)
+
 ## 2023-09-29
 Rspec Tests der API. Diese dann swaggerized: `rake rswag:specs:swaggerize`
-Die Swagger Dokumentation ist dann (api-docs/index.html)[http://0.0.0.0:3001/api-docs/index.html]
+Die Swagger Dokumentation ist dann [api-docs/index.html](http://0.0.0.0:3001/api-docs/index.html)
 Siehe 
 - [rswag](https://github.com/rswag/rswag#rswag)
 - [tutorial](https://blog.corsego.com/learn-openapi-swagger-rswag)
