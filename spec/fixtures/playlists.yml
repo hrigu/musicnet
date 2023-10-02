@@ -6,3 +6,10 @@ dark:
   name: "Fusion Dark"
   url: null
   public: false
+
+bright:
+  spotify_id: "spotify_id_2"
+  snapshot_id: "keine_ahnungg"
+  name: "Fusion Bright"
+  url: null
+  public: true

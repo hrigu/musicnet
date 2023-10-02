@@ -31,8 +31,8 @@ RSpec.describe 'api/v1/playlists', type: :request do
         run_test! do |response|
           # Mit Custom Abfragen
           content = JSON.parse(response.body)
-          expect(content.length).to be(1)
-          expect(content.first["name"]).to eql(playlist.name)
+          expect(content.length).to be(Playlist.count)
+          expect(content.map{|p| p["name"]}).to match_array(Playlist.all.map{|p| p.name})
         end #swagger_strict_schema_validation: true  #vcr: true
       end
 
