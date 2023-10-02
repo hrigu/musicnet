@@ -70,6 +70,8 @@ gem "rswag-api"
 gem "graphiti"
 gem 'graphiti-rails'
 gem 'kaminari'
+gem 'vandal_ui'
+
 group :development, :test do
   gem 'graphiti_spec_helpers'
 end
