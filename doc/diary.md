@@ -3,6 +3,9 @@
 V2 der API mit [graphiti](https://www.graphiti.dev/) erstellt. Ist eine Implementation der [json:api](https://jsonapi.org/) Spez.
 Vandal läuft unter [api/v2/vandal](http://0.0.0.0:3001/api/v2/vandal). Das schema.json mit dem ganzen Beschriebe der Dokumentation wird ins public/api/v2/schemal.json generiert. (Wenn man die Tests laufen lässt)
 
+Habe dann [graphiti-openapi](https://github.com/alsemyonov/graphiti-openapi) ausprobiert. Sollte aus dem graphiti schema.json dann OpenApi Doc erstellen. Ging aber nicht, darum wieder deinstalliert.
+
+Interessant wäre als Alternative zu graphiti [jsonapi-rb](https://jsonapi-rb.org/)
 ## 2023-09-29
 Rspec Tests der API. Diese dann swaggerized: `rake rswag:specs:swaggerize`
 Die Swagger Dokumentation ist dann [api-docs/index.html](http://0.0.0.0:3001/api-docs/index.html)
