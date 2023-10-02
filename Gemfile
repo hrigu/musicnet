@@ -75,9 +75,11 @@ gem 'vandal_ui'
 group :development, :test do
   gem 'graphiti_spec_helpers'
 end
-# benötigt damit man von ActionControler::API erbaen kann. ( Api::V1::Generic::PlanikApiController ) Siehe graphiti Dokumentation
+# benötigt damit man von ActionControler::API erben kann. ( Api::V1::Generic::PlanikApiController ) Siehe graphiti Dokumentation
 gem 'responders'
-gem 'vandal_ui'
+
+#gem 'graphiti-openapi', github: 'planik/graphiti-openapi'
+
 
 group :development, :test do
   gem 'rswag-specs'
