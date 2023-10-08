@@ -47,19 +47,16 @@ class Track < ApplicationRecord
   def track_path
     search = name
 
-    replacements = {':' => '-'}
+    replacements = {':' => '-', '?' => '', '/' => ''}
     search.gsub!(Regexp.union(replacements.keys), replacements)
-    search = search.tr('/', '')
-
-    Rails.logger.info "Track#track_path: name: #{search}"
     dir_name = "#{Rails.root}/downloads/tracks/"
     Dir.chdir dir_name
     files = Dir.glob("*#{search}*.m4a")
-    if files.first
-      Rails.logger.info("File gefunden: #{search}")
-    else
-      Rails.logger.info("File nicht gefunden: #{search}")
-    end
+    # if files.first
+    #  Rails.logger.info("File gefunden: #{search}")
+    # else
+    #  Rails.logger.info("File nicht gefunden: #{search}")
+    # end
     files.first
   end
 

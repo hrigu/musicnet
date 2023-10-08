@@ -15,13 +15,12 @@ class PlaylistsController < ApplicationController
     @playlist_tracks = @playlist.playlist_tracks.includes(track: { album: :artists })
   end
 
+  # Lädt alle Tracks der Plylist runter und zeigt dann diese Plylit an
   def download
     id = params[:id]
     @playlist = Playlist.find(id)
     service = DownloadPlaylistService.new(current_user, @playlist)
     service.download
-    @playlist_tracks = @playlist.playlist_tracks.includes(track: { album: :artists })
-
-    render :show
+    redirect_to playlist_path(id)
   end
 end
