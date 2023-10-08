@@ -6,23 +6,29 @@ Holt Playlists, Tracks etc des eingeloggten Benutzers und kann die Tracks runter
 https://developer.spotify.com/documentation/web-api
 
 ### Spoty
-Die Spotify App welche die Credentials enthält, damit diese Webpapp überhaupt auf die API zugreifen kann.
-https://developer.spotify.com/dashboard/61f2f8a2eb7340e89e33723785125ca5
-###
-Die Client ID und Client Secret sind dort hinterlegt.
-Auf der App: Siehe unter [Anderes/Credentials](#credentials)
+Die Spotify App welche mit dieser Anwendung verknüpft ist. Sie ist definiert im Spotify Dashboard und definiert
+die Credentials, damit diese Webpapp überhaupt auf die API zugreifen kann. 
+[spoty](https://developer.spotify.com/dashboard/61f2f8a2eb7340e89e33723785125ca5)
+
+#### Credentials
+Die `Client ID` und `Client Secret` sind dort hinterlegt.
+Auf der Webpp: Siehe unter [Anderes/Credentials](#credentials-für-spotify-auf-der-webapp)
 
 ### Ruby Wrapper: rspotify
 https://github.com/guilhermesad/rspotify
 
-### Login 
+#### Authentication
+Für viele SpotifyAPIS muss die Anwendung authentisiert sein. Diese Authentisierung findet beim Starten dieser App
+statt. Siehe [application.rb](config/application.rb)
+
+### Login
+Für das einloggen des Users mit oauth nehmen wir das gem `omniauth-spotify`. 
 
 # Architektur
 
 ## Tools
 ### spotdl
-Ein Command-Line Tool welches Tracks runterlädt.
-https://github.com/spotDL/spotify-downloader
+[spotdl](https://github.com/spotDL/spotify-downloader) ist ein Command-Line Tool welches Tracks runterlädt.
 In Python geschrieben.
 
 
@@ -41,7 +47,7 @@ users
 
 ## Anderes
 
-### Credentials
+### Credentials für Spotify auf der webapp
 Die CLient-ID und Client-Secret von Spotify sind als Credentials in der RailsApp hinterlegt und eingebacken.
 Dieser Key mit den Infos ist im config/master.key hinterlegt. Dieses nicht einchecken! Es muss geheim bleiben (1Password)
 So hat man Zugriff: Rails.application.credentials.dig(:spotify, :client_id)

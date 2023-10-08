@@ -111,7 +111,8 @@ GEM
       zeitwerk (~> 2.6)
     erubi (1.12.0)
     execjs (2.8.1)
-    faraday (2.7.10)
+    faraday (2.7.11)
+      base64
       faraday-net_http (>= 2.0, < 3.1)
       ruby2_keywords (>= 0.0.4)
     faraday-net_http (3.0.2)
@@ -177,7 +178,7 @@ GEM
     method_source (1.0.0)
     mime-types (3.5.1)
       mime-types-data (~> 3.2015)
-    mime-types-data (3.2023.0808)
+    mime-types-data (3.2023.1003)
     mini_mime (1.1.5)
     mini_portile2 (2.8.4)
     minitest (5.19.0)
