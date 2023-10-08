@@ -1,4 +1,8 @@
 # Diary
+## 2023-10-08
+* Heruntergeladene Files können nun abgespielt werden
+* Informationen (Genre) aus den Tracks werden dargestellt. Mit hilfe des gems Wahwah
+
 ## 2023-10-02
 V2 der API mit [graphiti](https://www.graphiti.dev/) erstellt. Ist eine Implementation der [json:api](https://jsonapi.org/) Spez.
 Vandal läuft unter [api/v2/vandal](http://0.0.0.0:3001/api/v2/vandal). Das schema.json mit dem ganzen Beschriebe der Dokumentation wird ins public/api/v2/schemal.json generiert. (Wenn man die Tests laufen lässt)
