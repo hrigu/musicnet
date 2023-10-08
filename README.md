@@ -19,10 +19,13 @@ https://github.com/guilhermesad/rspotify
 
 #### Authentication
 Für viele SpotifyAPIS muss die Anwendung authentisiert sein. Diese Authentisierung findet beim Starten dieser App
-statt. Siehe [application.rb](config/application.rb)
+statt. Siehe [application.rb](config/application.rb) und [Spotify Doc](https://developer.spotify.com/documentation/web-api/concepts/authorization)
+
 
 ### Login
 Für das einloggen des Users mit oauth nehmen wir das gem `omniauth-spotify`. 
+Siehe auch den [devise.rb](config/initializers/devise.rb) Initializer. Dort sind die scopes definiert, die freigeschalten sind.
+Siehe [Spotify doc](https://developer.spotify.com/documentation/web-api/concepts/scopes) für Details über Scopes.
 
 # Architektur
 
