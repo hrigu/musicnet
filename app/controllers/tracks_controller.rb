@@ -35,6 +35,7 @@ class TracksController < ApplicationController
     if track_path
       send_file track_path
     end
-    #head :no_content
+    # head :no_content
   end
+
 end

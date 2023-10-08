@@ -4,6 +4,7 @@
   <td>
     <%= track.dauer %>
   </td>
+  <td> <%= track.genre %> </td>
   <td>
     <%= track.popularity %>
   </td>
@@ -35,7 +36,8 @@
 
   <td>
     <audio id="<%= track.id %>" preload="false" controls>
-      <source src="<%= stream_track_path(track.id) %>"></source>
+      <source src="<%= stream_track_path(track.id) %>">
+      </source>
     </audio>
   </td>
 </tr>

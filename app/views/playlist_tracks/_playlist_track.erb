@@ -3,6 +3,7 @@
   <th scope="row"><%= link_to playlist_track.track.name, track_path(playlist_track.track.id) %> </th>
   <td> <%= playlist_track.track.dauer %> </td>
   <td> <%= l(playlist_track.added_at.to_date) %> </td>
+  <td> <%= (playlist_track.track.genre) %> </td>
   <td><%= playlist_track.track.popularity %></td>
   <td><%= engergie_to_view playlist_track.track.energy %></td>
   <td><%= tempo_to_view playlist_track.track.tempo %></td>

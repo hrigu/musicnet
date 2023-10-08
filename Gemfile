@@ -32,6 +32,7 @@ gem 'bootsnap' # , '>= 1.4.4', require: false
 gem 'bootstrap' # , '~> 5.0.0.beta1'
 
 gem 'rspotify' # https://github.com/guilhermesad/rspotify
+gem 'wahwah'
 
 gem 'omniauth-rails_csrf_protection' # 2023-08-26 nötig, damit das Einloggen via Omniauth funktioniert.
 gem 'omniauth-spotify' # Stellt die 'Spotify' Omniauth Strategie for Devise zur Verfügung. Siehe config/initializers/devise.rb

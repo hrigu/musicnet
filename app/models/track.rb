@@ -44,10 +44,19 @@ class Track < ApplicationRecord
     af.try(:tempo)
   end
 
+  def genre
+
+    if track_path
+      WahWah.open(track_path).genre
+    else
+      nil
+    end
+  end
+
   def track_path
     search = name
 
-    replacements = {':' => '-', '?' => '', '/' => ''}
+    replacements = { ':' => '-', '?' => '', '/' => '' }
     search.gsub!(Regexp.union(replacements.keys), replacements)
     dir_name = "#{Rails.root}/downloads/tracks/"
     Dir.chdir dir_name
