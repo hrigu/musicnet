@@ -1,6 +1,8 @@
-require  'graphiti_helper'
+# frozen_string_literal: true
 
-RSpec.describe "playlists#destroy", type: :request do
+require 'graphiti_helper'
+
+RSpec.describe 'playlists#destroy', type: :request do
   fixtures :playlists
   let!(:playlist) { playlists(:dark) }
 
@@ -9,13 +11,12 @@ RSpec.describe "playlists#destroy", type: :request do
   end
 
   describe 'basic destroy' do
-
     it 'updates the resource' do
       expect(PlaylistResource).to receive(:find).and_call_original
-      expect {
+      expect do
         make_request
         expect(response.status).to eq(200), response.body
-      }.to change { Playlist.count }.by(-1)
+      end.to change { Playlist.count }.by(-1)
       expect { playlist.reload }
         .to raise_error(ActiveRecord::RecordNotFound)
       expect(json).to eq('meta' => {})

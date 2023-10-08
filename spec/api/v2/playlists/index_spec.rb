@@ -1,17 +1,19 @@
-require  'graphiti_helper'
+# frozen_string_literal: true
 
-RSpec.describe "playlists#index", type: :request do
+require 'graphiti_helper'
+
+RSpec.describe 'playlists#index', type: :request do
   fixtures :playlists
 
   let(:params) { {} }
 
   subject(:make_request) do
-    jsonapi_get "/api/v2/playlists", params: params
+    jsonapi_get '/api/v2/playlists', params: params
   end
 
   describe 'basic fetch' do
     let!(:playlist1) { playlists(:dark) }
-    let!(:playlist2) { playlists(:bright)}
+    let!(:playlist2) { playlists(:bright) }
 
     it 'works' do
       expect(PlaylistResource).to receive(:all).and_call_original

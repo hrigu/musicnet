@@ -1,5 +1,6 @@
-class ArtistsController < ApplicationController
+# frozen_string_literal: true
 
+class ArtistsController < ApplicationController
   def index
     @artists = Artist.includes(:albums, :tracks).all
   end

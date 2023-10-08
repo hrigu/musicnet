@@ -73,6 +73,7 @@ gem 'kaminari'
 gem 'vandal_ui'
 
 group :development, :test do
+  gem 'rubocop'
   gem 'graphiti_spec_helpers'
 end
 # benötigt damit man von ActionControler::API erben kann. ( Api::V1::Generic::PlanikApiController ) Siehe graphiti Dokumentation

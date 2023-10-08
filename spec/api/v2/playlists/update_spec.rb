@@ -1,6 +1,8 @@
-require  'graphiti_helper'
+# frozen_string_literal: true
 
-RSpec.describe "playlists#update", type: :request do
+require 'graphiti_helper'
+
+RSpec.describe 'playlists#update', type: :request do
   fixtures :playlists
   let!(:playlist) { playlists(:dark) }
 
@@ -9,14 +11,13 @@ RSpec.describe "playlists#update", type: :request do
   end
 
   describe 'basic update' do
-
     let(:payload) do
       {
         data: {
           id: playlist.id.to_s,
           type: 'playlists',
           attributes: {
-            name: "orange"
+            name: 'orange'
             # ... your attrs here
           }
         }
@@ -25,10 +26,10 @@ RSpec.describe "playlists#update", type: :request do
 
     it 'updates the resource' do
       expect(PlaylistResource).to receive(:find).and_call_original
-      expect {
+      expect do
         make_request
         expect(response.status).to eq(200), response.body
-      }.to change { playlist.reload.attributes }
+      end.to(change { playlist.reload.attributes })
     end
   end
 end

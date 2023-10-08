@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class ApiToken < ApplicationRecord
   belongs_to :user
   # before_create :generate_token
@@ -13,5 +15,4 @@ class ApiToken < ApplicationRecord
     self.token = Digest::MD5.hexdigest(SecureRandom.hex)
     self.active = true
   end
-
 end

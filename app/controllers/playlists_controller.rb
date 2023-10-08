@@ -1,5 +1,6 @@
-class PlaylistsController < ApplicationController
+# frozen_string_literal: true
 
+class PlaylistsController < ApplicationController
   def fetch_all
     @info = BuildMusicNetService.new(current_user).build
   end
@@ -11,7 +12,7 @@ class PlaylistsController < ApplicationController
   def show
     id = params[:id]
     @playlist = Playlist.find(id)
-    @playlist_tracks = @playlist.playlist_tracks.includes(track: { album: :artists})
+    @playlist_tracks = @playlist.playlist_tracks.includes(track: { album: :artists })
   end
 
   def download
@@ -23,5 +24,4 @@ class PlaylistsController < ApplicationController
 
     render :index
   end
-
 end

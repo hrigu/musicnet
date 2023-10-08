@@ -1,5 +1,6 @@
-class TracksController < ApplicationController
+# frozen_string_literal: true
 
+class TracksController < ApplicationController
   # Zeigt die letzten 50 gespielte Lieder
   # tracks sind RSpotify::Track
   def recently_played_index
@@ -13,7 +14,7 @@ class TracksController < ApplicationController
   def show
     id = params[:id]
     @track = Track.find(id)
-    #@spotify_track = RSpotify::Track.find ([@track.spotify_id]).first
+    # @spotify_track = RSpotify::Track.find ([@track.spotify_id]).first
   end
 
   # Spielt den Track in Spotify. Funktioniert leider nicht. Es gibt einen RestClient::Unauthorized (401 Unauthorized)
@@ -26,5 +27,4 @@ class TracksController < ApplicationController
     player.play_track(nil, uri)
     head :ok
   end
-
 end

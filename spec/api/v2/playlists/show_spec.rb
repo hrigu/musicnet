@@ -1,6 +1,8 @@
-require  'graphiti_helper'
+# frozen_string_literal: true
 
-RSpec.describe "playlists#show", type: :request do
+require 'graphiti_helper'
+
+RSpec.describe 'playlists#show', type: :request do
   fixtures :playlists
 
   let(:params) { {} }
@@ -11,7 +13,6 @@ RSpec.describe "playlists#show", type: :request do
   end
 
   describe 'basic fetch' do
-
     it 'works' do
       expect(PlaylistResource).to receive(:find).and_call_original
       make_request
