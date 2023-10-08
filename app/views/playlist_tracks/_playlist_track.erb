@@ -24,9 +24,9 @@
     <% end %>
   </td>
   <td>
-    <%= link_to playlist_track.track.url, target: '_blank' do %>
-      <%= image_tag("spotify_icon.png", size: "24") %>
-    <% end %>
+    <audio id="<%= playlist_track.track.id %>" controls>
+      <source src="<%= stream_track_path(playlist_track.track.id) %>"></source>
+    </audio>
     <%#= link_to "spielen", play_track_path(track), remote: true %>
   </td>
 </tr>

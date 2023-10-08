@@ -1,6 +1,11 @@
 <h1><%= @track.name %></h1>
 <div> aus: <%= @track.album.name %> | <%= @track.album.release_date ? l(@track.album.release_date) : nil %></div>
 <div><a href="<%= @track.url %>">Track in Spotify hören</a></div>
+<div>
+  <audio id="<%= @track.id %>" controls>
+    <source src="<%= stream_track_path(@track.id) %>"></source>
+  </audio>
+</div>
 <br>
   <table class="table caption-top">
     <caption>Künstler</caption>

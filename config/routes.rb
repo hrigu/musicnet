@@ -20,6 +20,7 @@ Rails.application.routes.draw do
     end
     member do
       get :play
+      get :stream
     end
   end
   resources :artists, only: [:index, :show]

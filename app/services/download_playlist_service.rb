@@ -5,17 +5,15 @@ class DownloadPlaylistService
 
   end
 
-  # lädt die Songs der @playlist runter und speichert sie unter downloads/[playlist_name]
+  # lädt die Songs der @playlist runter und speichert sie unter downloads/tracks.
+  # Tracks die schon vorhanden sind werden nicht nochmals runtergeladen
   def download
-    current_dir = __dir__
+    current_dir = Rails.root
     Rails.logger.info "DownloadPlaylistService#download: current_dir = #{current_dir}"
-    path = "#{current_dir}/../../downloads/#{@playlist.name}"
-    Dir.chdir current_dir
-    FileUtils.mkdir_p(path)
+    path = "#{current_dir}/downloads/tracks"
     Dir.chdir path
     result = system( build_command )
     Rails.logger.info(result)
-    Dir.chdir current_dir
   end
 
   private

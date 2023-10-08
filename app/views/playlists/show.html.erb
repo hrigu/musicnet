@@ -1,5 +1,8 @@
 
 <h1><%= @playlist.name %></h1>
+
+<div>  <%= link_to("Download Tracks", download_playlist_path(@playlist.id)) %>
+</div>
 <table class="table caption-top">
   <caption>Einträge</caption>
   <thead>

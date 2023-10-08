@@ -27,4 +27,14 @@ class TracksController < ApplicationController
     player.play_track(nil, uri)
     head :ok
   end
+
+  def stream
+    id = params[:id]
+    track = Track.find(id)
+    track_path = track.track_path
+    if track_path
+      send_file track_path
+    end
+    #head :no_content
+  end
 end

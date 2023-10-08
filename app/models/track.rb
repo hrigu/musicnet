@@ -44,5 +44,24 @@ class Track < ApplicationRecord
     af.try(:tempo)
   end
 
+  def track_path
+    search = name
+
+    replacements = {':' => '-'}
+    search.gsub!(Regexp.union(replacements.keys), replacements)
+    search = search.tr('/', '')
+
+    Rails.logger.info "Track#track_path: name: #{search}"
+    dir_name = "#{Rails.root}/downloads/tracks/"
+    Dir.chdir dir_name
+    files = Dir.glob("*#{search}*.m4a")
+    if files.first
+      Rails.logger.info("File gefunden: #{search}")
+    else
+      Rails.logger.info("File nicht gefunden: #{search}")
+    end
+    files.first
+  end
+
   # {"acousticness"=>0.552, "analysis_url"=>"https://api.spotify.com/v1/audio-analysis/2uSavRrWjouarU9DupcWmK", "danceability"=>0.69, "duration_ms"=>296333, "energy"=>0.553, "instrumentalness"=>0.914, "key"=>5, "liveness"=>0.121, "loudness"=>-12.152, "mode"=>1, "speechiness"=>0.0372, "tempo"=>131.674, "time_signature"=>4, "track_href"=>"https://api.spotify.com/v1/tracks/2uSavRrWjouarU9DupcWmK", "valence"=>0.917, "external_urls"=>nil, "href"=>nil, "id"=>"2uSavRrWjouarU9DupcWmK", "type"=>"audio_features", "uri"=>"spotify:track:2uSavRrWjouarU9DupcWmK"}
 end
