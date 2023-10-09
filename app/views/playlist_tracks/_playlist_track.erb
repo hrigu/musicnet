@@ -25,12 +25,8 @@
     <% end %>
   </td>
   <td>
-    <iframe style="border-radius:12px"
-            src="https://open.spotify.com/embed/track/<%= playlist_track.track.spotify_id %>?utm_source=generator&theme=0"
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-            loading="lazy">
-    </iframe>
-
+    <%= render partial: 'components/audio_file', locals: {track: playlist_track.track} %>
+    <% #= render partial: 'components/spotify_player', locals: {track: playlist_track.track} %>
   </td>
   <!--
   <td>

@@ -35,9 +35,6 @@
   </td>
 
   <td>
-    <audio id="<%= track.id %>" preload="false" controls>
-      <source src="<%= stream_track_path(track.id) %>">
-      </source>
-    </audio>
+    <%= render partial: 'components/audio_file', locals: {track: track} %>
   </td>
 </tr>

@@ -8,10 +8,9 @@ class DownloadPlaylistService
   # lädt die Songs der @playlist runter und speichert sie unter downloads/tracks.
   # Tracks die schon vorhanden sind werden nicht nochmals runtergeladen
   def download
-    current_dir = Rails.root
-    Rails.logger.info "DownloadPlaylistService#download: current_dir = #{current_dir}"
-    path = "#{current_dir}/downloads/tracks"
-    Dir.chdir path
+    tracks_dir = Rails.root.join('downloads/tracks')
+    Rails.logger.info "DownloadPlaylistService#download: current_dir = #{tracks_dir}"
+    Dir.chdir tracks_dir
     result = system( build_command )
     Rails.logger.info(result)
   end
@@ -20,11 +19,11 @@ class DownloadPlaylistService
 
   def build_command
     o = {
-      main_option: "sync", #Removes songs that are no longer present, downloads new ones
+      main_option: 'sync', #Removes songs that are no longer present, downloads new ones
       save_file: "--save-file #{@playlist.name_path_ready}.spotdl", #The file to save/load the songs data from/to. It has to end with .spotdl. If combined with the download operation, it will save the songs data to the file. Required for save/preload/sync
-      sync_without_deleting: "--sync-without-deleting", #Sync without deleting songs that are not in the query.
-      user_auth: "--user-auth",           #Login to Spotify using OAuth.
-      format: "--format m4a"
+      sync_without_deleting: '--sync-without-deleting', #Sync without deleting songs that are not in the query.
+      user_auth: '--user-auth',           #Login to Spotify using OAuth.
+      format: '--format m4a'
   }
 
     playlist_url = @playlist.url

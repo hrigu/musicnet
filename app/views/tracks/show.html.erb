@@ -2,18 +2,11 @@
 <div> aus: <%= @track.album.name %> | <%= @track.album.release_date ? l(@track.album.release_date) : nil %></div>
 <div><a href="<%= @track.url %>">Track in Spotify hören</a></div>
 <div>
-  <audio id="<%= @track.id %>" controls>
-    <source src="<%= stream_track_path(@track.id) %>"></source>
-  </audio>
+  <%= render partial: 'components/audio_file', locals: {track: @track}  %>
 </div>
-
-<iframe style="border-radius:12px"
-        src="https://open.spotify.com/embed/track/<%= @track.spotify_id %>?utm_source=generator&theme=0"
-        width="40%" height="152" frameBorder="0" allowfullscreen=""
-        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-        loading="lazy">
-
-</iframe>
+<div>
+  <%= render partial: 'components/spotify_player', locals: {track: @track} %>
+</div>
 
 <div>
     Genre: <%= @track.genre%>

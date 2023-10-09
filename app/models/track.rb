@@ -13,17 +13,15 @@ class Track < ApplicationRecord
   end
 
   # Siehe @RSpotify::Audiofeatures
-  # - acousticness
-  # [Float] danceability Danceability describes how suitable a track is for dancing based on a combination of musical elements including tempo, rhythm stability, beat strength, and overall regularity. A value of 0.0 is least danceable and 1.0 is most danceable.
-  # - mode  1: Dur, 0 Minor
-  # - energy
-  # - instrumentalness
-  # - liveness
-  # - loudness
-  # - speechiness
-  # - [Float] tempo The overall estimated tempo of a track in beats per minute (BPM). In musical terminology, tempo is the speed or pace of a given piece and derives directly from the average beat duration.
-  # - time_signature
-  # - valence
+  # - acousticness:     [Float] danceability Danceability describes how suitable a track is for dancing based on a combination of musical elements including tempo, rhythm stability, beat strength, and overall regularity. A value of 0.0 is least danceable and 1.0 is most danceable.
+  # - mode:             Major, Minor (Oder 1 und 0)
+  # - energy:           Float
+  # - instrumentalness  Float
+  # - liveness          Float
+  # - loudness          Float
+  # - speechiness       [Float] tempo The overall estimated tempo of a track in beats per minute (BPM). In musical terminology, tempo is the speed or pace of a given piece and derives directly from the average beat duration.
+  # - time_signature    Integer
+  # - valence           Float
   #
   # - duration_ms
   # - analysis_url
@@ -44,21 +42,22 @@ class Track < ApplicationRecord
     af.try(:tempo)
   end
 
+  # Das Genre, wird aus dem runtergeladenen File gelesen
   def genre
+    return unless track_path
 
-    if track_path
-      WahWah.open(track_path).genre
-    else
-      nil
-    end
+    WahWah.open(track_path).genre
   end
 
+  # @return den Pfad zum rungereladenen Lied. Wird aus dem Namen des Tracks bestimmt.
+  # Gewisse Zeichen werden im Pfad nicht oder anders verwendet, darum zuerst ersetzen.
+  # Der Interpret ist meistens im Namen des Files auch vorhanden. Wird hier nicht berücksichtigt.
   def track_path
     search = name
 
     replacements = { ':' => '-', '?' => '', '/' => '' }
     search.gsub!(Regexp.union(replacements.keys), replacements)
-    dir_name = "#{Rails.root}/downloads/tracks/"
+    dir_name = Rails.root.join('downloads/tracks')
     Dir.chdir dir_name
     files = Dir.glob("*#{search}*.m4a")
     # if files.first
