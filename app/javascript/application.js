@@ -6,6 +6,3 @@ import "popper"
 import "bootstrap"
 import "@hotwired/turbo-rails"
 import "controllers"
-
-const toastTrigger = document.getElementById('liveToastBtn')
-const toastLiveExample = document.getElementById('liveToast')
