@@ -42,8 +42,6 @@ gem 'devise'
 group :development, :test do
   # Call 'byebug' anywhere in the code to stop execution and get a debugger console
   gem 'byebug', platforms: %i[mri mingw x64_mingw]
-  gem 'graphiti_spec_helpers'
-  gem 'rswag-specs'
   gem 'rubocop'
   # gem 'graphiti-openapi', github: 'planik/graphiti-openapi'
 end
@@ -68,19 +66,6 @@ group :test do
   # gem 'webdrivers'
   gem 'rspec-rails'
 end
-
-# API Stuff
-# display Swagger UI
-gem 'rswag-ui'
-# make API requests from Swagger UI
-gem 'graphiti'
-gem 'graphiti-rails'
-gem 'kaminari'
-gem 'rswag-api'
-gem 'vandal_ui'
-
-# benötigt damit man von ActionControler::API erben kann. ( Api::V1::Generic::PlanikApiController ) Siehe graphiti Dokumentation
-gem 'responders'
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 # gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw, :jruby]

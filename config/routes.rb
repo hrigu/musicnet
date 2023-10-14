@@ -33,25 +33,6 @@ Rails.application.routes.draw do
         resources :playlists, only: [:index, :show]
       end
     end
-    namespace :v2 do
-      defaults format: :jsonapi do
-        resources :playlists
-      end
-    end
   end
-
-  # vandal: Graphiti API
-  # Wird nicht gefunden auf http://0.0.0.0:3001/api/v2/vandal
-  scope path: ApplicationResource.endpoint_namespace, defaults: { format: :jsonapi } do
-    resources :playlists
-    mount VandalUi::Engine, at: '/vandal'
-    # your routes go here
-  end
-
-
-  #http://0.0.0.0:3001/api-docs/index.html
-  mount Rswag::Ui::Engine => '/api-docs'
-  mount Rswag::Api::Engine => '/api-docs'
-
 
 end
