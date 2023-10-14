@@ -43,7 +43,7 @@ group :development, :test do
   # Call 'byebug' anywhere in the code to stop execution and get a debugger console
   gem 'byebug', platforms: %i[mri mingw x64_mingw]
   gem 'graphiti_spec_helpers'
-  gem 'rswag-specs'
+  gem 'rswag-specs' # Für Swagger Dokumentation aus Specs zu generieren
   gem 'rubocop'
   # gem 'graphiti-openapi', github: 'planik/graphiti-openapi'
 end
