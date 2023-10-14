@@ -15,6 +15,18 @@ class PlaylistsController < ApplicationController
     @playlist_tracks = @playlist.playlist_tracks.includes(track: { album: :artists })
   end
 
+  def edit
+    id = params[:id]
+    @playlist = Playlist.find(id)
+  end
+
+  def update
+    id = params[:id]
+    @playlist = Playlist.find(id)
+    @playlist.save!
+    redirect_to playlists_path
+  end
+
   # Lädt alle Tracks der Plylist runter und zeigt dann diese Plylit an
   def download
     id = params[:id]

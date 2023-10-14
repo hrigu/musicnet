@@ -5,7 +5,7 @@ Rails.application.routes.draw do
 
   root "tracks#recently_played_index"
 
-  resources :playlists, only: [:index, :show] do
+  resources :playlists do
     collection do
       get 'fetch_all'
     end
