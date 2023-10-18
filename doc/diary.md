@@ -1,4 +1,13 @@
 # Diary
+## 2023-10-18
+Die Idee, mit Handsontable.js die Listen darzustellen. Darum zuerst gelernt, wie man ein Framework mit
+importmap einbindet.
+Lange ging es nicht, Handsontable war einfach nicht im Browser vorhanden. Endlich geklappt mit 
+runterladen 
+* manuell runterladen `wget https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js`
+* dann einbinden im [importmap.rb](../config/importmap.rb) `pin "handsontable", to:  "handsontable.full.min.js"`
+* (Der Versuch mit `bin/importmap pin handsontable -d` klappte nicht. 404)
+
 ## 2023-10-08
 * Heruntergeladene Files können nun abgespielt werden
 * Informationen (Genre) aus den Tracks werden dargestellt. Mit hilfe des gems Wahwah
