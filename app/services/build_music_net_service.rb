@@ -13,6 +13,7 @@ class BuildMusicNetService
     #Album.delete_all
     #Artist.delete_all
 
+    # Alle Spotify Playlists holen und die eigenen Playlists
     spotify_playlists = fetch_all_playlists_from_spotify
     spotify_playlists.each do |spot_playlist|
       next if spot_playlist.owner.id != @current_user.spotify_user.id
@@ -22,14 +23,18 @@ class BuildMusicNetService
     playlists_to_delete = Playlist.select("playlists.id", "playlists.name").left_joins(:tracks).where(tracks: {id: nil})
     @info.add playlists: { deleted: playlists_to_delete.map(&:name)} if playlists_to_delete.present?
     playlists_to_delete.destroy_all
+
+    # Tracks löschen die keiner Playlist zugeordnet sind
     tracks_to_delete = Track.select("tracks.id", "tracks.name").left_joins(:playlists).where(playlists: { id: nil })
     @info.add tracks: { deleted: tracks_to_delete.map(&:name)} if tracks_to_delete.present?
     tracks_to_delete.destroy_all
 
+    # Artists ohne Tracks löschen
     artists_to_delete = Artist.select("artists.id", "artists.name").left_joins(:tracks).where(tracks: { id: nil })
     @info.add artists: { deleted: artists_to_delete.map(&:name)} if artists_to_delete.present?
     artists_to_delete.destroy_all
 
+    # Albums ohne Tracks löschen
     albums_to_delete = Album.select("albums.id", "albums.name").left_joins(:tracks).where(tracks: { id: nil })
     @info.add albums: { deleted: albums_to_delete.map(&:name)} if albums_to_delete.present?
     albums_to_delete.destroy_all
@@ -110,6 +115,7 @@ class BuildMusicNetService
     artists
   end
 
+  # holt alle Playlists des SpotifyUsers mit dem Namen "fusion" oder "heute"
   def fetch_all_playlists_from_spotify
     playlists = []
     offset = 0
