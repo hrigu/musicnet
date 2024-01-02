@@ -23,9 +23,18 @@
     </tr>
     </thead>
     <tbody>
-    <%= render @track.album.artists %>
+    <%= render @track.artists %>
     </tbody>
   </table>
+
+<div> Die Künstler des Albums</div>
+<% @track.album.artists.each do |a| %>
+  <a><%= link_to a.name, artist_path(a.id)  %></a>
+<% end %>
+
+
+<br>
+<br>
 
 
 <% if @track.af.present? %>

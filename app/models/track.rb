@@ -45,8 +45,12 @@ class Track < ApplicationRecord
   # Das Genre, wird aus dem runtergeladenen File gelesen
   def genre
     return unless track_path
-
-    WahWah.open(track_path).genre
+    begin
+      WahWah.open(track_path).genre
+    rescue
+      # kann irgendwie nil sein.
+      nil
+    end
   end
 
   # @return den Pfad zum rungereladenen Lied. Wird aus dem Namen des Tracks bestimmt.
@@ -55,16 +59,16 @@ class Track < ApplicationRecord
   def track_path
     search = name
 
-    replacements = { ':' => '-', '?' => '', '/' => '' }
+    replacements = { ':' => '-', '?' => '', '/' => '', '"' => '\'', '[' => '\[', ']' => '\]' }
     search.gsub!(Regexp.union(replacements.keys), replacements)
     dir_name = Rails.root.join('downloads/tracks')
     Dir.chdir dir_name
-    files = Dir.glob("*#{search}*.m4a")
-    # if files.first
-    #  Rails.logger.info("File gefunden: #{search}")
-    # else
-    #  Rails.logger.info("File nicht gefunden: #{search}")
-    # end
+    files = Dir.glob("*-*#{search}.m4a")
+    if files.first
+      # Rails.logger.info("File gefunden: #{search}")
+    else
+      Rails.logger.info("!!File nicht gefunden: #{search}")
+    end
     files.first
   end
 
