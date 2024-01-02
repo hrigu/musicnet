@@ -63,7 +63,7 @@ class Track < ApplicationRecord
     search.gsub!(Regexp.union(replacements.keys), replacements)
     dir_name = Rails.root.join('downloads/tracks')
     Dir.chdir dir_name
-    files = Dir.glob("*-*#{search}.m4a")
+    files = Dir.glob("*-?#{search}.m4a")
     if files.first
       # Rails.logger.info("File gefunden: #{search}")
     else
