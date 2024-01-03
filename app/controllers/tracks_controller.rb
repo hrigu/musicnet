@@ -11,6 +11,18 @@ class TracksController < ApplicationController
     @tracks = Track.includes(:artists, :playlists, :album).order(:name)
   end
 
+  def download
+    tracks_without_file = []
+    Track.all.each do |t|
+      path = t.track_path
+      tracks_without_file << t unless path
+    end
+
+    service = DownloadTrackService.new(tracks_without_file)
+    service.download
+    redirect_to tracks_path
+  end
+
   def show
     id = params[:id]
     @track = Track.find(id)

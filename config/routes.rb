@@ -17,6 +17,7 @@ Rails.application.routes.draw do
   resources :tracks, only: [:index, :show] do
     collection do
       get :recently_played_index
+      get :download
     end
     member do
       get :play
