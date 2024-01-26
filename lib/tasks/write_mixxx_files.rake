@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-desc 'erstelle die crates-Listen für mixxx'
+desc 'erstellt für alle Playlists die crates-Listen für mixxx'
 task create_crates_lists: [:environment] do
   Playlist.all.each do |p|
     tracks = p.tracks
@@ -10,7 +10,8 @@ task create_crates_lists: [:environment] do
       track_path = t.track_path
       track_pathes << "#{dir_name}/#{track_path}" if track_path.present?
     end
-    file_name = "/home/christian/Documents/mixx/#{p.name}.m3u"
+
+    file_name = "/Users/chrigu/Documents/mixxx/#{p.name}.m3u"
     puts "create '#{file_name}'"
     File.open(file_name, "w") do |f|
       track_pathes.each do |tp|

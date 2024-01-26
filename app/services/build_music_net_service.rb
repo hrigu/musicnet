@@ -115,7 +115,7 @@ class BuildMusicNetService
     artists
   end
 
-  # holt alle Playlists des SpotifyUsers mit dem Namen "fusion" oder "heute"
+  # holt alle Playlists des SpotifyUsers mit dem Namen "fusion" oder "blues"
   def fetch_all_playlists_from_spotify
     playlists = []
     offset = 0
@@ -129,7 +129,7 @@ class BuildMusicNetService
     playlists.flatten!
     playlists.select! do |p|
       name = p.name.downcase
-      name.include?("fusion") || name.include?("heute")
+      name.include?("fusion") || name.include?("blues")
     end
     Rails.logger.info("Anzahl Playlists: #{playlists.length}" )
     playlists

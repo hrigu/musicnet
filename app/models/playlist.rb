@@ -4,8 +4,7 @@ class Playlist < ApplicationRecord
   has_many :playlist_tracks
   has_many :tracks, through: :playlist_tracks
 
-  COLORS = %i[green blue yellow red lila orange xyz].freeze
-
+  COLORS = %i[green blue yellow red lila orange black brown].freeze
   CONTEXT = [
     'bg-primary',
     'bg-secondary',
@@ -13,8 +12,7 @@ class Playlist < ApplicationRecord
     'bg-danger',
     'bg-warning',
     'bg-info',
-    # "bg-light",
-    'bg-dark'
+    "bg-light",
   ].freeze
 
   COLORS_TO_CONTEXT = {
@@ -27,85 +25,53 @@ class Playlist < ApplicationRecord
     xyz: 'bg-dark'
   }.freeze
 
-  TAGS = {
-    next: { color: :green },
-    blues: { color: :blue },
-    minimalistic: { color: :yellow },
-    opulent: { color: :red },
-    romantik: { color: :yellow },
-    triphop: { color: :blue },
-    smart: { color: :orange },
-    sweet: { color: :orange },
-    'tender zart': { color: :orange },
-    groove: { color: :lila },
-    happy: { color: :green },
-    'heavy fett': { color: :blue },
-    'encore schluss': { color: :red },
-    'french francais': { color: :red },
-    jungle: { color: :green },
-    hymnisch: { color: :lila },
-    love: { color: :orange },
-    accustic: { color: :blue },
-    dark: { color: :red },
-    classic: { color: :blue },
-    piano: { color: :blue },
-    dream: { color: :green },
-    sad: { color: :blue },
-    verspielt: { color: :yellow },
-    '?':  { color: :green },
-    africa: { color: :yellow },
-    suisse: { color: :yellow },
-    '80ies sort of': { color: :lila },
-    skurril: { color: :yellow },
-    song: { color: :blue },
-    'classic cover': { color: :green },
-    melody: { color: :yellow },
-    tango: { color: :green },
-    best: { color: :green },
-    'unregelmässiger Takt': { color: :green },
-    rock: { color: :green },
-    hiphop: { color: :green },
-    lied: { color: :green },
-    'experimental electronica': { color: :green },
-    funk: { color: :green },
-    reggea: { color: :green },
-    floating: { color: :green },
-    Waltz: { color: :green },
-    jazz: { color: :red },
-    Drama: { color: :lila },
-    techno: { color: :blue },
-    worldmusic: { color: :green },
-    swing: { color: :green },
-    energie: { color: :yellow },
-    soul: { color: :orange },
-    kitsch: { color: :green },
-    latin: { color: :blue },
-    arabisch: { color: :red },
-    crossover: { color: :yellow },
-    'contemporary classical': { color: :green },
-    cover: { color: :red },
-    renaissance: { color: :blue },
-    melancolia: { color: :yellow },
-    mystery: { color: :orange },
-    story: { color: :blue },
-    avantgarde: { color: :orange },
-    cool: { color: :green },
-    simple: { color: :red },
-    mainstream: { color: :yellow }
-  }.freeze
+
 
   def color_class
-    color = TAGS.dig(short_name.downcase.to_sym, :color) || :xyz
-    COLORS_TO_CONTEXT[color] || 'bg-light'
+    select_color short_name
   end
 
+  # def short_name
+  #   n = name.remove('Fusion')
+  #   n = n.remove('fusion')
+  #   n.strip
+  # end
+
+  #Um die Groß- und Kleinschreibung zu ignorieren, nutzen wir einen regulären Ausdruck mit dem i-Flag.
   def short_name
-    n = name.remove('Fusion')
-    n = n.remove('fusion')
-    n.strip
+    name.gsub(/\bfusion\b/i, '_F_') # \b Wortgrenze
+       .gsub(/\bblues\b/i, '_B_')
+      .gsub(/\s+/, '')
+      .gsub(/_+/, '_')
+      .gsub(/\A_+/, '')
+      .gsub(/_+\z/, '')
+
   end
 
   def name_path_ready
     name.delete(' ')
+  end
+
+  private
+
+  def calculate_checksum(str)
+    checksum = 0
+    str.each_byte do |byte|
+      checksum += byte
+    end
+    checksum
+  end
+
+  def select_color(str)
+    if is_a_dj_playlist? str
+      'bg-dark'
+    else
+      checksum = calculate_checksum(str)
+      CONTEXT[checksum % CONTEXT.length]
+    end
+  end
+
+  def is_a_dj_playlist?(str)
+    /^\d{4}/.match?(str)
   end
 end
