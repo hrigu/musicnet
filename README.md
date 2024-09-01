@@ -1,5 +1,31 @@
 # Musicnet
-Holt Playlists, Tracks etc des eingeloggten Benutzers und kann die Tracks runterladen
+* Holt bei Spotify Playlists, Track- und Künstlernamen des eingeloggten Benutzers
+* Lädt die  Tracks runter
+* Exportiert die Tracks für DJ Programm
+
+## Vorgehen
+* Musicnet: Code ok?
+* Musicnet starten (in RubyMine)http://0.0.0.0:3001
+ * Bei Spotify einloggen
+ * Alle Playlists holen (Menüpunkt Fetch al Playlists)
+ * Alle (die noch nicht vorhandenen Files) herunterladens
+   * Tracks -> Download Files
+   * Geht lange
+   * Zielordner: mucinet/downloads/tracks
+* Für das DJ Programm "Mixx" die "crates" (Kisten) erstellen
+  * Rake Task create_crates_lists 
+  * Für jede Playlist eine Crate
+  * Zielordner: home/Documents/mixxx/
+*  Die aktuellen Crates von Mixxx löschen
+  * RubyMine: in der mixxxdb.sqlite DB die Einträge löschen
+    * Tabelle crates
+    * Tabelle crate_tracks
+* Die Crates aufräumen:
+  * home/Documents/mixxx/
+* Mixx öffnen
+  * crates importieren: Crates Ordner, rechte Maustaste
+
+# Technisches
 
 ## Spotify
 ### Spotify API: 
