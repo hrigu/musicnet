@@ -7,11 +7,10 @@
 * Musicnet: Code ok?
 * Musicnet starten (in RubyMine)http://0.0.0.0:3001
  * Bei Spotify einloggen
- * Alle Playlists holen (Menüpunkt Fetch al Playlists)
- * Alle (die noch nicht vorhandenen Files) herunterladens
-   * Tracks -> Download Files
-   * Geht lange
-   * Zielordner: mucinet/downloads/tracks
+ * Alle Playlists holen (Menüpunkt 'Fetch all Playlists!')
+ * Alle Music Files (noch nicht vorhandenen) bei Youtube herunterladen:
+   * Tracks -> Download Files (Geht lange wenn viele neue Songs)
+     * Zielordner: mucinet/downloads/tracks
 * Für das DJ Programm "Mixx" die "crates" (Kisten) erstellen
   * Rake Task create_crates_lists 
   * Für jede Playlist eine Crate
