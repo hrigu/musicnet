@@ -5,7 +5,7 @@
 
 ## Vorgehen
 * Musicnet: Code ok?
-* Musicnet starten (in RubyMine)http://0.0.0.0:3001
+* Musicnet starten (in RubyMine)http://127.0.0.1:3001
  * Bei Spotify einloggen
  * Alle Playlists holen (Menüpunkt 'Fetch all Playlists!')
  * Alle Music Files (noch nicht vorhandenen) bei Youtube herunterladen:
@@ -16,9 +16,9 @@
   * Für jede Playlist eine Crate
   * Zielordner: home/Documents/mixxx/
 *  Die aktuellen Crates von Mixxx löschen
-  * RubyMine: in der mixxxdb.sqlite DB die Einträge löschen
-    * Tabelle crates
-    * Tabelle crate_tracks
+    * RubyMine: in der mixxxdb.sqlite DB die Einträge löschen
+      * Tabelle crates
+      * Tabelle crate_tracks
 * Die Crates aufräumen:
   * home/Documents/mixxx/
 * Mixx öffnen

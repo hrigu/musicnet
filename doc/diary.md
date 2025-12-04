@@ -1,4 +1,7 @@
 # Diary
+## 2025-12-04
+* die Callback Adresse auf Spotify (und darum auch die Adresse, auf dem diese App läuft, geändert):
+* 127.0.0.1 (Die Callbackadresse muss eine Loopbackadresse oder secure sein)
 ## 2023-10-08
 * Heruntergeladene Files können nun abgespielt werden
 * Informationen (Genre) aus den Tracks werden dargestellt. Mit hilfe des gems Wahwah

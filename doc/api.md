@@ -14,7 +14,7 @@
 ### Dokumentation
 Im Swagger Format mit den gems "rswag-ui" und "rswag-api"
 Siehe [Hier für ein Blogeintrag](https://www.doctave.com/blog/generate-openapi-swagger-spec-from-ruby-on-rails)
-Die Dokumentation ist [hier](http://0.0.0.0:3001/api-docs/index.html)
+Die Dokumentation ist [hier](http://127.0.0.1:3001/api-docs/index.html)
 
 ## V2 mit graphiti
 - Die Dokumentation zu swagger geht nicht so einfach.

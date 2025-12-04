@@ -53,7 +53,7 @@ class Track < ApplicationRecord
     end
   end
 
-  # @return den Pfad zum rungereladenen Lied. Wird aus dem Namen des Tracks bestimmt.
+  # @return den Pfad zum runtereladenen Lied. Wird aus dem Namen des Tracks bestimmt.
   # Gewisse Zeichen werden im Pfad nicht oder anders verwendet, darum zuerst ersetzen.
   # Der Interpret ist meistens im Namen des Files auch vorhanden. Wird hier nicht berücksichtigt.
   def track_path
