@@ -17,6 +17,8 @@ gem 'sass-rails' # , '>= 6'
 gem 'jbuilder' # , '~> 2.7'
 # Track#af nutzt OpenStruct; ab Ruby 3.5 kein Default-Gem mehr, daher explizit.
 gem 'ostruct'
+# Kein Default-Gem mehr ab Ruby 3.4; silenced eine Warnung vom IDE-Debugger (debase).
+gem 'mutex_m'
 # Use Redis adapter to run Action Cable in production
 # gem 'redis', '~> 4.0'
 # Use Active Model has_secure_password

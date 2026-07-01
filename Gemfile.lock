@@ -172,6 +172,7 @@ GEM
       prism (~> 1.5)
     msgpack (1.7.2)
     multi_xml (0.6.0)
+    mutex_m (0.3.0)
     net-imap (0.6.4.1)
       date
       net-protocol
@@ -407,6 +408,7 @@ DEPENDENCIES
   importmap-rails (~> 1.2)
   jbuilder
   listen
+  mutex_m
   omniauth-rails_csrf_protection
   omniauth-spotify
   ostruct
