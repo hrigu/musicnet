@@ -13,9 +13,6 @@ Musicnet is a Rails app for a single Spotify user (the DJ) to:
 
 Comments and commit messages in this codebase are largely in German (Swiss context).
 
-Before making non-trivial changes, check `.intent/` — it holds short, checked-in files stating project
-goals/non-goals/guardrails (the "why"), separate from this file's "how".
-
 ## Commands
 
 ```bash
