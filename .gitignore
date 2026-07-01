@@ -42,3 +42,5 @@ yarn-debug.log*
 /config/credentials/development.key
 /downloads
 /identifier.sqlite
+
+.DS_Store
