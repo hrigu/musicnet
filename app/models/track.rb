@@ -55,7 +55,7 @@ class Track < ApplicationRecord
     end
   end
 
-  # @return den Pfad zum runtereladenen Lied. Wird aus dem Namen des Tracks bestimmt.
+  # @return den absoluten Pfad zum runtergeladenen Lied. Wird aus dem Namen des Tracks bestimmt.
   # Gewisse Zeichen werden im Pfad nicht oder anders verwendet, darum zuerst ersetzen.
   # Der Interpret ist meistens im Namen des Files auch vorhanden. Wird hier nicht berücksichtigt.
   def track_path
@@ -64,7 +64,7 @@ class Track < ApplicationRecord
     replacements = { ':' => '-', '?' => '', '/' => '', '"' => '\'', '[' => '\[', ']' => '\]' }
     search.gsub!(Regexp.union(replacements.keys), replacements)
     dir_name = Rails.root.join('downloads/tracks')
-    files = Dir.chdir(dir_name) { Dir.glob("*-?#{search}.m4a") }
+    files = Dir.glob(dir_name.join("*-?#{search}.m4a").to_s)
     Rails.logger.info("!!File nicht gefunden: #{search}") unless files.first
     files.first
   end

@@ -5,10 +5,9 @@ task create_crates_lists: [:environment] do
   Playlist.all.each do |p|
     tracks = p.tracks
     track_pathes = []
-    dir_name = Rails.root.join('downloads/tracks')
     tracks.each do |t|
       track_path = t.track_path
-      track_pathes << "#{dir_name}/#{track_path}" if track_path.present?
+      track_pathes << track_path if track_path.present?
     end
 
     file_name = "/Users/chrigu/Documents/mixxx/#{p.name}.m3u"
