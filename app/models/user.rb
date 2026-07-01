@@ -7,19 +7,16 @@ class User < ApplicationRecord
          :recoverable, :rememberable, :validatable,
          :omniauthable, omniauth_providers: %i[spotify]
 
+  # spotify_user_data wird bei jedem Login aktualisiert, nicht nur bei der Erstellung -
+  # sonst bleiben z.B. Avatar-URLs auf dem Stand des allerersten Logins und laufen ab.
   def self.from_omniauth(auth, spotify_user_data)
-    where(provider: auth.provider, uid: auth.uid).first_or_create do |user|
-      user.email = auth.info.email
-      user.password = Devise.friendly_token[0, 20]
-      user.spotify_user_data = spotify_user_data
-      # user.name = auth.info.name # assuming the user model has a name
-      # user.username = auth.info.nickname # assuming the user model has a username
-      # user.image = auth.info.image # assuming the user model has an image
-      # If you are using confirmable and the provider(s) you use validate emails,
-      # uncomment the line below to skip the confirmation emails.
-      # user.skip_confirmation!
-      #
+    user = where(provider: auth.provider, uid: auth.uid).first_or_initialize do |new_user|
+      new_user.email = auth.info.email
+      new_user.password = Devise.friendly_token[0, 20]
     end
+    user.spotify_user_data = spotify_user_data
+    user.save!
+    user
   end
 
   def spotify_user

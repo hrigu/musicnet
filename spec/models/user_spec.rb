@@ -30,6 +30,18 @@ RSpec.describe User, type: :model do
       end.not_to change(User, :count)
       expect(result).to eq(existing)
     end
+
+    it "aktualisiert spotify_user_data bei jedem Login, nicht nur beim Erstellen" do
+      existing = User.create!(email: "bestehend@musicnet.org", password: "geheim123",
+                               provider: "spotify", uid: "bestehende-uid",
+                               spotify_user_data: '{"images": []}')
+      auth = OmniAuth::AuthHash.new(provider: "spotify", uid: "bestehende-uid",
+                                     info: { email: "irrelevant@musicnet.org" })
+
+      User.from_omniauth(auth, '{"images": [{"url": "https://example.com/neu.jpg"}]}')
+
+      expect(existing.reload.spotify_user_data).to eq('{"images": [{"url": "https://example.com/neu.jpg"}]}')
+    end
   end
 
   describe "#spotify_user" do
