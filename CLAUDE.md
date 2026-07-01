@@ -110,9 +110,6 @@ Per the README, the operator then manually clears Mixxx's existing crates (delet
   `config/initializers/devise.rb` for the requested scopes and `UsersController#spotify` for the callback.
   Requires the `omniauth-rails_csrf_protection` gem to work (without it, omniauth throws
   `OmniAuth::AuthenticityTokenProtection` — see README "Diary").
-- The `/api/v1/*` namespace uses a **separate** auth scheme: static bearer tokens (`ApiToken` model) checked in
-  `Api::V1::BaseController#authenticate_user_with_token`, independent of the Devise session used by the rest of
-  the app.
 
 ### Frontend
 

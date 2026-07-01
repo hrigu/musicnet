@@ -26,14 +26,4 @@ Rails.application.routes.draw do
   end
   resources :artists, only: [:index, :show]
 
-
-  namespace :api do
-    namespace :v1 do
-      defaults format: :json do
-        get "home/index", to: "home#index" # /api/v1/home/index
-        resources :playlists, only: [:index, :show]
-      end
-    end
-  end
-
 end
