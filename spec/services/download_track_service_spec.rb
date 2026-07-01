@@ -7,7 +7,7 @@ RSpec.describe DownloadTrackService do
     it "ruft system mit dem korrekten spotdl-download-Kommando fuer einen Track auf" do
       track = Track.new(spotify_id: "trk1")
       service = described_class.new([track])
-      allow(Dir).to receive(:chdir)
+      allow(Dir).to receive(:chdir).and_yield
       allow(service).to receive(:system).and_return(true)
 
       service.download
@@ -20,7 +20,7 @@ RSpec.describe DownloadTrackService do
     it "fügt mehrere Track-URLs im Kommando leerzeichengetrennt zusammen" do
       tracks = [Track.new(spotify_id: "trk1"), Track.new(spotify_id: "trk2")]
       service = described_class.new(tracks)
-      allow(Dir).to receive(:chdir)
+      allow(Dir).to receive(:chdir).and_yield
       allow(service).to receive(:system).and_return(true)
 
       service.download
@@ -34,7 +34,7 @@ RSpec.describe DownloadTrackService do
       track = Track.new(spotify_id: "trk1")
       service = described_class.new([track])
       allow(service).to receive(:system).and_return(true)
-      allow(Dir).to receive(:chdir)
+      allow(Dir).to receive(:chdir).and_yield
 
       service.download
 

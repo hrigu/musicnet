@@ -15,29 +15,11 @@ class Playlist < ApplicationRecord
     "bg-light",
   ].freeze
 
-  COLORS_TO_CONTEXT = {
-    green: 'bg-success',
-    blue: 'bg-primary',
-    yellow: 'bg-warning',
-    red: 'bg-danger',
-    lila: 'bg-info',
-    orange: 'bg-secondary',
-    xyz: 'bg-dark'
-  }.freeze
-
-
-
   def color_class
     select_color short_name
   end
 
-  # def short_name
-  #   n = name.remove('Fusion')
-  #   n = n.remove('fusion')
-  #   n.strip
-  # end
-
-  #Um die Groß- und Kleinschreibung zu ignorieren, nutzen wir einen regulären Ausdruck mit dem i-Flag.
+  # Um die Groß- und Kleinschreibung zu ignorieren, nutzen wir einen regulären Ausdruck mit dem i-Flag.
   def short_name
     name.gsub(/\bfusion\b/i, '_F_') # \b Wortgrenze
        .gsub(/\bblues\b/i, '_B_')

@@ -10,10 +10,8 @@ class DownloadTrackService
   def download
     tracks_dir = Rails.root.join(DownloadPlaylistService::TRACKS_DIR)
     Rails.logger.info "DownloadTrackService#download: current_dir = #{tracks_dir}"
-    Dir.chdir tracks_dir
-    result = system( build_command )
+    result = Dir.chdir(tracks_dir) { system(build_command) }
     Rails.logger.info(result)
-
   end
 
   private

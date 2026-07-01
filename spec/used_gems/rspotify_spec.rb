@@ -7,12 +7,8 @@ RSpec.describe RSpotify do
     it 'Die App kann sich authentisieren' do
       client_id = Rails.application.credentials.dig(:spotify, :client_id)
       client_secret = Rails.application.credentials.dig(:spotify, :client_secret)
-      puts client_id
-      time = Benchmark.realtime {
-        result = RSpotify.authenticate(client_id, client_secret)
-        expect(result).to be true
-      }
-      puts time
+      result = RSpotify.authenticate(client_id, client_secret)
+      expect(result).to be true
     end
   end
 end

@@ -47,8 +47,8 @@ class Track < ApplicationRecord
     return unless track_path
     begin
       WahWah.open(track_path).genre
-    rescue
-      # kann irgendwie nil sein.
+    rescue WahWah::WahWahArgumentError, WahWah::WahWahNotImplementedError
+      # Datei existiert, aber WahWah kann sie nicht parsen (z.B. unbekanntes Format).
       nil
     end
   end
@@ -57,18 +57,13 @@ class Track < ApplicationRecord
   # Gewisse Zeichen werden im Pfad nicht oder anders verwendet, darum zuerst ersetzen.
   # Der Interpret ist meistens im Namen des Files auch vorhanden. Wird hier nicht berücksichtigt.
   def track_path
-    search = name
+    search = name.dup
 
     replacements = { ':' => '-', '?' => '', '/' => '', '"' => '\'', '[' => '\[', ']' => '\]' }
     search.gsub!(Regexp.union(replacements.keys), replacements)
     dir_name = Rails.root.join('downloads/tracks')
-    Dir.chdir dir_name
-    files = Dir.glob("*-?#{search}.m4a")
-    if files.first
-      # Rails.logger.info("File gefunden: #{search}")
-    else
-      Rails.logger.info("!!File nicht gefunden: #{search}")
-    end
+    files = Dir.chdir(dir_name) { Dir.glob("*-?#{search}.m4a") }
+    Rails.logger.info("!!File nicht gefunden: #{search}") unless files.first
     files.first
   end
 

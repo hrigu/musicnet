@@ -31,7 +31,7 @@ class PlaylistsController < ApplicationController
   def download
     id = params[:id]
     @playlist = Playlist.find(id)
-    service = DownloadPlaylistService.new(current_user, @playlist)
+    service = DownloadPlaylistService.new(@playlist)
     service.download
     redirect_to playlist_path(id)
   end

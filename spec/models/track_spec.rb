@@ -31,7 +31,7 @@ RSpec.describe Track, type: :model do
   describe "#track_path" do
     it "findet die passende, sanitisierte Datei im downloads/tracks-Verzeichnis" do
       track = Track.new(name: "Song: Live")
-      allow(Dir).to receive(:chdir)
+      allow(Dir).to receive(:chdir).and_yield
       allow(Dir).to receive(:glob).with("*-?Song- Live.m4a").and_return(["01-Song- Live.m4a"])
 
       expect(track.track_path).to eq("01-Song- Live.m4a")
@@ -39,7 +39,7 @@ RSpec.describe Track, type: :model do
 
     it "gibt nil zurück, wenn keine Datei gefunden wird" do
       track = Track.new(name: "Unbekannter Song")
-      allow(Dir).to receive(:chdir)
+      allow(Dir).to receive(:chdir).and_yield
       allow(Dir).to receive(:glob).and_return([])
 
       expect(track.track_path).to be_nil
@@ -49,7 +49,7 @@ RSpec.describe Track, type: :model do
   describe "#genre" do
     it "gibt nil zurück, wenn kein Track-File gefunden wird" do
       track = Track.new(name: "Unbekannter Song")
-      allow(Dir).to receive(:chdir)
+      allow(Dir).to receive(:chdir).and_yield
       allow(Dir).to receive(:glob).and_return([])
 
       expect(track.genre).to be_nil

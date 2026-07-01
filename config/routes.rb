@@ -20,7 +20,6 @@ Rails.application.routes.draw do
       get :download
     end
     member do
-      get :play
       get :stream
     end
   end

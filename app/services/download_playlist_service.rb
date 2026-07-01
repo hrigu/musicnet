@@ -1,10 +1,8 @@
 class DownloadPlaylistService
   TRACKS_DIR = 'downloads/tracks'
 
-  def initialize user, playlist
-    @user = user
+  def initialize playlist
     @playlist = playlist
-
   end
 
   # lädt die Songs der @playlist runter und speichert sie unter downloads/tracks.
@@ -12,8 +10,7 @@ class DownloadPlaylistService
   def download
     tracks_dir = Rails.root.join(TRACKS_DIR)
     Rails.logger.info "DownloadPlaylistService#download: current_dir = #{tracks_dir}"
-    Dir.chdir tracks_dir
-    result = system( build_command )
+    result = Dir.chdir(tracks_dir) { system(build_command) }
     Rails.logger.info(result)
   end
 
@@ -31,7 +28,6 @@ class DownloadPlaylistService
 
     playlist_url = @playlist.url
     playlist_url = "https://open.spotify.com/playlist/#{@playlist.spotify_id}" unless playlist_url
-    #cmd = "spotdl #{o[:main_option]} #{o[:save_file]}  #{o[:format]} #{playlist_url}"
 
     cmd = "spotdl #{o[:main_option]} #{playlist_url} #{o[:save_file]} #{o[:user_auth]} #{o[:format]}"
     Rails.logger.info cmd

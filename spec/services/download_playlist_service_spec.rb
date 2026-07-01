@@ -10,8 +10,8 @@ RSpec.describe DownloadPlaylistService do
 
     it "ruft system mit dem korrekten spotdl-sync-Kommando auf, wenn playlist.url gesetzt ist" do
       playlist = build_playlist(url: "https://open.spotify.com/playlist/abc123")
-      service = described_class.new(nil, playlist)
-      allow(Dir).to receive(:chdir)
+      service = described_class.new(playlist)
+      allow(Dir).to receive(:chdir).and_yield
       allow(service).to receive(:system).and_return(true)
 
       service.download
@@ -24,8 +24,8 @@ RSpec.describe DownloadPlaylistService do
 
     it "baut die Playlist-URL aus spotify_id, wenn playlist.url fehlt" do
       playlist = build_playlist(url: nil)
-      service = described_class.new(nil, playlist)
-      allow(Dir).to receive(:chdir)
+      service = described_class.new(playlist)
+      allow(Dir).to receive(:chdir).and_yield
       allow(service).to receive(:system).and_return(true)
 
       service.download
@@ -38,9 +38,9 @@ RSpec.describe DownloadPlaylistService do
 
     it "wechselt vorher ins downloads/tracks-Verzeichnis" do
       playlist = build_playlist(url: "https://open.spotify.com/playlist/abc123")
-      service = described_class.new(nil, playlist)
+      service = described_class.new(playlist)
       allow(service).to receive(:system).and_return(true)
-      allow(Dir).to receive(:chdir)
+      allow(Dir).to receive(:chdir).and_yield
 
       service.download
 
