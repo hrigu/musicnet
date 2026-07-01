@@ -8,7 +8,9 @@ ruby '3.4.10'
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails' # , '~> 6.1.1'
 # Use sqlite3 as the database for Active Record
-gem 'sqlite3' # , '~> 1.4'
+# Rails 7.1's sqlite3-Adapter verlangt intern "~> 1.4" (LoadError bei 2.x). Erst mit dem
+# Rails-8-Bump (Intent 13, Phase E) zusammen auf sqlite3 2.x anheben.
+gem 'sqlite3', '~> 1.4'
 # Use Puma as the app server
 gem 'puma' # , '~> 5.0'
 # Use SCSS for stylesheets
