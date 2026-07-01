@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+At the start of every session, read `AGENTS.md` and `CODE_GUIDELINES.md` in full before making any changes.
+
 ## What this is
 
 Musicnet is a Rails app for a single Spotify user (the DJ) to:
@@ -10,6 +12,9 @@ Musicnet is a Rails app for a single Spotify user (the DJ) to:
 3. Generate `.m3u` crate playlists for the Mixxx DJ software from the downloaded files.
 
 Comments and commit messages in this codebase are largely in German (Swiss context).
+
+Before making non-trivial changes, check `.intent/` — it holds short, checked-in files stating project
+goals/non-goals/guardrails (the "why"), separate from this file's "how".
 
 ## Commands
 
