@@ -8,4 +8,36 @@ RSpec.describe User, type: :model do
   it 'hat eine Email' do
     expect(subject.email).to eql('one@musicnet.org')
   end
+
+  describe ".from_omniauth" do
+    it "erstellt einen neuen User, wenn noch keiner existiert" do
+      auth = OmniAuth::AuthHash.new(provider: "spotify", uid: "neue-uid", info: { email: "neu@musicnet.org" })
+
+      expect do
+        User.from_omniauth(auth, "{}")
+      end.to change(User, :count).by(1)
+    end
+
+    it "findet den bestehenden User anhand provider+uid, statt ein Duplikat zu erstellen" do
+      existing = User.create!(email: "bestehend@musicnet.org", password: "geheim123",
+                               provider: "spotify", uid: "bestehende-uid")
+      auth = OmniAuth::AuthHash.new(provider: "spotify", uid: "bestehende-uid",
+                                     info: { email: "irrelevant@musicnet.org" })
+
+      result = nil
+      expect do
+        result = User.from_omniauth(auth, "{}")
+      end.not_to change(User, :count)
+      expect(result).to eq(existing)
+    end
+  end
+
+  describe "#spotify_user" do
+    it "rekonstruiert ein RSpotify::User aus spotify_user_data" do
+      user = User.new(spotify_user_data: { id: "spotify-id-1", display_name: "Test" }.to_json)
+
+      expect(user.spotify_user).to be_a(RSpotify::User)
+      expect(user.spotify_user.id).to eq("spotify-id-1")
+    end
+  end
 end

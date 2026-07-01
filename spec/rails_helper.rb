@@ -62,6 +62,9 @@ RSpec.configure do |config|
     metadata[:type] = :model
   end
 
+  # Erlaubt sign_in(user) in Request-Specs (spec/requests).
+  config.include Devise::Test::IntegrationHelpers, type: :request
+
   # Filter lines from Rails gems in backtraces.
   config.filter_rails_from_backtrace!
   # arbitrary gems may also be filtered via:

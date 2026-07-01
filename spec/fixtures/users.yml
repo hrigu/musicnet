@@ -3,6 +3,8 @@
 one:
   email: one@musicnet.org
   encrypted_password: "123456"
+  spotify_user_data: '{"id": "spotify-id-one"}'
 two:
   encrypted_password: "123456"
   email: two@musicnet.org
+  spotify_user_data: '{"id": "spotify-id-two"}'
