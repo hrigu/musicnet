@@ -8,15 +8,15 @@ ruby '3.4.10'
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails' # , '~> 6.1.1'
 # Use sqlite3 as the database for Active Record
-# Rails 7.1's sqlite3-Adapter verlangt intern "~> 1.4" (LoadError bei 2.x). Erst mit dem
-# Rails-8-Bump (Intent 13, Phase E) zusammen auf sqlite3 2.x anheben.
-gem 'sqlite3', '~> 1.4'
+gem 'sqlite3'
 # Use Puma as the app server
 gem 'puma' # , '~> 5.0'
 # Use SCSS for stylesheets
 gem 'sass-rails' # , '>= 6'
 # Build JSON APIs with ease. Read more: https://github.com/rails/jbuilder
 gem 'jbuilder' # , '~> 2.7'
+# Track#af nutzt OpenStruct; ab Ruby 3.5 kein Default-Gem mehr, daher explizit.
+gem 'ostruct'
 # Use Redis adapter to run Action Cable in production
 # gem 'redis', '~> 4.0'
 # Use Active Model has_secure_password
@@ -76,3 +76,5 @@ gem "turbo-rails"
 
 # Hotwire's modest JavaScript framework [https://stimulus.hotwired.dev]
 gem "stimulus-rails"
+
+gem "rack", "~> 3.0"
