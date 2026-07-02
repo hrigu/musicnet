@@ -22,6 +22,31 @@ RSpec.describe "Playlists", type: :request do
       expect(response).to have_http_status(:success)
     end
 
+    it "GET /playlists zeigt die Track-Anzahl ohne eine COUNT-Query pro Playlist" do
+      album = Album.create!(spotify_id: "alb-i1", name: "A Go Go")
+      with_two = Playlist.create!(spotify_id: "pl-i1", name: "Fusion Zwei")
+      Playlist.create!(spotify_id: "pl-i2", name: "Fusion Leer")
+      2.times do |i|
+        track = Track.create!(spotify_id: "trk-i#{i}", name: "Track #{i}", album: album, duration_ms: 200_000)
+        PlaylistTrack.create!(playlist: with_two, track: track, added_at: Time.current)
+      end
+
+      queries = []
+      callback = lambda do |_name, _start, _finish, _id, payload|
+        queries << payload[:sql] unless payload[:name] == "SCHEMA"
+      end
+      ActiveSupport::Notifications.subscribed(callback, "sql.active_record") do
+        get playlists_path
+      end
+
+      expect(response).to have_http_status(:success)
+      aggregate_failures do
+        expect(queries.count { |sql| sql.include?('FROM "tracks"') }).to eq(0)
+        expect(response.body).to include("<td>2</td>")
+        expect(response.body).to include("<td>0</td>")
+      end
+    end
+
     it "GET /playlists/:id liefert Erfolg" do
       get playlist_path(playlists(:dark))
 

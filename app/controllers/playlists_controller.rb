@@ -8,7 +8,11 @@ class PlaylistsController < ApplicationController
   end
 
   def index
-    @playlists = Playlist.order(:name)
+    # Track-Anzahl direkt mitzählen statt einer COUNT-Query pro Zeile im Partial
+    @playlists = Playlist.left_joins(:playlist_tracks)
+                         .select("playlists.*", "COUNT(playlist_tracks.id) AS tracks_count")
+                         .group("playlists.id")
+                         .order(:name)
   end
 
   def show
