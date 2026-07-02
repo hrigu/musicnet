@@ -110,6 +110,23 @@ RSpec.describe BuildMusicNetService do
       end
     end
 
+    context "wenn beim Import eines Tracks ein Fehler auftritt" do
+      it "rollt die Playlist komplett zurück statt sie halb importiert zu lassen" do
+        broken_track = spotify_track(id: "trk-broken", name: "Kaputt", album: album, artists: [artist])
+        allow(broken_track).to receive(:artists).and_raise(RuntimeError, "Spotify-Fehler")
+        playlist_with_broken_track = spotify_playlist(id: "pl1", name: "Fusion Favorites", owner_id: spotify_user_id,
+                                                      tracks: [track, broken_track])
+        stub_spotify_playlists([playlist_with_broken_track])
+
+        expect { BuildMusicNetService.new(user).build }.to raise_error(RuntimeError, "Spotify-Fehler")
+
+        aggregate_failures do
+          expect(Playlist.find_by(spotify_id: "pl1")).to be_nil
+          expect(Track.find_by(spotify_id: "trk1")).to be_nil
+        end
+      end
+    end
+
     context "ServiceInfo" do
       it "sammelt die Namen neu erstellter Datensätze" do
         stub_spotify_playlists([playlist])
@@ -134,6 +151,31 @@ RSpec.describe BuildMusicNetService do
         expect(info.hash[:playlists][:deleted]).to eq([["Fusion Favorites"]])
         expect(info.hash[:tracks][:deleted]).to eq([["Hottentot"]])
       end
+    end
+  end
+
+  describe "Parallelitäts-Schutz" do
+    it "weist build und refresh_playlist ab, solange ein anderer Sync läuft" do
+      stub_spotify_playlists([playlist])
+      BuildMusicNetService::SYNC_LOCK.lock
+      begin
+        aggregate_failures do
+          expect { BuildMusicNetService.new(user).build }
+            .to raise_error(BuildMusicNetService::SyncAlreadyRunningError)
+          expect { BuildMusicNetService.new(user).refresh_playlist(Playlist.new) }
+            .to raise_error(BuildMusicNetService::SyncAlreadyRunningError)
+        end
+      ensure
+        BuildMusicNetService::SYNC_LOCK.unlock
+      end
+    end
+
+    it "gibt den Lock nach einem Sync wieder frei" do
+      stub_spotify_playlists([playlist])
+
+      BuildMusicNetService.new(user).build
+
+      expect(BuildMusicNetService::SYNC_LOCK).to_not be_locked
     end
   end
 
@@ -217,6 +259,25 @@ RSpec.describe BuildMusicNetService do
           expect(playlist_record.name).to eq("Blues Favorites")
           expect(playlist_record.snapshot_id).to eq("snap-neu")
         end
+      end
+    end
+
+    context "wenn beim Refresh der Import eines Tracks fehlschlägt" do
+      it "lässt die Playlist unverändert (Rollback)" do
+        stub_spotify_playlists([playlist])
+        BuildMusicNetService.new(user).build
+        playlist_record = Playlist.find_by(spotify_id: "pl1")
+        broken_track = spotify_track(id: "trk-broken", name: "Kaputt", album: album, artists: [artist])
+        allow(broken_track).to receive(:artists).and_raise(RuntimeError, "Spotify-Fehler")
+        updated_playlist = spotify_playlist(id: "pl1", name: "Fusion Favorites", owner_id: spotify_user_id,
+                                            tracks: [new_track, broken_track])
+        stub_spotify_playlists([updated_playlist])
+
+        expect do
+          BuildMusicNetService.new(user).refresh_playlist(playlist_record)
+        end.to raise_error(RuntimeError, "Spotify-Fehler")
+
+        expect(playlist_record.tracks.reload.map(&:name)).to eq(["Hottentot"])
       end
     end
 

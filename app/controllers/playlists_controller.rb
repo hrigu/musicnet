@@ -3,6 +3,8 @@
 class PlaylistsController < ApplicationController
   def fetch_all
     @info = BuildMusicNetService.new(current_user).build
+  rescue BuildMusicNetService::SyncAlreadyRunningError => e
+    redirect_to playlists_path, alert: e.message
   end
 
   def index
@@ -21,7 +23,7 @@ class PlaylistsController < ApplicationController
     @refresh_info = BuildMusicNetService.new(current_user).refresh_playlist(@playlist)
     @playlist_tracks = playlist_tracks_with_associations
     render :show
-  rescue BuildMusicNetService::PlaylistNotFoundError => e
+  rescue BuildMusicNetService::PlaylistNotFoundError, BuildMusicNetService::SyncAlreadyRunningError => e
     redirect_to playlist_path(@playlist), alert: e.message
   end
 

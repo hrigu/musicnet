@@ -2,6 +2,13 @@ class BuildMusicNetService
   # Wird geworfen, wenn die Playlist auf Spotify nicht mehr existiert oder entfolgt wurde
   PlaylistNotFoundError = Class.new(StandardError)
 
+  # Wird geworfen, wenn bereits ein Sync läuft (SQLite erlaubt nur einen Schreiber;
+  # parallele Syncs würden sich den Write-Lock streitig machen)
+  SyncAlreadyRunningError = Class.new(StandardError)
+
+  # Prozessweiter Lock über alle Sync-Arten (voller Sync und Einzel-Refresh)
+  SYNC_LOCK = Mutex.new
+
   def initialize current_user
     @current_user = current_user
     @info = ServiceInfo.new
@@ -9,58 +16,86 @@ class BuildMusicNetService
 
   # Erstellt die ganze Modellstruktur aus allen Playlists, die der Owner erstellt hat.
   def build
-    PlaylistTrack.delete_all
+    with_sync_lock do
+      PlaylistTrack.delete_all
 
-    # Alle Spotify Playlists holen und die eigenen Playlists
-    spotify_playlists = fetch_all_playlists_from_spotify
-    spotify_playlists.each do |spot_playlist|
-      next if spot_playlist.owner.id != @current_user.spotify_user.id
-      build_playlist(spot_playlist)
+      # Alle Spotify Playlists holen und die eigenen Playlists
+      spotify_playlists = fetch_all_playlists_from_spotify
+      spotify_playlists.each do |spot_playlist|
+        next if spot_playlist.owner.id != @current_user.spotify_user.id
+        build_playlist(spot_playlist)
+      end
+      # Playlists löschen, die keine Einträge haben
+      playlists_to_delete = Playlist.select("playlists.id", "playlists.name").left_joins(:tracks).where(tracks: {id: nil})
+      @info.add playlists: { deleted: playlists_to_delete.map(&:name)} if playlists_to_delete.present?
+      playlists_to_delete.destroy_all
+
+      cleanup_orphan_records
+      @info
     end
-    # Playlists löschen, die keine Einträge haben
-    playlists_to_delete = Playlist.select("playlists.id", "playlists.name").left_joins(:tracks).where(tracks: {id: nil})
-    @info.add playlists: { deleted: playlists_to_delete.map(&:name)} if playlists_to_delete.present?
-    playlists_to_delete.destroy_all
-
-    cleanup_orphan_records
-    @info
   end
 
   # Gleicht eine einzelne Playlist mit Spotify ab: neue Tracks werden angelegt,
   # entfernte aus der Playlist gelöst. Liefert die Namen der Änderungen zurück.
   def refresh_playlist(playlist)
+    with_sync_lock do
+      refresh_playlist_without_lock(playlist)
+    end
+  end
+
+  private
+
+  def refresh_playlist_without_lock(playlist)
     spot_playlist = fetch_playlist_from_spotify(playlist.spotify_id)
     raise PlaylistNotFoundError, "Playlist '#{playlist.name}' wurde auf Spotify nicht gefunden" if spot_playlist.nil?
 
     spot_tracks, added_at_by_track_id = fetch_all_tracks(spot_playlist)
 
-    removed_names = remove_vanished_tracks(playlist, spot_tracks.map(&:id))
+    # Gleiche Atomaritäts-Garantie wie beim vollen Sync (siehe build_playlist)
+    ActiveRecord::Base.transaction(requires_new: true) do
+      removed_names = remove_vanished_tracks(playlist, spot_tracks.map(&:id))
 
-    existing_spotify_ids = playlist.tracks.pluck(:spotify_id)
-    new_spot_tracks = spot_tracks.reject { |t| existing_spotify_ids.include?(t.id) }
-    new_spot_tracks.each { |t| build_track(playlist, t, added_at: added_at_by_track_id[t.id]) }
+      existing_spotify_ids = playlist.tracks.pluck(:spotify_id)
+      new_spot_tracks = spot_tracks.reject { |t| existing_spotify_ids.include?(t.id) }
+      new_spot_tracks.each { |t| build_track(playlist, t, added_at: added_at_by_track_id[t.id]) }
 
-    playlist.update!(name: spot_playlist.name, snapshot_id: spot_playlist.snapshot_id)
-    cleanup_orphan_records
-    RefreshInfo.new(new_spot_tracks.map(&:name), removed_names)
+      playlist.update!(name: spot_playlist.name, snapshot_id: spot_playlist.snapshot_id)
+      cleanup_orphan_records
+      RefreshInfo.new(new_spot_tracks.map(&:name), removed_names)
+    end
   end
 
-  private
+  # Verhindert parallele Sync-Läufe. try_lock statt lock, damit der zweite Aufruf sofort
+  # mit einer verständlichen Meldung scheitert, statt auf den SQLite-Write-Lock zu warten.
+  def with_sync_lock
+    raise SyncAlreadyRunningError, "Es läuft bereits ein Sync - bitte warten, bis er fertig ist" unless SYNC_LOCK.try_lock
+
+    begin
+      yield
+    ensure
+      SYNC_LOCK.unlock
+    end
+  end
 
   # Erstellt aus der spot_playlist eine entsprechendes Playlist und speichert es in der DB
   # Für jeden spot_track wird dann ein Track erstellt
   def build_playlist(spot_playlist)
     Rails.logger.info "build_playlist: #{spot_playlist.name}"
-    playlist = Playlist.find_or_create_by!(spotify_id: spot_playlist.id) do |p|
-      @info.add_new_created_playlist(spot_playlist.name)
-      p.snapshot_id = spot_playlist.snapshot_id
-      p.name = spot_playlist.name
-      p.public = spot_playlist.public
-    end
-
     spot_tracks, added_at_by_track_id = fetch_all_tracks(spot_playlist)
-    spot_tracks.each do |spot_track|
-      build_track(playlist, spot_track, added_at: added_at_by_track_id[spot_track.id])
+
+    # Eine Transaktion pro Playlist statt pro Datensatz: schneller (ein Commit) und atomar.
+    # requires_new erzwingt einen Savepoint auch innerhalb einer umgebenden Transaktion.
+    ActiveRecord::Base.transaction(requires_new: true) do
+      playlist = Playlist.find_or_create_by!(spotify_id: spot_playlist.id) do |p|
+        @info.add_new_created_playlist(spot_playlist.name)
+        p.snapshot_id = spot_playlist.snapshot_id
+        p.name = spot_playlist.name
+        p.public = spot_playlist.public
+      end
+
+      spot_tracks.each do |spot_track|
+        build_track(playlist, spot_track, added_at: added_at_by_track_id[spot_track.id])
+      end
     end
   end
 
@@ -70,7 +105,7 @@ class BuildMusicNetService
   # * Die Artisten
   # erstellt
   def build_track(playlist, spot_track, added_at:)
-    Rails.logger.info " build_track: #{spot_track.name}"
+    Rails.logger.debug " build_track: #{spot_track.name}"
 
     track = Track.find_or_create_by!(spotify_id: spot_track.id) do |t|
       album = build_album(spot_track.album)
@@ -94,7 +129,7 @@ class BuildMusicNetService
   end
 
   def build_album spot_album
-    Rails.logger.info "  build_album: #{spot_album.name}"
+    Rails.logger.debug "  build_album: #{spot_album.name}"
     Album.find_or_create_by!(spotify_id: spot_album.id) do |a|
       popularity = try_fetch(spot_album, :popularity) # spot_album.popularity
       release_date = try_fetch(spot_album, :release_date) # spot_album.release_date
@@ -109,7 +144,7 @@ class BuildMusicNetService
   def build_artists spot_artists
     artists = []
     spot_artists.each do |spot_artist|
-      Rails.logger.info "   build_artists: #{spot_artist.name}"
+      Rails.logger.debug "   build_artists: #{spot_artist.name}"
       artist = Artist.find_or_create_by!(spotify_id: spot_artist.id) do |a|
         @info.add_new_created_artist(spot_artist.name)
         a.name = spot_artist.name
@@ -200,7 +235,7 @@ class BuildMusicNetService
     begin
       result = object.send(attribute)
     rescue => e
-      Rails.logger.info(e.message)
+      Rails.logger.debug(e.message)
     end
     result
   end

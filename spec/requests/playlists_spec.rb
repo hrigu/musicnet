@@ -125,6 +125,31 @@ RSpec.describe "Playlists", type: :request do
       expect(flash[:alert]).to include("nicht gefunden")
     end
 
+    it "GET /playlists/fetch_all zeigt einen Alert, wenn bereits ein Sync läuft" do
+      service = instance_double(BuildMusicNetService)
+      allow(service).to receive(:build)
+        .and_raise(BuildMusicNetService::SyncAlreadyRunningError, "Es läuft bereits ein Sync")
+      allow(BuildMusicNetService).to receive(:new).and_return(service)
+
+      get fetch_all_playlists_path
+
+      expect(response).to redirect_to(playlists_path)
+      expect(flash[:alert]).to include("läuft bereits")
+    end
+
+    it "GET /playlists/:id/refresh zeigt einen Alert, wenn bereits ein Sync läuft" do
+      service = instance_double(BuildMusicNetService)
+      allow(service).to receive(:refresh_playlist)
+        .and_raise(BuildMusicNetService::SyncAlreadyRunningError, "Es läuft bereits ein Sync")
+      allow(BuildMusicNetService).to receive(:new).and_return(service)
+      playlist = playlists(:dark)
+
+      get refresh_playlist_path(playlist)
+
+      expect(response).to redirect_to(playlist_path(playlist))
+      expect(flash[:alert]).to include("läuft bereits")
+    end
+
     it "GET /playlists/:id/download ruft DownloadPlaylistService auf und redirected zur Playlist" do
       service = instance_double(DownloadPlaylistService, download: true)
       allow(DownloadPlaylistService).to receive(:new).and_return(service)
