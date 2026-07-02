@@ -34,6 +34,12 @@ class Playlist < ApplicationRecord
     name.delete(' ')
   end
 
+  # Der Playlist-Index lädt die Anzahl als SELECT-Alias gebündelt mit (eine Query für alle
+  # Playlists); überall sonst, z.B. auf der Track-Detailseite, wird pro Playlist gezählt.
+  def tracks_count
+    self[:tracks_count] || tracks.count
+  end
+
   private
 
   def calculate_checksum(str)

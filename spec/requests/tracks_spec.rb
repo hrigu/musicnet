@@ -33,6 +33,17 @@ RSpec.describe "Tracks", type: :request do
 
       expect(response).to have_http_status(:success)
     end
+
+    it "rendert die Playlist-Zeile inkl. Track-Anzahl, wenn der Track in einer Playlist ist" do
+      track = create_track
+      playlist = Playlist.create!(spotify_id: "pl-t1", name: "Fusion Badge")
+      PlaylistTrack.create!(playlist: playlist, track: track, added_at: Time.current)
+
+      get track_path(track)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("<td>1</td>")
+    end
   end
 
   describe "GET / (recently_played_index)" do
