@@ -57,6 +57,18 @@ RSpec.describe "Tracks", type: :request do
       expect(service).to have_received(:download)
       expect(response).to redirect_to(tracks_path)
     end
+
+    it "zeigt einen Alert, wenn bereits ein Download läuft" do
+      service = instance_double(DownloadTrackService)
+      allow(service).to receive(:download)
+        .and_raise(DownloadPlaylistService::DownloadAlreadyRunningError, "Es läuft bereits ein Download")
+      allow(DownloadTrackService).to receive(:new).and_return(service)
+
+      get download_tracks_path
+
+      expect(response).to redirect_to(tracks_path)
+      expect(flash[:alert]).to include("läuft bereits")
+    end
   end
 
   describe "GET /tracks/:id/stream" do

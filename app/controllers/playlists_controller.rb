@@ -50,6 +50,8 @@ class PlaylistsController < ApplicationController
     service = DownloadPlaylistService.new(@playlist)
     service.download
     redirect_to playlist_path(id)
+  rescue DownloadPlaylistService::DownloadAlreadyRunningError => e
+    redirect_to playlist_path(id), alert: e.message
   end
 
   private

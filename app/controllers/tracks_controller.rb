@@ -21,6 +21,8 @@ class TracksController < ApplicationController
     service = DownloadTrackService.new(tracks_without_file)
     service.download
     redirect_to tracks_path
+  rescue DownloadPlaylistService::DownloadAlreadyRunningError => e
+    redirect_to tracks_path, alert: e.message
   end
 
   def show

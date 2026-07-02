@@ -36,6 +36,29 @@ RSpec.describe DownloadPlaylistService do
       )
     end
 
+    it "weist einen zweiten Download ab, solange einer läuft" do
+      playlist = build_playlist(url: "https://open.spotify.com/playlist/abc123")
+      service = described_class.new(playlist)
+      allow(service).to receive(:system).and_return(true)
+
+      DownloadPlaylistService::DOWNLOAD_LOCK.lock
+      begin
+        expect { service.download }.to raise_error(DownloadPlaylistService::DownloadAlreadyRunningError)
+      ensure
+        DownloadPlaylistService::DOWNLOAD_LOCK.unlock
+      end
+    end
+
+    it "gibt den Lock nach einem Download wieder frei" do
+      playlist = build_playlist(url: "https://open.spotify.com/playlist/abc123")
+      service = described_class.new(playlist)
+      allow(service).to receive(:system).and_return(true)
+
+      service.download
+
+      expect(DownloadPlaylistService::DOWNLOAD_LOCK).to_not be_locked
+    end
+
     it "wechselt vorher ins downloads/tracks-Verzeichnis" do
       playlist = build_playlist(url: "https://open.spotify.com/playlist/abc123")
       service = described_class.new(playlist)
