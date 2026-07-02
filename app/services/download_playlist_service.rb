@@ -29,7 +29,7 @@ class DownloadPlaylistService
     playlist_url = @playlist.url
     playlist_url = "https://open.spotify.com/playlist/#{@playlist.spotify_id}" unless playlist_url
 
-    cmd = "spotdl #{o[:main_option]} #{playlist_url} #{o[:save_file]} #{o[:user_auth]} #{o[:format]}"
+    cmd = "spotdl #{o[:main_option]} #{playlist_url} #{o[:save_file]} #{o[:sync_without_deleting]} #{o[:user_auth]} #{o[:format]}"
     Rails.logger.info cmd
     cmd
   end

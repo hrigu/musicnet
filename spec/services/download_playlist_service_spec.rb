@@ -17,7 +17,7 @@ RSpec.describe DownloadPlaylistService do
 
       expect(service).to have_received(:system).with(
         "spotdl sync https://open.spotify.com/playlist/abc123 --save-file FusionDark.spotdl " \
-        "--user-auth --format m4a",
+        "--sync-without-deleting --user-auth --format m4a",
         chdir: Rails.root.join("downloads/tracks")
       )
     end
@@ -31,7 +31,7 @@ RSpec.describe DownloadPlaylistService do
 
       expect(service).to have_received(:system).with(
         "spotdl sync https://open.spotify.com/playlist/spotify_id_1 --save-file FusionDark.spotdl " \
-        "--user-auth --format m4a",
+        "--sync-without-deleting --user-auth --format m4a",
         chdir: Rails.root.join("downloads/tracks")
       )
     end

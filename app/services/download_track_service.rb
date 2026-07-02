@@ -4,30 +4,19 @@ class DownloadTrackService
     @tracks = tracks
   end
 
-  # lädt die Songs der @playlist runter und speichert sie unter downloads/tracks.
-  # Tracks die schon vorhanden sind werden nicht nochmals runtergeladen
-
+  # Lädt die fehlenden Audiodateien der @tracks herunter - playlist-weise über
+  # spotdl sync, damit die Spotify-API gebündelt statt pro Track abgefragt wird
+  # (einzelne Track-URLs führten ins Rate-Limit, siehe Intent 21).
   def download
-    tracks_dir = Rails.root.join(DownloadPlaylistService::TRACKS_DIR)
-    Rails.logger.info "DownloadTrackService#download: current_dir = #{tracks_dir}"
-    result = system(build_command, chdir: tracks_dir)
-    Rails.logger.info(result)
+    affected_playlists.each do |playlist|
+      DownloadPlaylistService.new(playlist).download
+    end
   end
 
   private
 
-  def build_command
-    o = {
-      format: '--format m4a'
-    }
-
-    track_urls = @tracks.map{ |t| "https://open.spotify.com/track/#{t.spotify_id}"}
-
-    cmd = "spotdl download #{track_urls.join(' ')} #{o[:format]}"
-    Rails.logger.info cmd
-    cmd
+  def affected_playlists
+    @tracks.flat_map(&:playlists).uniq
   end
-
-
 
 end
