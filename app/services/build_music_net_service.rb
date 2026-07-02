@@ -1,4 +1,7 @@
 class BuildMusicNetService
+  # Wird geworfen, wenn die Playlist auf Spotify nicht mehr existiert oder entfolgt wurde
+  PlaylistNotFoundError = Class.new(StandardError)
+
   def initialize current_user
     @current_user = current_user
     @info = ServiceInfo.new
@@ -19,21 +22,27 @@ class BuildMusicNetService
     @info.add playlists: { deleted: playlists_to_delete.map(&:name)} if playlists_to_delete.present?
     playlists_to_delete.destroy_all
 
-    # Tracks löschen die keiner Playlist zugeordnet sind
-    tracks_to_delete = Track.select("tracks.id", "tracks.name").left_joins(:playlists).where(playlists: { id: nil })
-    @info.add tracks: { deleted: tracks_to_delete.map(&:name)} if tracks_to_delete.present?
-    tracks_to_delete.destroy_all
-
-    # Artists ohne Tracks löschen
-    artists_to_delete = Artist.select("artists.id", "artists.name").left_joins(:tracks).where(tracks: { id: nil })
-    @info.add artists: { deleted: artists_to_delete.map(&:name)} if artists_to_delete.present?
-    artists_to_delete.destroy_all
-
-    # Albums ohne Tracks löschen
-    albums_to_delete = Album.select("albums.id", "albums.name").left_joins(:tracks).where(tracks: { id: nil })
-    @info.add albums: { deleted: albums_to_delete.map(&:name)} if albums_to_delete.present?
-    albums_to_delete.destroy_all
+    cleanup_orphan_records
     @info
+  end
+
+  # Gleicht eine einzelne Playlist mit Spotify ab: neue Tracks werden angelegt,
+  # entfernte aus der Playlist gelöst. Liefert die Namen der Änderungen zurück.
+  def refresh_playlist(playlist)
+    spot_playlist = fetch_playlist_from_spotify(playlist.spotify_id)
+    raise PlaylistNotFoundError, "Playlist '#{playlist.name}' wurde auf Spotify nicht gefunden" if spot_playlist.nil?
+
+    spot_tracks, added_at_by_track_id = fetch_all_tracks(spot_playlist)
+
+    removed_names = remove_vanished_tracks(playlist, spot_tracks.map(&:id))
+
+    existing_spotify_ids = playlist.tracks.pluck(:spotify_id)
+    new_spot_tracks = spot_tracks.reject { |t| existing_spotify_ids.include?(t.id) }
+    new_spot_tracks.each { |t| build_track(playlist, t, added_at: added_at_by_track_id[t.id]) }
+
+    playlist.update!(name: spot_playlist.name, snapshot_id: spot_playlist.snapshot_id)
+    cleanup_orphan_records
+    RefreshInfo.new(new_spot_tracks.map(&:name), removed_names)
   end
 
   private
@@ -50,7 +59,7 @@ class BuildMusicNetService
     end
 
     spot_playlist.tracks.each do |spot_track|
-      build_track(playlist, spot_playlist, spot_track)
+      build_track(playlist, spot_track, added_at: spot_playlist.tracks_added_at[spot_track.id])
     end
   end
 
@@ -59,7 +68,7 @@ class BuildMusicNetService
   # * Ein Album
   # * Die Artisten
   # erstellt
-  def build_track(playlist, spot_playlist, spot_track)
+  def build_track(playlist, spot_track, added_at:)
     Rails.logger.info " build_track: #{spot_track.name}"
 
     track = Track.find_or_create_by!(spotify_id: spot_track.id) do |t|
@@ -79,7 +88,7 @@ class BuildMusicNetService
     end
 
     PlaylistTrack.find_or_create_by!(playlist: playlist, track: track) do |pt|
-      pt.added_at = spot_playlist.tracks_added_at[spot_track.id].in_time_zone
+      pt.added_at = added_at&.in_time_zone
     end
   end
 
@@ -130,6 +139,61 @@ class BuildMusicNetService
     playlists
   end
 
+  # Löst Tracks aus der Playlist, die auf Spotify nicht mehr enthalten sind
+  def remove_vanished_tracks(playlist, spotify_track_ids)
+    vanished = playlist.playlist_tracks.joins(:track).where.not(tracks: { spotify_id: spotify_track_ids })
+    names = vanished.map { |pt| pt.track.name }
+    vanished.destroy_all
+    names
+  end
+
+  # Tracks ohne Playlist sowie Artists/Alben ohne Tracks löschen
+  def cleanup_orphan_records
+    tracks_to_delete = Track.select("tracks.id", "tracks.name").left_joins(:playlists).where(playlists: { id: nil })
+    @info.add tracks: { deleted: tracks_to_delete.map(&:name)} if tracks_to_delete.present?
+    tracks_to_delete.destroy_all
+
+    artists_to_delete = Artist.select("artists.id", "artists.name").left_joins(:tracks).where(tracks: { id: nil })
+    @info.add artists: { deleted: artists_to_delete.map(&:name)} if artists_to_delete.present?
+    artists_to_delete.destroy_all
+
+    albums_to_delete = Album.select("albums.id", "albums.name").left_joins(:tracks).where(tracks: { id: nil })
+    @info.add albums: { deleted: albums_to_delete.map(&:name)} if albums_to_delete.present?
+    albums_to_delete.destroy_all
+  end
+
+  # Sucht die Spotify-Playlist mit der spotify_id in den eigenen Playlists des Users
+  def fetch_playlist_from_spotify(spotify_id)
+    offset = 0
+    limit = 50
+    loop do
+      page = @current_user.spotify_user.playlists(limit: limit, offset: offset)
+      found = page.find { |p| p.id == spotify_id }
+      return found if found
+      return nil if page.size < limit
+
+      offset += limit
+    end
+  end
+
+  # Holt alle Tracks einer Spotify-Playlist über die 100er-Paginierung der API hinweg.
+  # rspotify überschreibt tracks_added_at bei jedem Seitenabruf, deshalb wird pro Seite gemerged.
+  def fetch_all_tracks(spot_playlist)
+    tracks = []
+    added_at_by_track_id = {}
+    offset = 0
+    limit = 100
+    loop do
+      page = spot_playlist.tracks(limit: limit, offset: offset)
+      tracks.concat(page)
+      added_at_by_track_id.merge!(spot_playlist.tracks_added_at || {})
+      break if page.size < limit
+
+      offset += limit
+    end
+    [tracks, added_at_by_track_id]
+  end
+
   def try_fetch(object, attribute)
     result = nil
     begin
@@ -140,6 +204,9 @@ class BuildMusicNetService
     result
   end
 
+
+  # Ergebnis eines Einzel-Playlist-Refreshs: Namen der hinzugekommenen und entfernten Tracks
+  RefreshInfo = Struct.new(:added, :removed)
 
   class ServiceInfo
     attr_reader :hash

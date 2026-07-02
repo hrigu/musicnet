@@ -121,4 +121,101 @@ RSpec.describe BuildMusicNetService do
       end
     end
   end
+
+  describe "#refresh_playlist" do
+    let(:new_track) { spotify_track(id: "trk2", name: "Green Tea", album: album, artists: [artist]) }
+
+    context "wenn die Spotify-Playlist einen neuen Track enthält" do
+      it "fügt den Track der Playlist hinzu und meldet ihn als hinzugekommen" do
+        stub_spotify_playlists([playlist])
+        BuildMusicNetService.new(user).build
+        playlist_record = Playlist.find_by(spotify_id: "pl1")
+        updated_playlist = spotify_playlist(id: "pl1", name: "Fusion Favorites", owner_id: spotify_user_id,
+                                            tracks: [track, new_track])
+        stub_spotify_playlists([updated_playlist])
+
+        info = BuildMusicNetService.new(user).refresh_playlist(playlist_record)
+
+        aggregate_failures do
+          expect(playlist_record.tracks.reload.map(&:name)).to contain_exactly("Hottentot", "Green Tea")
+          expect(info.added).to eq(["Green Tea"])
+          expect(info.removed).to be_empty
+        end
+      end
+    end
+
+    context "wenn ein lokaler Track auf Spotify nicht mehr in der Playlist ist" do
+      it "löst den Track aus der Playlist, meldet ihn als entfernt und räumt Waisen auf" do
+        stub_spotify_playlists([playlist])
+        BuildMusicNetService.new(user).build
+        playlist_record = Playlist.find_by(spotify_id: "pl1")
+        updated_playlist = spotify_playlist(id: "pl1", name: "Fusion Favorites", owner_id: spotify_user_id,
+                                            tracks: [new_track])
+        stub_spotify_playlists([updated_playlist])
+
+        info = BuildMusicNetService.new(user).refresh_playlist(playlist_record)
+
+        aggregate_failures do
+          expect(playlist_record.tracks.reload.map(&:name)).to eq(["Green Tea"])
+          expect(info.added).to eq(["Green Tea"])
+          expect(info.removed).to eq(["Hottentot"])
+          expect(Track.find_by(spotify_id: "trk1")).to be_nil
+        end
+      end
+    end
+
+    context "wenn die Spotify-Playlist mehr als 100 Tracks enthält" do
+      it "importiert alle Tracks über die 100er-Paginierung der API hinweg" do
+        many_tracks = (1..120).map do |i|
+          spotify_track(id: "bulk#{i}", name: "Bulk Track #{i}", album: album, artists: [artist])
+        end
+        stub_spotify_playlists([playlist])
+        BuildMusicNetService.new(user).build
+        playlist_record = Playlist.find_by(spotify_id: "pl1")
+        updated_playlist = spotify_playlist(id: "pl1", name: "Fusion Favorites", owner_id: spotify_user_id,
+                                            tracks: many_tracks)
+        stub_spotify_playlists([updated_playlist])
+
+        info = BuildMusicNetService.new(user).refresh_playlist(playlist_record)
+
+        aggregate_failures do
+          expect(playlist_record.tracks.reload.count).to eq(120)
+          expect(info.added.size).to eq(120)
+          expect(info.removed).to eq(["Hottentot"])
+        end
+      end
+    end
+
+    context "wenn die Playlist auf Spotify umbenannt wurde" do
+      it "aktualisiert Name und snapshot_id" do
+        stub_spotify_playlists([playlist])
+        BuildMusicNetService.new(user).build
+        playlist_record = Playlist.find_by(spotify_id: "pl1")
+        renamed_playlist = spotify_playlist(id: "pl1", name: "Blues Favorites", owner_id: spotify_user_id,
+                                            tracks: [track], snapshot_id: "snap-neu")
+        stub_spotify_playlists([renamed_playlist])
+
+        BuildMusicNetService.new(user).refresh_playlist(playlist_record)
+
+        playlist_record.reload
+        aggregate_failures do
+          expect(playlist_record.name).to eq("Blues Favorites")
+          expect(playlist_record.snapshot_id).to eq("snap-neu")
+        end
+      end
+    end
+
+    context "wenn die Playlist auf Spotify nicht gefunden wird" do
+      it "wirft einen verständlichen Fehler" do
+        stub_spotify_playlists([playlist])
+        BuildMusicNetService.new(user).build
+        playlist_record = Playlist.find_by(spotify_id: "pl1")
+        stub_spotify_playlists([])
+
+        expect do
+          BuildMusicNetService.new(user).refresh_playlist(playlist_record)
+        end.to raise_error(BuildMusicNetService::PlaylistNotFoundError, /nicht gefunden/)
+      end
+    end
+  end
 end

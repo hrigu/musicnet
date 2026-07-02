@@ -5,14 +5,19 @@
 module SpotifyDoubles
   def spotify_playlist(id:, name:, owner_id:, tracks: [], public: true, snapshot_id: "snap-#{id}")
     tracks_added_at = tracks.each_with_object({}) { |t, h| h[t.id] = Time.current }
-    double("RSpotify::Playlist",
-           id: id,
-           name: name,
-           snapshot_id: snapshot_id,
-           public: public,
-           owner: double("RSpotify::User", id: owner_id),
-           tracks: tracks,
-           tracks_added_at: tracks_added_at)
+    playlist = double("RSpotify::Playlist",
+                      id: id,
+                      name: name,
+                      snapshot_id: snapshot_id,
+                      public: public,
+                      owner: double("RSpotify::User", id: owner_id),
+                      tracks_added_at: tracks_added_at)
+    # Wie die echte API paginiert das Double die Tracks; ohne Argumente kommen alle zurück
+    allow(playlist).to receive(:tracks) do |limit: nil, offset: 0|
+      limit ||= tracks.size
+      tracks.slice(offset, limit) || []
+    end
+    playlist
   end
 
   def spotify_track(id:, name:, album:, artists: [], popularity: 50, duration_ms: 200_000)
