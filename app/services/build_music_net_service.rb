@@ -58,8 +58,9 @@ class BuildMusicNetService
       p.public = spot_playlist.public
     end
 
-    spot_playlist.tracks.each do |spot_track|
-      build_track(playlist, spot_track, added_at: spot_playlist.tracks_added_at[spot_track.id])
+    spot_tracks, added_at_by_track_id = fetch_all_tracks(spot_playlist)
+    spot_tracks.each do |spot_track|
+      build_track(playlist, spot_track, added_at: added_at_by_track_id[spot_track.id])
     end
   end
 

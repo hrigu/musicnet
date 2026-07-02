@@ -12,9 +12,9 @@ module SpotifyDoubles
                       public: public,
                       owner: double("RSpotify::User", id: owner_id),
                       tracks_added_at: tracks_added_at)
-    # Wie die echte API paginiert das Double die Tracks; ohne Argumente kommen alle zurück
-    allow(playlist).to receive(:tracks) do |limit: nil, offset: 0|
-      limit ||= tracks.size
+    # Wie die echte API paginiert das Double die Tracks; ohne Argumente gilt wie bei
+    # rspotify das Default-Limit von 100 - mehr Tracks gibt es nur über die Paginierung
+    allow(playlist).to receive(:tracks) do |limit: 100, offset: 0|
       tracks.slice(offset, limit) || []
     end
     playlist

@@ -95,6 +95,21 @@ RSpec.describe BuildMusicNetService do
       end
     end
 
+    context "wenn eine Playlist mehr als 100 Tracks enthält" do
+      it "importiert alle Tracks über die 100er-Paginierung der API hinweg" do
+        many_tracks = (1..120).map do |i|
+          spotify_track(id: "bulk#{i}", name: "Bulk Track #{i}", album: album, artists: [artist])
+        end
+        big_playlist = spotify_playlist(id: "pl-big", name: "Blues Marathon", owner_id: spotify_user_id,
+                                        tracks: many_tracks)
+        stub_spotify_playlists([big_playlist])
+
+        BuildMusicNetService.new(user).build
+
+        expect(Playlist.find_by(spotify_id: "pl-big").tracks.count).to eq(120)
+      end
+    end
+
     context "ServiceInfo" do
       it "sammelt die Namen neu erstellter Datensätze" do
         stub_spotify_playlists([playlist])
