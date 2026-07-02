@@ -1,8 +1,35 @@
 
 <h1><%= @playlist.name %></h1>
 
-<div>  <%= link_to("Download Tracks", download_playlist_path(@playlist.id)) %>
+<div>
+  <%= link_to("Download Tracks", download_playlist_path(@playlist.id)) %>
+  <%= link_to("Playlist aktualisieren", refresh_playlist_path(@playlist.id)) %>
 </div>
+
+<% if @refresh_info %>
+  <div class="alert alert-info mt-3">
+    <% if @refresh_info.added.empty? && @refresh_info.removed.empty? %>
+      Keine Änderungen — die Playlist ist auf dem aktuellen Stand.
+    <% else %>
+      <% if @refresh_info.added.any? %>
+        <strong>Hinzugekommen:</strong>
+        <ul class="mb-2">
+          <% @refresh_info.added.each do |name| %>
+            <li><%= name %></li>
+          <% end %>
+        </ul>
+      <% end %>
+      <% if @refresh_info.removed.any? %>
+        <strong>Entfernt:</strong>
+        <ul class="mb-0">
+          <% @refresh_info.removed.each do |name| %>
+            <li><%= name %></li>
+          <% end %>
+        </ul>
+      <% end %>
+    <% end %>
+  </div>
+<% end %>
 <table class="table caption-top">
   <caption>Einträge</caption>
   <thead>

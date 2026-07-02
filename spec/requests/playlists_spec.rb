@@ -39,6 +39,15 @@ RSpec.describe "Playlists", type: :request do
       expect(service).to have_received(:build)
     end
 
+    it "GET /playlists/:id zeigt den Button zum Aktualisieren der Playlist" do
+      playlist = playlists(:dark)
+
+      get playlist_path(playlist)
+
+      expect(response.body).to include(refresh_playlist_path(playlist))
+      expect(response.body).to include("Playlist aktualisieren")
+    end
+
     it "GET /playlists/:id/refresh ruft refresh_playlist auf und rendert die Playlist-Seite" do
       info = BuildMusicNetService::RefreshInfo.new(["Green Tea"], ["Hottentot"])
       service = instance_double(BuildMusicNetService, refresh_playlist: info)
@@ -49,6 +58,18 @@ RSpec.describe "Playlists", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(service).to have_received(:refresh_playlist).with(playlist)
+      expect(response.body).to include("Green Tea")
+      expect(response.body).to include("Hottentot")
+    end
+
+    it "GET /playlists/:id/refresh zeigt einen Hinweis, wenn es keine Änderungen gibt" do
+      info = BuildMusicNetService::RefreshInfo.new([], [])
+      service = instance_double(BuildMusicNetService, refresh_playlist: info)
+      allow(BuildMusicNetService).to receive(:new).and_return(service)
+
+      get refresh_playlist_path(playlists(:dark))
+
+      expect(response.body).to include("Keine Änderungen")
     end
 
     it "GET /playlists/:id/refresh zeigt bei nicht mehr existierender Spotify-Playlist einen Alert" do
