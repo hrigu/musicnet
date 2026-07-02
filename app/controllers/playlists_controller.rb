@@ -15,6 +15,16 @@ class PlaylistsController < ApplicationController
     @playlist_tracks = @playlist.playlist_tracks.includes(track: { album: :artists })
   end
 
+  # Gleicht die Playlist mit Spotify ab und zeigt sie mit den Änderungen an
+  def refresh
+    @playlist = Playlist.find(params[:id])
+    @refresh_info = BuildMusicNetService.new(current_user).refresh_playlist(@playlist)
+    @playlist_tracks = @playlist.playlist_tracks.includes(track: { album: :artists })
+    render :show
+  rescue BuildMusicNetService::PlaylistNotFoundError => e
+    redirect_to playlist_path(@playlist), alert: e.message
+  end
+
   def edit
     id = params[:id]
     @playlist = Playlist.find(id)
