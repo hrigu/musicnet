@@ -39,6 +39,46 @@ RSpec.describe "Playlists", type: :request do
       expect(service).to have_received(:build)
     end
 
+    it "GET /playlists/:id lädt tracks, artists und albums mit je genau einer Query" do
+      album = Album.create!(spotify_id: "alb-n1", name: "A Go Go")
+      artist = Artist.create!(spotify_id: "art-n1", name: "John Scofield")
+      playlist = Playlist.create!(spotify_id: "pl-n1", name: "Fusion Query")
+      other_playlist = Playlist.create!(spotify_id: "pl-n2", name: "Blues Query")
+      3.times do |i|
+        track = Track.create!(spotify_id: "trk-n#{i}", name: "Track #{i}", album: album,
+                              artists: [artist], duration_ms: 200_000)
+        PlaylistTrack.create!(playlist: playlist, track: track, added_at: Time.current)
+        PlaylistTrack.create!(playlist: other_playlist, track: track, added_at: Time.current)
+      end
+
+      queries = []
+      callback = lambda do |_name, _start, _finish, _id, payload|
+        queries << payload[:sql] unless payload[:name] == "SCHEMA"
+      end
+      ActiveSupport::Notifications.subscribed(callback, "sql.active_record") do
+        get playlist_path(playlist)
+      end
+
+      expect(response).to have_http_status(:success)
+      aggregate_failures do
+        expect(queries.count { |sql| sql.include?('FROM "tracks"') }).to eq(1)
+        expect(queries.count { |sql| sql.include?('FROM "artists"') }).to eq(1)
+        expect(queries.count { |sql| sql.include?('FROM "albums"') }).to eq(1)
+      end
+    end
+
+    it "GET /playlists/:id lädt Audio-Elemente nicht automatisch (preload=none)" do
+      album = Album.create!(spotify_id: "alb-p1", name: "A Go Go")
+      playlist = Playlist.create!(spotify_id: "pl-p1", name: "Fusion Preload")
+      track = Track.create!(spotify_id: "trk-p1", name: "Hottentot", album: album, duration_ms: 200_000)
+      PlaylistTrack.create!(playlist: playlist, track: track, added_at: Time.current)
+
+      get playlist_path(playlist)
+
+      expect(response.body).to include('preload="none"')
+      expect(response.body).to_not include('preload="false"')
+    end
+
     it "GET /playlists/:id zeigt den Button zum Aktualisieren der Playlist" do
       playlist = playlists(:dark)
 

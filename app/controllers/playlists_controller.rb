@@ -12,14 +12,14 @@ class PlaylistsController < ApplicationController
   def show
     id = params[:id]
     @playlist = Playlist.find(id)
-    @playlist_tracks = @playlist.playlist_tracks.includes(track: { album: :artists })
+    @playlist_tracks = playlist_tracks_with_associations
   end
 
   # Gleicht die Playlist mit Spotify ab und zeigt sie mit den Änderungen an
   def refresh
     @playlist = Playlist.find(params[:id])
     @refresh_info = BuildMusicNetService.new(current_user).refresh_playlist(@playlist)
-    @playlist_tracks = @playlist.playlist_tracks.includes(track: { album: :artists })
+    @playlist_tracks = playlist_tracks_with_associations
     render :show
   rescue BuildMusicNetService::PlaylistNotFoundError => e
     redirect_to playlist_path(@playlist), alert: e.message
@@ -44,5 +44,12 @@ class PlaylistsController < ApplicationController
     service = DownloadPlaylistService.new(@playlist)
     service.download
     redirect_to playlist_path(id)
+  end
+
+  private
+
+  # Lädt alles vor, was das _playlist_track-Partial anzeigt (vermeidet N+1-Queries)
+  def playlist_tracks_with_associations
+    @playlist.playlist_tracks.includes(track: [:artists, :album, { playlist_tracks: :playlist }])
   end
 end
