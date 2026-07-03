@@ -106,9 +106,11 @@ RSpec.describe "Tracks", type: :request do
   end
 
   describe "GET / (recently_played_index)" do
-    it "liefert Erfolg" do
-      spotify_user = users(:one).spotify_user
-      allow(spotify_user).to receive(:recently_played).with(limit: 50).and_return([])
+    it "verwendet den angemeldeten User für recently_played" do
+      current_spotify_user = users(:one).spotify_user
+      other_spotify_user = users(:two).spotify_user
+      allow(current_spotify_user).to receive(:recently_played).with(limit: 50).and_return([])
+      expect(other_spotify_user).not_to receive(:recently_played)
 
       get root_path
 

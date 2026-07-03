@@ -63,6 +63,16 @@ RSpec.describe "Playlists", type: :request do
       expect(response).to have_http_status(:success)
     end
 
+    it "GET /playlists/:id bleibt für einen anderen eingeloggten User sichtbar" do
+      sign_out users(:one)
+      sign_in users(:two)
+
+      get playlist_path(playlists(:dark))
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Fusion Dark")
+    end
+
     it "GET /playlists/fetch_all ruft BuildMusicNetService auf und liefert Erfolg" do
       info = BuildMusicNetService::ServiceInfo.new
       service = instance_double(BuildMusicNetService, build: info)
