@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_03_055157) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_03_090000) do
   create_table "albums", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name"
@@ -52,6 +52,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_03_055157) do
     t.boolean "public"
     t.string "snapshot_id"
     t.string "spotify_id"
+    t.integer "tracks_count", default: 0, null: false
     t.datetime "updated_at", null: false
     t.string "url"
   end
