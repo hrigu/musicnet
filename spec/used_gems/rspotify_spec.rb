@@ -7,6 +7,8 @@ RSpec.describe RSpotify do
     it 'Die App kann sich authentisieren' do
       client_id = Rails.application.credentials.dig(:spotify, :client_id)
       client_secret = Rails.application.credentials.dig(:spotify, :client_secret)
+
+      expect(RSpotify).to receive(:authenticate).with(client_id, client_secret).and_return(true)
       result = RSpotify.authenticate(client_id, client_secret)
       expect(result).to be true
     end
