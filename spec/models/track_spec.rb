@@ -3,6 +3,18 @@
 require "rails_helper"
 
 RSpec.describe Track, type: :model do
+  let(:downloads_dir) { Rails.root.join("downloads/tracks") }
+
+  # Legt eine echte Datei ins Download-Verzeichnis und räumt sie danach wieder weg —
+  # das Pfad-Matching wird gegen das Dateisystem getestet, nicht gegen Stubs.
+  def with_download_file(file_name)
+    FileUtils.mkdir_p(downloads_dir)
+    FileUtils.touch(downloads_dir.join(file_name))
+    yield
+  ensure
+    FileUtils.rm_f(downloads_dir.join(file_name))
+  end
+
   describe "#dauer" do
     it "formatiert duration_ms als MM:SS" do
       track = Track.new(duration_ms: 125_000)
@@ -28,26 +40,97 @@ RSpec.describe Track, type: :model do
     end
   end
 
+  describe ".preload_track_paths" do
+    it "setzt track_path für alle Tracks mit einem einzigen Verzeichnis-Scan" do
+      found = Track.new(name: "RSpec Song: Live")
+      missing = Track.new(name: "RSpec Nicht Vorhanden")
+      file_name = "RSpec Artist - RSpec Song- Live.m4a"
+
+      with_download_file(file_name) do
+        Track.preload_track_paths([found, missing])
+      end
+
+      # Datei ist beim Zugriff bereits gelöscht: liefert track_path den Pfad trotzdem,
+      # wurde er beim Preload aufgelöst und nicht durch einen erneuten Verzeichnis-Scan.
+      aggregate_failures do
+        expect(found.track_path).to eq(downloads_dir.join(file_name).to_s)
+        expect(missing.track_path).to be_nil
+      end
+    end
+
+    it "memoisiert auch nicht gefundene Pfade" do
+      missing = Track.new(name: "RSpec Nicht Vorhanden")
+
+      Track.preload_track_paths([missing])
+
+      # Eine erst nach dem Preload erstellte Datei darf nicht mehr gefunden werden,
+      # sonst hätte track_path erneut das Verzeichnis gelesen.
+      with_download_file("RSpec Artist - RSpec Nicht Vorhanden.m4a") do
+        expect(missing.track_path).to be_nil
+      end
+    end
+  end
+
   describe "#track_path" do
     it "findet die passende, sanitisierte Datei im downloads/tracks-Verzeichnis" do
-      track = Track.new(name: "Song: Live")
-      expected_pattern = Rails.root.join("downloads/tracks/*-?Song- Live.m4a").to_s
-      found_path = Rails.root.join("downloads/tracks/01-Song- Live.m4a").to_s
-      allow(Dir).to receive(:glob).with(expected_pattern).and_return([found_path])
+      track = Track.new(name: "RSpec Song: Live?")
+      file_name = "RSpec Artist - RSpec Song- Live.m4a"
 
-      expect(track.track_path).to eq(found_path)
+      with_download_file(file_name) do
+        expect(track.track_path).to eq(downloads_dir.join(file_name).to_s)
+      end
+    end
+
+    it "findet die Datei unabhängig von Gross-/Kleinschreibung (wie das frühere Glob auf macOS)" do
+      track = Track.new(name: "RSpec Song Case")
+
+      with_download_file("RSPEC ARTIST - RSPEC SONG CASE.M4A") do
+        expect(track.track_path).to eq(downloads_dir.join("RSPEC ARTIST - RSPEC SONG CASE.M4A").to_s)
+      end
+    end
+
+    it "behandelt Backslashes im Namen als Escape-Zeichen (wie das frühere Glob)" do
+      track = Track.new(name: "RSpec Sittin\\' And Cryin\\'")
+      file_name = "RSpec Artist - RSpec Sittin' And Cryin'.m4a"
+
+      with_download_file(file_name) do
+        expect(track.track_path).to eq(downloads_dir.join(file_name).to_s)
+      end
+    end
+
+    it "ignoriert Dotfiles (wie das frühere Glob)" do
+      track = Track.new(name: "RSpec Song Dot")
+
+      with_download_file(".RSpec Artist - RSpec Song Dot.m4a") do
+        expect(track.track_path).to be_nil
+      end
+    end
+
+    it "verlangt vor dem Tracknamen ein beliebiges Zeichen und davor einen Bindestrich" do
+      track = Track.new(name: "RSpec Song Prefix")
+
+      with_download_file("RSpec Song Prefix.m4a") do
+        expect(track.track_path).to be_nil
+      end
     end
 
     it "gibt nil zurück, wenn keine Datei gefunden wird" do
-      track = Track.new(name: "Unbekannter Song")
-      allow(Dir).to receive(:glob).and_return([])
+      track = Track.new(name: "RSpec Unbekannter Song")
 
       expect(track.track_path).to be_nil
     end
 
+    it "memoisiert das Resultat innerhalb der Instanz" do
+      track = Track.new(name: "RSpec Song Memo")
+      track.track_path
+
+      with_download_file("RSpec Artist - RSpec Song Memo.m4a") do
+        expect(track.track_path).to be_nil
+      end
+    end
+
     it "verwendet keinen Dir.chdir (Thread-Sicherheit bei gleichzeitigen Requests)" do
-      track = Track.new(name: "Song")
-      allow(Dir).to receive(:glob).and_return([])
+      track = Track.new(name: "RSpec Song")
       expect(Dir).not_to receive(:chdir)
 
       track.track_path
@@ -56,20 +139,21 @@ RSpec.describe Track, type: :model do
 
   describe "#genre" do
     it "gibt nil zurück, wenn kein Track-File gefunden wird" do
-      track = Track.new(name: "Unbekannter Song")
-      allow(Dir).to receive(:glob).and_return([])
+      track = Track.new(name: "RSpec Unbekannter Song")
 
       expect(track.genre).to be_nil
     end
 
     it "öffnet die gefundene Datei mit WahWah und gibt das Genre zurück" do
-      track = Track.new(name: "Song: Live")
-      found_path = Rails.root.join("downloads/tracks/01-Song- Live.m4a").to_s
-      allow(Dir).to receive(:glob).and_return([found_path])
+      track = Track.new(name: "RSpec Song Genre")
+      file_name = "RSpec Artist - RSpec Song Genre.m4a"
       tag = instance_double(WahWah::Mp4Tag, genre: "Fusion")
-      allow(WahWah).to receive(:open).with(found_path).and_return(tag)
 
-      expect(track.genre).to eq("Fusion")
+      with_download_file(file_name) do
+        allow(WahWah).to receive(:open).with(downloads_dir.join(file_name).to_s).and_return(tag)
+
+        expect(track.genre).to eq("Fusion")
+      end
     end
   end
 end

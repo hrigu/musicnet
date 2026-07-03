@@ -9,14 +9,13 @@ class TracksController < ApplicationController
 
   def index
     @tracks = Track.includes(:artists, :playlists, :album).order(:name)
+    Track.preload_track_paths(@tracks)
   end
 
   def download
-    tracks_without_file = []
-    Track.all.each do |t|
-      path = t.track_path
-      tracks_without_file << t unless path
-    end
+    tracks = Track.all.to_a
+    Track.preload_track_paths(tracks)
+    tracks_without_file = tracks.reject(&:track_path)
 
     service = DownloadTrackService.new(tracks_without_file)
     service.download
