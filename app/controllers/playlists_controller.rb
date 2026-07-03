@@ -56,8 +56,11 @@ class PlaylistsController < ApplicationController
 
   private
 
-  # Lädt alles vor, was das _playlist_track-Partial anzeigt (vermeidet N+1-Queries)
+  # Lädt alles vor, was das _playlist_track-Partial anzeigt (vermeidet N+1-Queries
+  # und einen Verzeichnis-Scan pro Track für Genre und Soundfile-Badge)
   def playlist_tracks_with_associations
-    @playlist.playlist_tracks.includes(track: [:artists, :album, { playlist_tracks: :playlist }])
+    playlist_tracks = @playlist.playlist_tracks.includes(track: [:artists, :album, { playlist_tracks: :playlist }])
+    Track.preload_track_paths(playlist_tracks.map(&:track))
+    playlist_tracks
   end
 end

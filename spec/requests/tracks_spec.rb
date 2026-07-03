@@ -24,6 +24,30 @@ RSpec.describe "Tracks", type: :request do
       expect(response).to have_http_status(:success)
     end
 
+    it "zeigt ein Badge statt des Players für Tracks ohne Soundfile" do
+      create_track
+
+      get tracks_path
+
+      aggregate_failures do
+        expect(response.body).to include("kein File")
+        expect(response.body).to_not include("<audio")
+      end
+    end
+
+    it "zeigt den Player für Tracks mit Soundfile" do
+      create_track
+      existing_file = Rails.root.join("spec/fixtures/files/.keep").to_s
+      allow_any_instance_of(Track).to receive(:track_path).and_return(existing_file)
+
+      get tracks_path
+
+      aggregate_failures do
+        expect(response.body).to include("<audio")
+        expect(response.body).to_not include("kein File")
+      end
+    end
+
     it "zeigt die Playlist-Badges ohne eine Query pro Track" do
       playlist = Playlist.create!(spotify_id: "pl-q1", name: "Fusion Badge")
       other_playlist = Playlist.create!(spotify_id: "pl-q2", name: "Blues Badge")

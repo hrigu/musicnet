@@ -1,3 +1,9 @@
-<audio id="<%= track.id %>" preload="none" controls>
-  <source src="<%= stream_track_path(track.id) %>"></source>
-</audio>
+<%# Seit preload="none" laedt der Player die Datei erst beim Abspielen — ohne diese
+    Fallunterscheidung saehe ein Track ohne Soundfile wie ein abspielbarer aus. %>
+<% if track.track_path %>
+  <audio id="<%= track.id %>" preload="none" controls>
+    <source src="<%= stream_track_path(track.id) %>"></source>
+  </audio>
+<% else %>
+  <span class="badge bg-danger">kein File</span>
+<% end %>

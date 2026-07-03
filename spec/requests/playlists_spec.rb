@@ -97,11 +97,41 @@ RSpec.describe "Playlists", type: :request do
       playlist = Playlist.create!(spotify_id: "pl-p1", name: "Fusion Preload")
       track = Track.create!(spotify_id: "trk-p1", name: "Hottentot", album: album, duration_ms: 200_000)
       PlaylistTrack.create!(playlist: playlist, track: track, added_at: Time.current)
+      existing_file = Rails.root.join("spec/fixtures/files/.keep").to_s
+      allow_any_instance_of(Track).to receive(:track_path).and_return(existing_file)
 
       get playlist_path(playlist)
 
       expect(response.body).to include('preload="none"')
       expect(response.body).to_not include('preload="false"')
+    end
+
+    it "GET /playlists/:id zeigt das Badge für Tracks ohne Soundfile" do
+      album = Album.create!(spotify_id: "alb-b1", name: "A Go Go")
+      playlist = Playlist.create!(spotify_id: "pl-b1", name: "Fusion Badge")
+      track = Track.create!(spotify_id: "trk-b1", name: "RSpec Ohne File", album: album, duration_ms: 200_000)
+      PlaylistTrack.create!(playlist: playlist, track: track, added_at: Time.current)
+
+      get playlist_path(playlist)
+
+      aggregate_failures do
+        expect(response.body).to include("kein File")
+        expect(response.body).to_not include("<audio")
+      end
+    end
+
+    it "GET /playlists/:id löst die Track-Pfade mit einem einzigen Verzeichnis-Scan auf" do
+      album = Album.create!(spotify_id: "alb-s1", name: "A Go Go")
+      playlist = Playlist.create!(spotify_id: "pl-s1", name: "Fusion Scan")
+      3.times do |i|
+        track = Track.create!(spotify_id: "trk-s#{i}", name: "RSpec Scan #{i}", album: album, duration_ms: 200_000)
+        PlaylistTrack.create!(playlist: playlist, track: track, added_at: Time.current)
+      end
+      allow(Dir).to receive(:children).and_call_original
+
+      get playlist_path(playlist)
+
+      expect(Dir).to have_received(:children).with(Track.downloads_dir).at_most(:once)
     end
 
     it "GET /playlists/:id zeigt den Button zum Aktualisieren der Playlist" do
