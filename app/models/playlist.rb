@@ -28,15 +28,4 @@ class Playlist < ApplicationRecord
       Track.preload_track_paths(records.map(&:track))
     end
   end
-
-  private
-
-  def calculate_checksum(str)
-    checksum = 0
-    str.each_byte do |byte|
-      checksum += byte
-    end
-    checksum
-  end
-
 end
