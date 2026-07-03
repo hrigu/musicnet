@@ -2,6 +2,13 @@
 
 <h1>Meine Tracks</h1>
 
+<%= form_with url: tracks_path, method: :get, id: "tracks-search", class: "mb-3" do %>
+  <%= hidden_field_tag :sort, params[:sort] %>
+  <%= hidden_field_tag :direction, params[:direction] %>
+  <%= text_field_tag :q, params[:q], placeholder: "Suche nach Name, Künstler, Album oder Genre", class: "form-control d-inline-block w-auto" %>
+  <%= submit_tag "Suchen", class: "btn btn-outline-secondary" %>
+<% end %>
+
 <%= render 'tracks', tracks: @tracks %>
 
 <%== @pagy.series_nav(:bootstrap) %>

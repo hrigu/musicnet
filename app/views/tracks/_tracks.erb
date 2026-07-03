@@ -1,20 +1,22 @@
-<table class="table caption-top">
-  <caption>Tracks</caption>
-  <thead>
-  <tr>
-    <th scope="col">Name</th>
-    <th scope="col">Dauer</th>
-    <th scope="col">Genre</th>
-    <th scope="col">Bekanntheit</th>
-    <th scope="col">Energie</th>
-    <th scope="col">Tempo</th>
-    <th scope="col">Künstler</th>
-    <th scope="col">Album Name</th>
-    <th scope="col">Release Date</th>
-    <th scope="col">Playlists</th>
-  </tr>
-  </thead>
-  <tbody>
-  <%= render tracks %>
-  </tbody>
-</table>
+<div class="table-responsive rounded border">
+  <table class="table table-hover align-middle mb-0 table-tracks table-tracks-detailed">
+    <thead class="table-light">
+    <tr>
+      <th scope="col"><%= sort_link("name", "Name") %></th>
+      <th scope="col" class="text-end"><%= sort_link("duration_ms", "Dauer") %></th>
+      <th scope="col"><%= sort_link("added_at", "hinzugefügt") %></th>
+      <th scope="col"><%= sort_link("genre", "Genre") %></th>
+      <th scope="col"><%= sort_link("popularity", "Bekanntheit") %></th>
+      <th scope="col"><%= sort_link("energy", "Energie") %></th>
+      <th scope="col" class="text-end"><%= sort_link("tempo", "Tempo") %></th>
+      <th scope="col">Künstler</th>
+      <th scope="col">Album Name</th>
+      <th scope="col">Playlists</th>
+      <th scope="col">Datei</th>
+    </tr>
+    </thead>
+    <tbody>
+    <%= render tracks %>
+    </tbody>
+  </table>
+</div>

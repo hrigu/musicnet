@@ -10,7 +10,8 @@ class TracksController < ApplicationController
   end
 
   def index
-    @pagy, @tracks = pagy(:offset, Track.for_index, limit: PAGE_SIZE)
+    tracks = Track.for_index.search(params[:q]).sorted(params[:sort], params[:direction])
+    @pagy, @tracks = pagy(:offset, tracks, limit: PAGE_SIZE)
     Track.preload_track_paths(@tracks)
   end
 

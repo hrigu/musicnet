@@ -108,6 +108,89 @@ RSpec.describe "Tracks", type: :request do
     end
   end
 
+  describe "GET /tracks - Sortierung" do
+    def header_link_query(response_body, label)
+      link = Nokogiri::HTML(response_body).css("thead th a").find { |a| a.text.start_with?(label) }
+      Rack::Utils.parse_nested_query(URI.parse(link[:href]).query)
+    end
+
+    before do
+      create_track(name: "B Track", spotify_id: "srt-b")
+      create_track(name: "A Track", spotify_id: "srt-a")
+    end
+
+    it "sortiert standardmässig nach Name aufsteigend" do
+      get tracks_path
+
+      names = Nokogiri::HTML(response.body).css("tbody tr th a").map(&:text)
+      expect(names).to eq(["A Track", "B Track"])
+    end
+
+    it "sortiert nach der gewählten Spalte und Richtung" do
+      get tracks_path(sort: "name", direction: "desc")
+
+      names = Nokogiri::HTML(response.body).css("tbody tr th a").map(&:text)
+      expect(names).to eq(["B Track", "A Track"])
+    end
+
+    it "verlinkt den Name-Header standardmässig auf absteigend (Toggle der aktiven Spalte)" do
+      get tracks_path
+
+      query = header_link_query(response.body, "Name")
+      expect(query).to include("sort" => "name", "direction" => "desc")
+    end
+
+    it "verlinkt eine inaktive Spalte auf aufsteigend" do
+      get tracks_path(sort: "name", direction: "desc")
+
+      query = header_link_query(response.body, "Dauer")
+      expect(query).to include("sort" => "duration_ms", "direction" => "asc")
+    end
+
+    it "setzt die Seite in den Sortier-Links zurück" do
+      get tracks_path(page: 2)
+
+      query = header_link_query(response.body, "Name")
+      expect(query).to_not have_key("page")
+    end
+  end
+
+  describe "GET /tracks - Suche" do
+    before do
+      create_track(name: "RSpec Blues Shuffle", spotify_id: "srch-hit")
+      create_track(name: "Andere Nummer", spotify_id: "srch-miss")
+    end
+
+    it "zeigt nur Tracks, die auf den Suchbegriff passen" do
+      get tracks_path(q: "blues shuffle")
+
+      names = Nokogiri::HTML(response.body).css("tbody tr th a").map(&:text)
+      expect(names).to eq(["RSpec Blues Shuffle"])
+    end
+
+    it "zeigt das Suchfeld mit dem aktuellen Suchbegriff vorausgefüllt" do
+      get tracks_path(q: "blues shuffle")
+
+      field = Nokogiri::HTML(response.body).at_css("input[name='q']")
+      expect(field[:value]).to eq("blues shuffle")
+    end
+
+    it "behält Sortierung beim Suchen bei" do
+      get tracks_path(q: "blues shuffle", sort: "popularity", direction: "desc")
+
+      form = Nokogiri::HTML(response.body).at_css("form#tracks-search")
+      expect(form.at_css("input[name='sort']")[:value]).to eq("popularity")
+      expect(form.at_css("input[name='direction']")[:value]).to eq("desc")
+    end
+
+    it "setzt die Seite bei neuer Suche zurück (kein page-Feld im Suchformular)" do
+      get tracks_path(page: 2)
+
+      form = Nokogiri::HTML(response.body).at_css("form#tracks-search")
+      expect(form.at_css("input[name='page']")).to be_nil
+    end
+  end
+
   describe "GET /tracks/:id" do
     it "liefert Erfolg" do
       track = create_track

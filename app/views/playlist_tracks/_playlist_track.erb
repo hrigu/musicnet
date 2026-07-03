@@ -1,30 +1,37 @@
 <%# Repräsentiert eine Playlist Track Eintrag in der Tabelle der Playlist %>
+<% track = playlist_track.track %>
 <tr>
-  <th scope="row"><%= link_to playlist_track.track.name, track_path(playlist_track.track.id) %> </th>
-  <td> <%= playlist_track.track.dauer %> </td>
-  <td> <%= l(playlist_track.added_at.to_date) %> </td>
-  <td> <%= (playlist_track.track.genre) %> </td>
-  <td><%= playlist_track.track.popularity %></td>
-  <td><%= engergie_to_view playlist_track.track.energy %></td>
-  <td><%= tempo_to_view playlist_track.track.tempo %></td>
-  <td>
-    <% playlist_track.track.artists.each do |a| %>
-      <%= link_to a.name, artist_path(a.id) %>
+  <th scope="row"><%= link_to(track.name, track_path(track.id)) %></th>
+  <td class="text-end text-muted font-monospace"><%= track.dauer %></td>
+  <td class="text-muted"><%= l(playlist_track.added_at.to_date) %></td>
+  <td><%= genre_badge(track.genre) %></td>
+  <td><%= track_meter(track.popularity, variant: "info") %></td>
+  <td><%= track_meter(engergie_to_view(track.energy), variant: "warning") %></td>
+  <td class="text-end text-muted">
+    <% if track.tempo %>
+      <%= tempo_to_view(track.tempo) %> <span class="small">BPM</span>
+    <% else %>
+      –
     <% end %>
   </td>
-  <td> <%= playlist_track.track.album.name %></td>
-  <td> <%= l playlist_track.track.album.release_date if playlist_track.track.album.release_date %></td>
-
   <td>
-    <% playlist_track.track.playlist_tracks.each do |pt| %>
-      <% unless pt.id == playlist_track.id %>
-        <%= link_to playlist_path(pt.playlist.id) do %>
-          <span class="badge <%= playlist_color_class(pt.playlist) %>"><%= playlist_short_name(pt.playlist) %></span>
+    <% track.artists.each do |a| %>
+      <%= link_to a.name, artist_path(a.id), class: "d-inline-block me-2" %>
+    <% end %>
+  </td>
+  <td><%= track.album.name %></td>
+  <td>
+    <div class="d-flex flex-wrap gap-1">
+      <% track.playlist_tracks.each do |pt| %>
+        <% unless pt.id == playlist_track.id %>
+          <%= link_to playlist_path(pt.playlist.id) do %>
+            <span class="badge <%= playlist_color_class(pt.playlist) %>"><%= playlist_short_name(pt.playlist) %></span>
+          <% end %>
         <% end %>
       <% end %>
-    <% end %>
+    </div>
   </td>
   <td>
-    <%= render partial: 'components/audio_file', locals: {track: playlist_track.track} %>
+    <%= render partial: 'components/audio_file', locals: {track: track} %>
   </td>
 </tr>

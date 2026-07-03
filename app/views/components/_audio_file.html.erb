@@ -1,9 +1,14 @@
 <%# Seit preload="none" laedt der Player die Datei erst beim Abspielen — ohne diese
     Fallunterscheidung saehe ein Track ohne Soundfile wie ein abspielbarer aus. %>
 <% if track.track_path %>
-  <audio id="<%= track.id %>" preload="none" controls>
-    <source src="<%= stream_track_path(track.id) %>"></source>
-  </audio>
+  <div data-controller="audio-player">
+    <audio data-audio-player-target="audio" preload="none">
+      <source src="<%= stream_track_path(track.id) %>"></source>
+    </audio>
+    <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle" data-action="audio-player#toggle">
+      <span data-audio-player-target="icon">▶</span>
+    </button>
+  </div>
 <% else %>
   <span class="badge bg-danger">kein File</span>
 <% end %>

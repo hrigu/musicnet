@@ -1,9 +1,10 @@
 
-<h1><%= @playlist.name %></h1>
-
-<div>
-  <%= link_to("Download Tracks", download_playlist_path(@playlist.id)) %>
-  <%= link_to("Playlist aktualisieren", refresh_playlist_path(@playlist.id)) %>
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <h1 class="mb-0"><%= @playlist.name %></h1>
+  <div class="d-flex gap-2">
+    <%= link_to("Download Tracks", download_playlist_path(@playlist.id), class: "btn btn-outline-secondary") %>
+    <%= link_to("Playlist aktualisieren", refresh_playlist_path(@playlist.id), class: "btn btn-outline-secondary") %>
+  </div>
 </div>
 
 <% if @refresh_info %>
@@ -30,26 +31,26 @@
     <% end %>
   </div>
 <% end %>
-<table class="table caption-top">
-  <caption>Einträge</caption>
-  <thead>
-  <tr>
-    <th scope="col">Name</th>
-    <th scope="col">Dauer</th>
-    <th scope="col">hinzugefügt</th>
-    <th scope="col">Genre</th>
-    <th scope="col">Bekanntheit</th>
-    <th scope="col">Energie</th>
-    <th scope="col">Tempo</th>
-    <th scope="col">Künstler</th>
-    <th scope="col">Albumname</th>
-    <th scope="col">Release Datum</th>
-    <th scope="col">Playlists</th>
-    <th scope="col" style="min-width: 90px">xxx </th>
-    <%# p.album.genres.join(", ") Teuer!!%>
-  </tr>
-  </thead>
-  <tbody>
-    <%= render @playlist_tracks %>
-  </tbody>
-</table>
+<div class="table-responsive rounded border">
+  <table class="table table-hover align-middle mb-0 table-tracks table-tracks-detailed">
+    <thead class="table-light">
+    <tr>
+      <th scope="col">Name</th>
+      <th scope="col" class="text-end">Dauer</th>
+      <th scope="col">hinzugefügt</th>
+      <th scope="col">Genre</th>
+      <th scope="col">Bekanntheit</th>
+      <th scope="col">Energie</th>
+      <th scope="col" class="text-end">Tempo</th>
+      <th scope="col">Künstler</th>
+      <th scope="col">Album Name</th>
+      <th scope="col">Playlists</th>
+      <th scope="col">Datei</th>
+      <%# p.album.genres.join(", ") Teuer!!%>
+    </tr>
+    </thead>
+    <tbody>
+      <%= render @playlist_tracks %>
+    </tbody>
+  </table>
+</div>

@@ -11,7 +11,53 @@ class Track < ApplicationRecord
   has_many :playlists, through: :playlist_tracks
 
   def self.for_index
-    preload(:artists, { playlist_tracks: :playlist }, :album).order(:name).strict_loading
+    preload(:artists, { playlist_tracks: :playlist }, :album).strict_loading
+  end
+
+  # Whitelist erlaubter Sortier-Spalten fuer den Tracks-Index (Intent 34) — verhindert, dass
+  # roher User-Input in ein order() gelangt. release_date liegt auf Album, braucht daher einen
+  # Join statt eines einfachen Spaltennamens.
+  SORT_COLUMNS = {
+    "name" => "tracks.name",
+    "duration_ms" => "tracks.duration_ms",
+    # Frühestes Datum, an dem der Track zu einer der Playlists hinzugefügt wurde, in denen er
+    # heute noch vorkommt — nicht tracks.created_at, das nur den lokalen Import-Zeitpunkt zeigt.
+    "added_at" => "(SELECT MIN(playlist_tracks.added_at) FROM playlist_tracks " \
+                  "WHERE playlist_tracks.track_id = tracks.id)",
+    "genre" => "tracks.genre",
+    "popularity" => "tracks.popularity",
+    "release_date" => "albums.release_date",
+    # audio_features wird immer per `.to_json` auf eine bereits-serialisierte Spalte
+    # geschrieben (siehe BuildMusicNetService#build_track) und landet dadurch doppelt
+    # JSON-kodiert in der DB (ein JSON-String, der selbst wieder JSON-Text enthaelt) - der
+    # erste json_extract(..., '$') entfernt nur diese aeussere String-Verpackung.
+    "energy" => "json_extract(json_extract(tracks.audio_features, '$'), '$.energy')",
+    "tempo" => "json_extract(json_extract(tracks.audio_features, '$'), '$.tempo')"
+  }.freeze
+  DEFAULT_SORT_COLUMN = "name"
+
+  def self.sorted(column, direction)
+    column = SORT_COLUMNS.key?(column) ? column : DEFAULT_SORT_COLUMN
+    direction = %w[asc desc].include?(direction) ? direction : "asc"
+
+    relation = column == "release_date" ? joins(:album) : all
+    relation.order(Arel.sql("#{SORT_COLUMNS[column]} #{direction}"))
+  end
+
+  # Volltextsuche über Name, Künstler, Album und Genre (Intent 34). LEFT JOIN statt INNER,
+  # damit Tracks ohne Künstler nicht aus dem Ergebnis fallen. distinct gegen Duplikate durch
+  # die Artist-Join-Kardinalität (ein Track mit mehreren Künstlern hätte sonst mehrere Zeilen).
+  def self.search(query)
+    return all if query.blank?
+
+    term = "%#{query.downcase}%"
+    left_joins(:artists, :album)
+      .where(
+        "LOWER(tracks.name) LIKE :term OR LOWER(artists.name) LIKE :term " \
+        "OR LOWER(albums.name) LIKE :term OR LOWER(tracks.genre) LIKE :term",
+        term: term
+      )
+      .distinct
   end
 
   def self.for_show
@@ -33,6 +79,13 @@ class Track < ApplicationRecord
 
   def dauer
     Time.at(duration_ms / 1000).utc.strftime('%M:%S')
+  end
+
+  # Frühestes Datum, an dem dieser Track zu einer seiner Playlists hinzugefügt wurde.
+  # Nutzt die bereits preloadeten playlist_tracks (siehe .for_index), verursacht also
+  # keine zusätzliche Query.
+  def added_at
+    playlist_tracks.map(&:added_at).min
   end
 
   # Siehe @RSpotify::Audiofeatures

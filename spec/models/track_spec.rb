@@ -71,6 +71,113 @@ RSpec.describe Track, type: :model do
     end
   end
 
+  describe ".sorted" do
+    def create_track(name:, duration_ms:, genre:, popularity:, release_date:, spotify_id:,
+                     energy: nil, tempo: nil)
+      album = Album.create!(name: "Album #{spotify_id}", spotify_id: "alb-#{spotify_id}", release_date: release_date)
+      Track.create!(name: name, spotify_id: spotify_id, album: album, duration_ms: duration_ms,
+                    genre: genre, popularity: popularity,
+                    audio_features: { energy: energy, tempo: tempo }.to_json)
+    end
+
+    before do
+      create_track(name: "B Track", duration_ms: 200_000, genre: "Blues", popularity: 50,
+                   release_date: "2020-01-01", spotify_id: "sort-b", energy: 0.5, tempo: 90.0)
+      create_track(name: "A Track", duration_ms: 100_000, genre: "Fusion", popularity: 80,
+                   release_date: "2010-01-01", spotify_id: "sort-a", energy: 0.9, tempo: 130.0)
+      create_track(name: "C Track", duration_ms: 300_000, genre: "Jazz", popularity: 20,
+                   release_date: "2030-01-01", spotify_id: "sort-c", energy: 0.1, tempo: 110.0)
+    end
+
+    it "sortiert nach Name aufsteigend (Default)" do
+      expect(described_class.sorted(nil, nil).pluck(:name)).to eq(["A Track", "B Track", "C Track"])
+    end
+
+    it "sortiert nach Dauer" do
+      expect(described_class.sorted("duration_ms", "asc").pluck(:name)).to eq(["A Track", "B Track", "C Track"])
+      expect(described_class.sorted("duration_ms", "desc").pluck(:name)).to eq(["C Track", "B Track", "A Track"])
+    end
+
+    it "sortiert nach Genre" do
+      expect(described_class.sorted("genre", "asc").pluck(:name)).to eq(["B Track", "A Track", "C Track"])
+    end
+
+    it "sortiert nach Bekanntheit (popularity)" do
+      expect(described_class.sorted("popularity", "desc").pluck(:name)).to eq(["A Track", "B Track", "C Track"])
+    end
+
+    it "sortiert nach Album-Release-Date" do
+      expect(described_class.sorted("release_date", "asc").pluck(:name)).to eq(["A Track", "B Track", "C Track"])
+    end
+
+    it "fällt bei unbekannter Spalte auf Name zurück, ohne Fehler" do
+      expect(described_class.sorted("does_not_exist", "asc").pluck(:name)).to eq(["A Track", "B Track", "C Track"])
+    end
+
+    it "fällt bei unbekannter Richtung auf aufsteigend zurück, behält aber die Spalte" do
+      expect(described_class.sorted("duration_ms", "sideways").pluck(:name)).to eq(["A Track", "B Track", "C Track"])
+    end
+
+    it "sortiert nach Energie (aus dem audio_features-JSON, ohne eigene DB-Spalte)" do
+      expect(described_class.sorted("energy", "desc").pluck(:name)).to eq(["A Track", "B Track", "C Track"])
+    end
+
+    it "sortiert nach Tempo (aus dem audio_features-JSON, ohne eigene DB-Spalte)" do
+      expect(described_class.sorted("tempo", "asc").pluck(:name)).to eq(["B Track", "C Track", "A Track"])
+    end
+  end
+
+  describe ".search" do
+    def create_track(name:, spotify_id:, genre: nil, album_name: "Album", artist_names: ["Artist"])
+      album = Album.create!(name: album_name, spotify_id: "alb-#{spotify_id}")
+      artists = artist_names.map { |n| Artist.create!(name: n, spotify_id: "art-#{n.parameterize}-#{spotify_id}") }
+      Track.create!(name: name, spotify_id: spotify_id, album: album, artists: artists,
+                    duration_ms: 200_000, genre: genre)
+    end
+
+    it "findet Tracks über den Namen, unabhängig von Gross-/Kleinschreibung" do
+      match = create_track(name: "RSpec Blues Shuffle", spotify_id: "search-name")
+      create_track(name: "Andere Nummer", spotify_id: "search-name-miss")
+
+      expect(described_class.search("blues shuffle").to_a).to eq([match])
+    end
+
+    it "findet Tracks über den Künstlernamen" do
+      match = create_track(name: "Irrelevant", spotify_id: "search-artist", artist_names: ["RSpec Fusion Combo"])
+      create_track(name: "Anderer Track", spotify_id: "search-artist-miss", artist_names: ["Andere Band"])
+
+      expect(described_class.search("fusion combo").to_a).to eq([match])
+    end
+
+    it "findet Tracks über den Album-Namen" do
+      match = create_track(name: "Irrelevant", spotify_id: "search-album", album_name: "RSpec Live Session")
+      create_track(name: "Anderer Track", spotify_id: "search-album-miss", album_name: "Anderes Album")
+
+      expect(described_class.search("live session").to_a).to eq([match])
+    end
+
+    it "findet Tracks über das Genre" do
+      match = create_track(name: "Irrelevant", spotify_id: "search-genre", genre: "RSpec Fusion")
+      create_track(name: "Anderer Track", spotify_id: "search-genre-miss", genre: "Jazz")
+
+      expect(described_class.search("fusion").to_a).to eq([match])
+    end
+
+    it "liefert einen Track mit mehreren Künstlern nur einmal" do
+      match = create_track(name: "RSpec Multi Artist", spotify_id: "search-distinct",
+                           artist_names: ["RSpec Artist Eins", "RSpec Artist Zwei"])
+
+      expect(described_class.search("rspec multi artist").to_a).to eq([match])
+    end
+
+    it "liefert die unveränderte Relation bei leerem Suchbegriff" do
+      create_track(name: "RSpec Track Ohne Suche", spotify_id: "search-blank")
+
+      expect(described_class.search("").count).to eq(described_class.count)
+      expect(described_class.search(nil).count).to eq(described_class.count)
+    end
+  end
+
   describe ".for_index" do
     it "liefert streng geladene Tracks für den Index" do
       album = Album.create!(name: "Album", spotify_id: "alb-strict")

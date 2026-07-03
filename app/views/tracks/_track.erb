@@ -1,39 +1,35 @@
 <%# Repräsentiert einen Eintrag in der Tabelle %>
 <tr>
   <th scope="row"><%= link_to(track.name, track_path(track.id)) %></th>
-  <td>
-    <%= track.dauer %>
+  <td class="text-end text-muted font-monospace"><%= track.dauer %></td>
+  <td class="text-muted">
+    <%= l(track.added_at.to_date) if track.added_at %>
   </td>
-  <td> <%= track.genre %> </td>
-  <td>
-    <%= track.popularity %>
+  <td><%= genre_badge(track.genre) %></td>
+  <td><%= track_meter(track.popularity, variant: "info") %></td>
+  <td><%= track_meter(engergie_to_view(track.energy), variant: "warning") %></td>
+  <td class="text-end text-muted">
+    <% if track.tempo %>
+      <%= tempo_to_view(track.tempo) %> <span class="small">BPM</span>
+    <% else %>
+      –
+    <% end %>
   </td>
-  <td>
-    <%= engergie_to_view track.energy %>
-  </td>
-  <td>
-    <%= tempo_to_view track.tempo %>
-  </td>
-
   <td>
     <% track.artists.each do |a| %>
-      <%= link_to a.name, artist_path(a.id) %>
+      <%= link_to a.name, artist_path(a.id), class: "d-inline-block me-2" %>
     <% end %>
   </td>
+  <td><%= track.album.name %></td>
   <td>
-    <%= track.album.name %>
-  </td>
-  <td>
-    <%= l track.album.release_date if track.album.release_date %>
-  </td>
-  <td>
-    <% track.playlist_tracks.each do |pt| %>
-      <%= link_to playlist_path(pt.playlist.id) do %>
-        <span class="badge <%= playlist_color_class(pt.playlist) %>"><%= playlist_short_name(pt.playlist) %></span>
+    <div class="d-flex flex-wrap gap-1">
+      <% track.playlist_tracks.each do |pt| %>
+        <%= link_to playlist_path(pt.playlist.id) do %>
+          <span class="badge <%= playlist_color_class(pt.playlist) %>"><%= playlist_short_name(pt.playlist) %></span>
+        <% end %>
       <% end %>
-    <% end %>
+    </div>
   </td>
-
   <td>
     <%= render partial: 'components/audio_file', locals: {track: track} %>
   </td>
