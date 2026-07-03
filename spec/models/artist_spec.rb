@@ -14,6 +14,43 @@ RSpec.describe Artist, type: :model do
     end
   end
 
+  describe ".for_index" do
+    it "liefert streng geladene Artists für den Index" do
+      artist = Artist.create!(name: "Artist", spotify_id: "art-strict")
+
+      found = described_class.for_index.find_by!(spotify_id: artist.spotify_id)
+
+      expect(found.strict_loading?).to be(true)
+      expect(found).to eq(artist)
+    end
+  end
+
+  describe ".for_show" do
+    it "liefert streng geladene Tracks für die Show" do
+      album = Album.create!(name: "Album", spotify_id: "alb-show-strict")
+      artist = Artist.create!(name: "Artist Show", spotify_id: "art-show-strict")
+      Track.create!(name: "Track", spotify_id: "trk-show-strict", album: album, artists: [artist])
+
+      found = described_class.for_show(artist).find_by!(spotify_id: "trk-show-strict")
+
+      expect(found.strict_loading?).to be(true)
+      expect(found).to be_a(Track)
+    end
+  end
+
+  describe ".albums_for_show" do
+    it "liefert streng geladene Alben für die Show" do
+      album = Album.create!(name: "Album", spotify_id: "alb-albums-strict")
+      artist = Artist.create!(name: "Artist Albums", spotify_id: "art-albums-strict")
+      Track.create!(name: "Track", spotify_id: "trk-albums-strict", album: album, artists: [artist])
+
+      found = described_class.albums_for_show(artist).find_by!(spotify_id: album.spotify_id)
+
+      expect(found.strict_loading?).to be(true)
+      expect(found).to eq(album)
+    end
+  end
+
   describe "#playlists_of_the_tracks" do
     it "liefert alle Playlists, in denen der Artist vorkommt" do
       album = Album.create!(name: "Album", spotify_id: "alb1")

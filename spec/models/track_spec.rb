@@ -71,6 +71,31 @@ RSpec.describe Track, type: :model do
     end
   end
 
+  describe ".for_index" do
+    it "liefert streng geladene Tracks für den Index" do
+      album = Album.create!(name: "Album", spotify_id: "alb-strict")
+      track = Track.create!(name: "Track Strict", spotify_id: "trk-strict", album: album, duration_ms: 200_000)
+
+      found = described_class.for_index.find_by!(spotify_id: track.spotify_id)
+
+      expect(found.strict_loading?).to be(true)
+      expect(found).to eq(track)
+    end
+  end
+
+  describe ".for_download" do
+    it "liefert streng geladene Tracks für den Download" do
+      album = Album.create!(name: "Album", spotify_id: "alb-download-strict")
+      track = Track.create!(name: "Track Download Strict", spotify_id: "trk-download-strict",
+                            album: album, duration_ms: 200_000)
+
+      found = described_class.for_download.find { |entry| entry.spotify_id == track.spotify_id }
+
+      expect(found.strict_loading?).to be(true)
+      expect(found).to eq(track)
+    end
+  end
+
   describe "#track_path" do
     it "findet die passende, sanitisierte Datei im downloads/tracks-Verzeichnis" do
       track = Track.new(name: "RSpec Song: Live?")

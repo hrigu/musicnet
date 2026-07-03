@@ -8,15 +8,15 @@ class Artist < ApplicationRecord
   has_many :albums, -> { distinct }, through: :tracks
 
   def self.for_index
-    includes(:tracks).all
+    includes(:tracks).strict_loading
   end
 
   def self.for_show(artist)
-    artist.tracks.includes(:artists, :album, playlist_tracks: :playlist)
+    artist.tracks.includes(:artists, :album, playlist_tracks: :playlist).strict_loading
   end
 
   def self.albums_for_show(artist)
-    artist.albums.includes(:tracks, :artists)
+    artist.albums.includes(:tracks, :artists).strict_loading
   end
 
   # Die Playlists aller Künstler auf einmal, gruppiert nach Künstler-ID — eine Query für

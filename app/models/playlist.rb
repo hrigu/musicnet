@@ -6,14 +6,14 @@ class Playlist < ApplicationRecord
   has_many :playlist_tracks, dependent: :destroy
   has_many :tracks, through: :playlist_tracks
 
-  scope :for_index, -> { order(:name) }
+  scope :for_index, -> { order(:name).strict_loading }
 
   def name_path_ready
     name.delete(' ')
   end
 
   def playlist_tracks_for_display
-    playlist_tracks.includes(track: [:artists, :album, { playlist_tracks: :playlist }]).tap do |records|
+    playlist_tracks.includes(track: [:artists, :album, { playlist_tracks: :playlist }]).strict_loading.tap do |records|
       Track.preload_track_paths(records.map(&:track))
     end
   end
