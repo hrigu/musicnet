@@ -220,6 +220,10 @@ GEM
       omniauth-oauth2 (>= 1.8, < 2.0)
     orm_adapter (0.5.0)
     ostruct (0.6.3)
+    pagy (43.5.6)
+      json
+      uri
+      yaml
     parallel (2.1.0)
     parser (3.3.11.1)
       ast (~> 2.4.1)
@@ -397,6 +401,7 @@ GEM
       base64
       websocket-extensions (>= 0.1.0)
     websocket-extensions (0.1.5)
+    yaml (0.4.0)
     zeitwerk (2.8.2)
 
 PLATFORMS
@@ -416,6 +421,7 @@ DEPENDENCIES
   omniauth-rails_csrf_protection
   omniauth-spotify
   ostruct
+  pagy
   pry-rails
   puma
   rack (~> 3.0)

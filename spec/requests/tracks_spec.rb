@@ -84,6 +84,30 @@ RSpec.describe "Tracks", type: :request do
     end
   end
 
+  describe "GET /tracks - Paginierung" do
+    before { 51.times { |i| create_track(name: "Pag Track #{i}", spotify_id: "pag-#{i}") } }
+
+    it "zeigt nur eine Seite an Tracks" do
+      get tracks_path
+
+      rows = Nokogiri::HTML(response.body).css("tbody tr")
+      expect(rows.size).to eq(50)
+    end
+
+    it "zeigt die restlichen Tracks auf der zweiten Seite" do
+      get tracks_path(page: 2)
+
+      rows = Nokogiri::HTML(response.body).css("tbody tr")
+      expect(rows.size).to eq(1)
+    end
+
+    it "rendert eine Pagination-Navigation" do
+      get tracks_path
+
+      expect(response.body).to include('class="pagination')
+    end
+  end
+
   describe "GET /tracks/:id" do
     it "liefert Erfolg" do
       track = create_track

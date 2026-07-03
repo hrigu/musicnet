@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class TracksController < ApplicationController
+  PAGE_SIZE = 50
+
   # Zeigt die letzten 50 gespielte Lieder
   # tracks sind RSpotify::Track
   def recently_played_index
@@ -8,7 +10,7 @@ class TracksController < ApplicationController
   end
 
   def index
-    @tracks = Track.for_index
+    @pagy, @tracks = pagy(:offset, Track.for_index, limit: PAGE_SIZE)
     Track.preload_track_paths(@tracks)
   end
 
