@@ -1,6 +1,6 @@
 <h1><%= @artist.name %></h1>
 
-<%= render 'tracks/tracks', tracks: @artist.tracks %>
+<%= render 'tracks/tracks', tracks: @tracks %>
 
 
 <table class="table caption-top">
@@ -17,7 +17,7 @@
   </tr>
   </thead>
   <tbody>
-  <%= render @artist.albums %>
+  <%= render @albums %>
   </tbody>
 </table>
 

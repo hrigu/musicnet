@@ -7,6 +7,16 @@ class Artist < ApplicationRecord
   # Alle Alben der Tracks in welchen der Künstler mitwirkt
   has_many :albums, -> { distinct }, through: :tracks
 
+  # Die Playlists aller Künstler auf einmal, gruppiert nach Künstler-ID — eine Query für
+  # die ganze Index-Seite statt einer pro Zeile (siehe #playlists_of_the_tracks für den
+  # Einzel-Fall).
+  def self.playlists_by_artist_id
+    Playlist.distinct
+            .joins(playlist_tracks: { track: :artists })
+            .select("playlists.*", "artists.id AS artist_id")
+            .group_by(&:artist_id)
+  end
+
   def playlists_of_the_tracks
     Playlist.distinct.joins(playlist_tracks: { track: :artists }).where(artists: { id: id })
   end

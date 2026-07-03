@@ -4,7 +4,7 @@
   <td><%= artist.popularity %> </td>
   <td><%= artist.tracks.length %> </td>
   <td>
-    <%artist.playlists_of_the_tracks.each do |playlist| %>
+    <% playlists_by_artist_id.fetch(artist.id, []).each do |playlist| %>
       <%= link_to playlist_path(playlist.id) do %>
         <span class="badge <%= playlist.color_class %>"><%= playlist.short_name %></span>
       <% end %>

@@ -10,6 +10,6 @@
   </tr>
   </thead>
   <tbody>
-  <%= render @artists %>
+  <%= render partial: "artist", collection: @artists, locals: { playlists_by_artist_id: @playlists_by_artist_id } %>
   </tbody>
 </table>
