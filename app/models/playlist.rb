@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
 class Playlist < ApplicationRecord
-  has_many :playlist_tracks
+  # dependent: :destroy, damit beim Löschen einer entfolgten Playlist (Sync) die
+  # Zuordnungen mitgehen — die Tracks selbst räumt der Orphan-Cleanup des Syncs ab.
+  has_many :playlist_tracks, dependent: :destroy
   has_many :tracks, through: :playlist_tracks
 
   COLORS = %i[green blue yellow red lila orange black brown].freeze

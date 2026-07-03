@@ -73,6 +73,45 @@ RSpec.describe BuildMusicNetService do
       end
     end
 
+    context "wenn sich die snapshot_id einer Playlist nicht geändert hat" do
+      it "überspringt die Playlist, ohne ihre Tracks von Spotify zu holen" do
+        stub_spotify_playlists([playlist])
+        BuildMusicNetService.new(user).build
+        playlist_track_id = PlaylistTrack.first.id
+        unchanged_playlist = spotify_playlist(id: "pl1", name: "Fusion Favorites", owner_id: spotify_user_id,
+                                              tracks: [track])
+        stub_spotify_playlists([unchanged_playlist])
+
+        BuildMusicNetService.new(user).build
+
+        aggregate_failures do
+          expect(unchanged_playlist).to_not have_received(:tracks)
+          expect(PlaylistTrack.first.id).to eq(playlist_track_id)
+        end
+      end
+    end
+
+    context "wenn sich die snapshot_id einer Playlist geändert hat" do
+      it "gleicht die Playlist ab und aktualisiert Name und snapshot_id" do
+        stub_spotify_playlists([playlist])
+        BuildMusicNetService.new(user).build
+        new_track = spotify_track(id: "trk2", name: "Green Tea", album: album, artists: [artist])
+        changed_playlist = spotify_playlist(id: "pl1", name: "Blues Favorites", owner_id: spotify_user_id,
+                                            tracks: [new_track], snapshot_id: "snap-neu")
+        stub_spotify_playlists([changed_playlist])
+
+        BuildMusicNetService.new(user).build
+
+        playlist_record = Playlist.find_by(spotify_id: "pl1")
+        aggregate_failures do
+          expect(playlist_record.name).to eq("Blues Favorites")
+          expect(playlist_record.snapshot_id).to eq("snap-neu")
+          expect(playlist_record.tracks.map(&:name)).to eq(["Green Tea"])
+          expect(Track.find_by(spotify_id: "trk1")).to be_nil
+        end
+      end
+    end
+
     context "wenn eine zuvor synchronisierte Playlist auf Spotify nicht mehr existiert" do
       before do
         stub_spotify_playlists([playlist])

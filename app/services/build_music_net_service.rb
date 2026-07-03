@@ -15,21 +15,24 @@ class BuildMusicNetService
   end
 
   # Erstellt die ganze Modellstruktur aus allen Playlists, die der Owner erstellt hat.
+  # Unveränderte Playlists (gleiche snapshot_id wie auf Spotify) werden komplett
+  # übersprungen — kein Tracks-Fetch, keine DB-Mutation. Nur so bleibt der Sync bei
+  # über 200 Playlists im Sekunden- statt Minutenbereich.
   def build
     with_sync_lock do
-      PlaylistTrack.delete_all
+      own_spotify_user_id = @current_user.spotify_user.id
+      own_playlists = fetch_all_playlists_from_spotify.select { |p| p.owner.id == own_spotify_user_id }
 
-      # Alle Spotify Playlists holen und die eigenen Playlists
-      spotify_playlists = fetch_all_playlists_from_spotify
-      spotify_playlists.each do |spot_playlist|
-        next if spot_playlist.owner.id != @current_user.spotify_user.id
-        build_playlist(spot_playlist)
+      own_playlists.each do |spot_playlist|
+        local_playlist = Playlist.find_by(spotify_id: spot_playlist.id)
+        if local_playlist.nil?
+          build_playlist(spot_playlist)
+        elsif local_playlist.snapshot_id != spot_playlist.snapshot_id
+          sync_playlist_with_spotify(local_playlist, spot_playlist)
+        end
       end
-      # Playlists löschen, die keine Einträge haben
-      playlists_to_delete = Playlist.select("playlists.id", "playlists.name").left_joins(:tracks).where(tracks: {id: nil})
-      @info.add playlists: { deleted: playlists_to_delete.map(&:name)} if playlists_to_delete.present?
-      playlists_to_delete.destroy_all
 
+      delete_vanished_playlists(own_playlists.map(&:id))
       cleanup_orphan_records
       @info
     end
@@ -49,6 +52,17 @@ class BuildMusicNetService
     spot_playlist = fetch_playlist_from_spotify(playlist.spotify_id)
     raise PlaylistNotFoundError, "Playlist '#{playlist.name}' wurde auf Spotify nicht gefunden" if spot_playlist.nil?
 
+    ActiveRecord::Base.transaction(requires_new: true) do
+      info = sync_playlist_with_spotify(playlist, spot_playlist)
+      cleanup_orphan_records
+      info
+    end
+  end
+
+  # Gleicht die Tracks einer lokalen Playlist mit der Spotify-Playlist ab: verschwundene
+  # werden gelöst, neue angelegt, Name und snapshot_id aktualisiert. Orphan-Cleanup ist
+  # Sache des Aufrufers (der volle Sync räumt einmal am Schluss auf, nicht pro Playlist).
+  def sync_playlist_with_spotify(playlist, spot_playlist)
     spot_tracks, added_at_by_track_id = fetch_all_tracks(spot_playlist)
 
     # Gleiche Atomaritäts-Garantie wie beim vollen Sync (siehe build_playlist)
@@ -60,7 +74,6 @@ class BuildMusicNetService
       new_spot_tracks.each { |t| build_track(playlist, t, added_at: added_at_by_track_id[t.id]) }
 
       playlist.update!(name: spot_playlist.name, snapshot_id: spot_playlist.snapshot_id)
-      cleanup_orphan_records
       RefreshInfo.new(new_spot_tracks.map(&:name), removed_names)
     end
   end
@@ -173,6 +186,13 @@ class BuildMusicNetService
     end
     Rails.logger.info("Anzahl Playlists: #{playlists.length}" )
     playlists
+  end
+
+  # Playlists löschen, die auf Spotify nicht mehr existieren oder entfolgt wurden
+  def delete_vanished_playlists(spotify_ids)
+    playlists_to_delete = Playlist.where.not(spotify_id: spotify_ids)
+    @info.add playlists: { deleted: playlists_to_delete.map(&:name) } if playlists_to_delete.present?
+    playlists_to_delete.destroy_all
   end
 
   # Löst Tracks aus der Playlist, die auf Spotify nicht mehr enthalten sind
