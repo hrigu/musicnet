@@ -27,6 +27,11 @@ class Track < ApplicationRecord
     "genre" => "tracks.genre",
     "popularity" => "tracks.popularity",
     "release_date" => "albums.release_date",
+    # Ein Track kann mehrere Künstler haben (artists_tracks) — MIN(name) statt eines Joins,
+    # damit kein Join-Fanout (Track mit 2 Künstlern würde sonst doppelt gezählt) entsteht.
+    "artist" => "(SELECT MIN(artists.name) FROM artists_tracks " \
+                "INNER JOIN artists ON artists.id = artists_tracks.artist_id " \
+                "WHERE artists_tracks.track_id = tracks.id)",
     # audio_features wird immer per `.to_json` auf eine bereits-serialisierte Spalte
     # geschrieben (siehe BuildMusicNetService#build_track) und landet dadurch doppelt
     # JSON-kodiert in der DB (ein JSON-String, der selbst wieder JSON-Text enthaelt) - der
