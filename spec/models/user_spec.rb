@@ -52,4 +52,21 @@ RSpec.describe User, type: :model do
       expect(user.spotify_user.id).to eq("spotify-id-1")
     end
   end
+
+  describe "#spotify_avatar_url" do
+    it "gibt die erste Avatar-URL zurück, wenn eine vorhanden ist" do
+      user = User.new(spotify_user_data: {
+                        id: "spotify-id-1",
+                        images: [{ "url" => "https://example.com/avatar.png" }]
+                      }.to_json)
+
+      expect(user.spotify_avatar_url).to eq("https://example.com/avatar.png")
+    end
+
+    it "gibt nil zurück, wenn kein Avatar vorhanden ist" do
+      user = User.new(spotify_user_data: { id: "spotify-id-1", images: [] }.to_json)
+
+      expect(user.spotify_avatar_url).to be_nil
+    end
+  end
 end

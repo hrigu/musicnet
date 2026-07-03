@@ -21,6 +21,13 @@ class Playlist < ApplicationRecord
     select_color short_name
   end
 
+  def self.for_index
+    left_joins(:playlist_tracks)
+      .select("playlists.*", "COUNT(playlist_tracks.id) AS tracks_count")
+      .group("playlists.id")
+      .order(:name)
+  end
+
   # Um die Groß- und Kleinschreibung zu ignorieren, nutzen wir einen regulären Ausdruck mit dem i-Flag.
   def short_name
     name.gsub(/\bfusion\b/i, '_F_') # \b Wortgrenze
@@ -40,6 +47,12 @@ class Playlist < ApplicationRecord
   # Playlists); überall sonst, z.B. auf der Track-Detailseite, wird pro Playlist gezählt.
   def tracks_count
     self[:tracks_count] || tracks.count
+  end
+
+  def playlist_tracks_for_display
+    playlist_tracks.includes(track: [:artists, :album, { playlist_tracks: :playlist }]).tap do |records|
+      Track.preload_track_paths(records.map(&:track))
+    end
   end
 
   private

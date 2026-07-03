@@ -8,59 +8,41 @@ class PlaylistsController < ApplicationController
   end
 
   def index
-    # Track-Anzahl direkt mitzählen statt einer COUNT-Query pro Zeile im Partial
-    @playlists = Playlist.left_joins(:playlist_tracks)
-                         .select("playlists.*", "COUNT(playlist_tracks.id) AS tracks_count")
-                         .group("playlists.id")
-                         .order(:name)
+    @playlists = Playlist.for_index
   end
 
   def show
-    id = params[:id]
-    @playlist = Playlist.find(id)
-    @playlist_tracks = playlist_tracks_with_associations
+    @playlist = Playlist.find(params[:id])
+    @playlist_tracks = @playlist.playlist_tracks_for_display
   end
 
   # Gleicht die Playlist mit Spotify ab und zeigt sie mit den Änderungen an
   def refresh
     @playlist = Playlist.find(params[:id])
     @refresh_info = BuildMusicNetService.new(current_user).refresh_playlist(@playlist)
-    @playlist_tracks = playlist_tracks_with_associations
+    @playlist_tracks = @playlist.playlist_tracks_for_display
     render :show
   rescue BuildMusicNetService::PlaylistNotFoundError, BuildMusicNetService::SyncAlreadyRunningError => e
     redirect_to playlist_path(@playlist), alert: e.message
   end
 
   def edit
-    id = params[:id]
-    @playlist = Playlist.find(id)
+    @playlist = Playlist.find(params[:id])
   end
 
   def update
-    id = params[:id]
-    @playlist = Playlist.find(id)
+    @playlist = Playlist.find(params[:id])
     @playlist.save!
     redirect_to playlists_path
   end
 
   # Lädt alle Tracks der Plylist runter und zeigt dann diese Plylit an
   def download
-    id = params[:id]
-    @playlist = Playlist.find(id)
+    @playlist = Playlist.find(params[:id])
     service = DownloadPlaylistService.new(@playlist)
     service.download
-    redirect_to playlist_path(id)
+    redirect_to playlist_path(@playlist)
   rescue DownloadPlaylistService::DownloadAlreadyRunningError => e
-    redirect_to playlist_path(id), alert: e.message
-  end
-
-  private
-
-  # Lädt alles vor, was das _playlist_track-Partial anzeigt (vermeidet N+1-Queries
-  # und einen Verzeichnis-Scan pro Track für Genre und Soundfile-Badge)
-  def playlist_tracks_with_associations
-    playlist_tracks = @playlist.playlist_tracks.includes(track: [:artists, :album, { playlist_tracks: :playlist }])
-    Track.preload_track_paths(playlist_tracks.map(&:track))
-    playlist_tracks
+    redirect_to playlist_path(@playlist), alert: e.message
   end
 end

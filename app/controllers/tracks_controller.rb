@@ -8,14 +8,12 @@ class TracksController < ApplicationController
   end
 
   def index
-    @tracks = Track.includes(:artists, :playlists, :album).order(:name)
+    @tracks = Track.for_index
     Track.preload_track_paths(@tracks)
   end
 
   def download
-    tracks = Track.all.to_a
-    Track.preload_track_paths(tracks)
-    tracks_without_file = tracks.reject(&:track_path)
+    tracks_without_file = Track.for_download.reject(&:track_path)
 
     service = DownloadTrackService.new(tracks_without_file)
     service.download
@@ -25,17 +23,12 @@ class TracksController < ApplicationController
   end
 
   def show
-    id = params[:id]
-    @track = Track.find(id)
+    @track = Track.find(params[:id])
   end
 
   def stream
-    id = params[:id]
-    track = Track.find(id)
+    track = Track.find(params[:id])
     track_path = track.track_path
-    if track_path
-      send_file track_path
-    end
+    send_file track_path if track_path
   end
-
 end
