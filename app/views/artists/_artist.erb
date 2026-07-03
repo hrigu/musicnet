@@ -6,7 +6,7 @@
   <td>
     <% playlists_by_artist_id.fetch(artist.id, []).each do |playlist| %>
       <%= link_to playlist_path(playlist.id) do %>
-        <span class="badge <%= playlist.color_class %>"><%= playlist.short_name %></span>
+        <span class="badge <%= playlist_color_class(playlist) %>"><%= playlist_short_name(playlist) %></span>
       <% end %>
   <% end %>
   </td>

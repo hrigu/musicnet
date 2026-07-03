@@ -19,7 +19,7 @@
     <% playlist_track.track.playlist_tracks.each do |pt| %>
       <% unless pt.id == playlist_track.id %>
         <%= link_to playlist_path(pt.playlist.id) do %>
-          <span class="badge <%= pt.playlist.color_class %>"><%= pt.playlist.short_name %></span>
+          <span class="badge <%= playlist_color_class(pt.playlist) %>"><%= playlist_short_name(pt.playlist) %></span>
         <% end %>
       <% end %>
     <% end %>
