@@ -49,17 +49,19 @@ class Track < ApplicationRecord
     relation.order(Arel.sql("#{SORT_COLUMNS[column]} #{direction}"))
   end
 
-  # Volltextsuche über Name, Künstler, Album und Genre (Intent 34). LEFT JOIN statt INNER,
-  # damit Tracks ohne Künstler nicht aus dem Ergebnis fallen. distinct gegen Duplikate durch
-  # die Artist-Join-Kardinalität (ein Track mit mehreren Künstlern hätte sonst mehrere Zeilen).
+  # Volltextsuche über Name, Künstler, Album, Genre und Playlist-Name (Intent 34 + Nachtrag).
+  # LEFT JOIN statt INNER, damit Tracks ohne Künstler/Playlist nicht aus dem Ergebnis fallen.
+  # distinct gegen Duplikate durch die Artist-/Playlist-Join-Kardinalität (ein Track mit
+  # mehreren Künstlern oder in mehreren Playlists hätte sonst mehrere Zeilen).
   def self.search(query)
     return all if query.blank?
 
     term = "%#{query.downcase}%"
-    left_joins(:artists, :album)
+    left_joins(:artists, :album, :playlists)
       .where(
         "LOWER(tracks.name) LIKE :term OR LOWER(artists.name) LIKE :term " \
-        "OR LOWER(albums.name) LIKE :term OR LOWER(tracks.genre) LIKE :term",
+        "OR LOWER(albums.name) LIKE :term OR LOWER(tracks.genre) LIKE :term " \
+        "OR LOWER(playlists.name) LIKE :term",
         term: term
       )
       .distinct
