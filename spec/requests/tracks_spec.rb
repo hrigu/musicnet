@@ -5,14 +5,23 @@ require "rails_helper"
 RSpec.describe "Tracks", type: :request do
   fixtures :users
 
+  let(:downloads_dir) { Rails.root.join("downloads/tracks") }
+
   def create_track(name: "Song", spotify_id: "trk1")
     album = Album.create!(name: "Album", spotify_id: "alb-#{spotify_id}")
     Track.create!(name: name, spotify_id: spotify_id, album: album, duration_ms: 200_000)
   end
 
+  def with_download_file(file_name)
+    FileUtils.mkdir_p(downloads_dir)
+    FileUtils.touch(downloads_dir.join(file_name))
+    yield
+  ensure
+    FileUtils.rm_f(downloads_dir.join(file_name))
+  end
+
   before do
     sign_in users(:one)
-    allow_any_instance_of(Track).to receive(:track_path).and_return(nil)
   end
 
   describe "GET /tracks" do
@@ -37,10 +46,10 @@ RSpec.describe "Tracks", type: :request do
 
     it "zeigt den Player für Tracks mit Soundfile" do
       create_track
-      existing_file = Rails.root.join("spec/fixtures/files/.keep").to_s
-      allow_any_instance_of(Track).to receive(:track_path).and_return(existing_file)
 
-      get tracks_path
+      with_download_file("RSpec Artist - Song.m4a") do
+        get tracks_path
+      end
 
       aggregate_failures do
         expect(response.body).to include("<audio")
@@ -98,9 +107,8 @@ RSpec.describe "Tracks", type: :request do
 
   describe "GET / (recently_played_index)" do
     it "liefert Erfolg" do
-      spotify_user = double("RSpotify::User", recently_played: [],
-                                               images: [{ "url" => "https://example.com/avatar.png" }])
-      allow_any_instance_of(User).to receive(:spotify_user).and_return(spotify_user)
+      spotify_user = users(:one).spotify_user
+      allow(spotify_user).to receive(:recently_played).with(limit: 50).and_return([])
 
       get root_path
 
@@ -135,10 +143,10 @@ RSpec.describe "Tracks", type: :request do
   describe "GET /tracks/:id/stream" do
     it "sendet die Datei, wenn track_path vorhanden ist" do
       track = create_track
-      existing_file = Rails.root.join("spec/fixtures/files/.keep").to_s
-      allow_any_instance_of(Track).to receive(:track_path).and_return(existing_file)
 
-      get stream_track_path(track)
+      with_download_file("RSpec Artist - Song.m4a") do
+        get stream_track_path(track)
+      end
 
       expect(response).to have_http_status(:success)
     end

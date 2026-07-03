@@ -7,7 +7,6 @@ RSpec.describe "Artists", type: :request do
 
   before do
     sign_in users(:one)
-    allow_any_instance_of(Track).to receive(:track_path).and_return(nil)
   end
 
   def create_artist_with_track
@@ -70,7 +69,6 @@ RSpec.describe "Artists", type: :request do
                               artists: [artist], duration_ms: 200_000)
         PlaylistTrack.create!(playlist: playlist, track: track, added_at: Time.current)
       end
-      allow_any_instance_of(Track).to receive(:track_path).and_call_original
       allow(Dir).to receive(:children).and_call_original
 
       queries = []

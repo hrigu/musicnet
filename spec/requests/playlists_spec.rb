@@ -5,6 +5,16 @@ require "rails_helper"
 RSpec.describe "Playlists", type: :request do
   fixtures :users, :playlists
 
+  let(:downloads_dir) { Rails.root.join("downloads/tracks") }
+
+  def with_download_file(file_name)
+    FileUtils.mkdir_p(downloads_dir)
+    FileUtils.touch(downloads_dir.join(file_name))
+    yield
+  ensure
+    FileUtils.rm_f(downloads_dir.join(file_name))
+  end
+
   describe "ohne Login" do
     it "redirected zum Sign-in" do
       get playlists_path
@@ -97,10 +107,10 @@ RSpec.describe "Playlists", type: :request do
       playlist = Playlist.create!(spotify_id: "pl-p1", name: "Fusion Preload")
       track = Track.create!(spotify_id: "trk-p1", name: "Hottentot", album: album, duration_ms: 200_000)
       PlaylistTrack.create!(playlist: playlist, track: track, added_at: Time.current)
-      existing_file = Rails.root.join("spec/fixtures/files/.keep").to_s
-      allow_any_instance_of(Track).to receive(:track_path).and_return(existing_file)
 
-      get playlist_path(playlist)
+      with_download_file("RSpec Artist - Hottentot.m4a") do
+        get playlist_path(playlist)
+      end
 
       expect(response.body).to include('preload="none"')
       expect(response.body).to_not include('preload="false"')
