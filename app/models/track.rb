@@ -73,15 +73,16 @@ class Track < ApplicationRecord
     af.try(:tempo)
   end
 
-  # Das Genre, wird aus dem runtergeladenen File gelesen
+  # Das Genre, wird aus dem runtergeladenen File gelesen und als Read-Through-Cache in der
+  # DB abgelegt — es ändert sich praktisch nie, das Datei-Parsen kostet aber ~1.3s pro
+  # Index-Aufruf. Invalidierung bewusst manuell via Track.update_all(genre: nil), siehe
+  # Intent 28. update_column, weil es nur ein Cache ist (keine Callbacks, updated_at bleibt).
   def genre
-    return unless track_path
-    begin
-      WahWah.open(track_path).genre
-    rescue WahWah::WahWahArgumentError, WahWah::WahWahNotImplementedError
-      # Datei existiert, aber WahWah kann sie nicht parsen (z.B. unbekanntes Format).
-      nil
-    end
+    return self[:genre] if self[:genre].present?
+
+    value = read_genre_from_file
+    update_column(:genre, value) if value.present? && persisted?
+    value
   end
 
   # @return den absoluten Pfad zum runtergeladenen Lied. Wird aus dem Namen des Tracks bestimmt.
@@ -106,6 +107,15 @@ class Track < ApplicationRecord
   end
 
   private
+
+  def read_genre_from_file
+    return unless track_path
+
+    WahWah.open(track_path).genre
+  rescue WahWah::WahWahArgumentError, WahWah::WahWahNotImplementedError
+    # Datei existiert, aber WahWah kann sie nicht parsen (z.B. unbekanntes Format).
+    nil
+  end
 
   def file_name_matches?(file_name, suffix)
     file_name.end_with?(suffix) &&

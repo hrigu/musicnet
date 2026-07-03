@@ -138,10 +138,63 @@ RSpec.describe Track, type: :model do
   end
 
   describe "#genre" do
+    def create_persisted_track(name:, genre: nil)
+      album = Album.create!(name: "RSpec Album", spotify_id: "rspec-alb-genre")
+      Track.create!(name: name, spotify_id: "rspec-trk-#{name.parameterize}", album: album,
+                    duration_ms: 200_000, genre: genre)
+    end
+
     it "gibt nil zurück, wenn kein Track-File gefunden wird" do
       track = Track.new(name: "RSpec Unbekannter Song")
 
       expect(track.genre).to be_nil
+    end
+
+    it "speichert das Genre beim ersten Lesen in der DB" do
+      track = create_persisted_track(name: "RSpec Song Cache")
+      file_name = "RSpec Artist - RSpec Song Cache.m4a"
+      tag = instance_double(WahWah::Mp4Tag, genre: "Fusion")
+
+      with_download_file(file_name) do
+        allow(WahWah).to receive(:open).and_return(tag)
+
+        expect(track.genre).to eq("Fusion")
+      end
+
+      expect(track.reload[:genre]).to eq("Fusion")
+    end
+
+    it "öffnet die Datei nicht mehr, wenn das Genre bereits in der DB liegt" do
+      track = create_persisted_track(name: "RSpec Song Cached", genre: "Blues")
+      expect(WahWah).to_not receive(:open)
+
+      expect(track.genre).to eq("Blues")
+    end
+
+    it "speichert nichts, wenn die Datei kein Genre-Tag hat" do
+      track = create_persisted_track(name: "RSpec Song Ohne Tag")
+      file_name = "RSpec Artist - RSpec Song Ohne Tag.m4a"
+      tag = instance_double(WahWah::Mp4Tag, genre: nil)
+
+      with_download_file(file_name) do
+        allow(WahWah).to receive(:open).and_return(tag)
+
+        expect(track.genre).to be_nil
+      end
+
+      expect(track.reload[:genre]).to be_nil
+    end
+
+    it "liefert das Genre auch für nicht persistierte Tracks, ohne zu speichern" do
+      track = Track.new(name: "RSpec Song Neu")
+      file_name = "RSpec Artist - RSpec Song Neu.m4a"
+      tag = instance_double(WahWah::Mp4Tag, genre: "Fusion")
+
+      with_download_file(file_name) do
+        allow(WahWah).to receive(:open).and_return(tag)
+
+        expect(track.genre).to eq("Fusion")
+      end
     end
 
     it "öffnet die gefundene Datei mit WahWah und gibt das Genre zurück" do
