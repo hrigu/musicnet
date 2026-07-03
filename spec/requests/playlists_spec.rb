@@ -131,7 +131,7 @@ RSpec.describe "Playlists", type: :request do
 
       get playlist_path(playlist)
 
-      expect(Dir).to have_received(:children).with(Track.downloads_dir).at_most(:once)
+      expect(Dir).to have_received(:children).with(TrackFileLocator.downloads_dir).at_most(:once)
     end
 
     it "GET /playlists/:id zeigt den Button zum Aktualisieren der Playlist" do

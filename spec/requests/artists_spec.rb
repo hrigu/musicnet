@@ -91,7 +91,7 @@ RSpec.describe "Artists", type: :request do
         expect(queries.count { |sql| sql.include?('FROM "albums"') }).to eq(2)
         # Artist.find + Künstler-Preload der Track-Tabelle + der Alben-Tabelle
         expect(queries.count { |sql| sql.include?('FROM "artists"') }).to eq(3)
-        expect(Dir).to have_received(:children).with(Track.downloads_dir).at_most(:once)
+        expect(Dir).to have_received(:children).with(TrackFileLocator.downloads_dir).at_most(:once)
       end
     end
   end

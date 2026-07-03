@@ -12,6 +12,7 @@ class BuildMusicNetService
   def initialize current_user
     @current_user = current_user
     @info = ServiceInfo.new
+    @spotify_playlists_gateway = SpotifyPlaylistsGateway.new(current_user)
   end
 
   # Erstellt die ganze Modellstruktur aus allen Playlists, die der Owner erstellt hat.
@@ -20,8 +21,7 @@ class BuildMusicNetService
   # über 200 Playlists im Sekunden- statt Minutenbereich.
   def build
     with_sync_lock do
-      own_spotify_user_id = @current_user.spotify_user.id
-      own_playlists = fetch_all_playlists_from_spotify.select { |p| p.owner.id == own_spotify_user_id }
+      own_playlists = @spotify_playlists_gateway.all
 
       own_playlists.each do |spot_playlist|
         local_playlist = Playlist.find_by(spotify_id: spot_playlist.id)
@@ -49,7 +49,7 @@ class BuildMusicNetService
   private
 
   def refresh_playlist_without_lock(playlist)
-    spot_playlist = fetch_playlist_from_spotify(playlist.spotify_id)
+    spot_playlist = @spotify_playlists_gateway.find(playlist.spotify_id)
     raise PlaylistNotFoundError, "Playlist '#{playlist.name}' wurde auf Spotify nicht gefunden" if spot_playlist.nil?
 
     ActiveRecord::Base.transaction(requires_new: true) do
@@ -63,7 +63,7 @@ class BuildMusicNetService
   # werden gelöst, neue angelegt, Name und snapshot_id aktualisiert. Orphan-Cleanup ist
   # Sache des Aufrufers (der volle Sync räumt einmal am Schluss auf, nicht pro Playlist).
   def sync_playlist_with_spotify(playlist, spot_playlist)
-    spot_tracks, added_at_by_track_id = fetch_all_tracks(spot_playlist)
+    spot_tracks, added_at_by_track_id = @spotify_playlists_gateway.tracks_for(spot_playlist)
 
     # Gleiche Atomaritäts-Garantie wie beim vollen Sync (siehe build_playlist)
     ActiveRecord::Base.transaction(requires_new: true) do
@@ -94,7 +94,7 @@ class BuildMusicNetService
   # Für jeden spot_track wird dann ein Track erstellt
   def build_playlist(spot_playlist)
     Rails.logger.info "build_playlist: #{spot_playlist.name}"
-    spot_tracks, added_at_by_track_id = fetch_all_tracks(spot_playlist)
+    spot_tracks, added_at_by_track_id = @spotify_playlists_gateway.tracks_for(spot_playlist)
 
     # Eine Transaktion pro Playlist statt pro Datensatz: schneller (ein Commit) und atomar.
     # requires_new erzwingt einen Savepoint auch innerhalb einer umgebenden Transaktion.
@@ -168,26 +168,6 @@ class BuildMusicNetService
     artists
   end
 
-  # holt alle Playlists des SpotifyUsers mit dem Namen "fusion" oder "blues"
-  def fetch_all_playlists_from_spotify
-    playlists = []
-    offset = 0
-    limit = 50
-    loop do
-      new_playlists = @current_user.spotify_user.playlists(limit: limit, offset: offset) #=>
-      break if new_playlists.empty?
-      playlists << new_playlists
-      offset += limit
-    end
-    playlists.flatten!
-    playlists.select! do |p|
-      name = p.name.downcase
-      name.include?("fusion") || name.include?("blues")
-    end
-    Rails.logger.info("Anzahl Playlists: #{playlists.length}" )
-    playlists
-  end
-
   # Playlists löschen, die auf Spotify nicht mehr existieren oder entfolgt wurden
   def delete_vanished_playlists(spotify_ids)
     playlists_to_delete = Playlist.where.not(spotify_id: spotify_ids)
@@ -216,38 +196,6 @@ class BuildMusicNetService
     albums_to_delete = Album.select("albums.id", "albums.name").left_joins(:tracks).where(tracks: { id: nil })
     @info.add albums: { deleted: albums_to_delete.map(&:name)} if albums_to_delete.present?
     albums_to_delete.destroy_all
-  end
-
-  # Sucht die Spotify-Playlist mit der spotify_id in den eigenen Playlists des Users
-  def fetch_playlist_from_spotify(spotify_id)
-    offset = 0
-    limit = 50
-    loop do
-      page = @current_user.spotify_user.playlists(limit: limit, offset: offset)
-      found = page.find { |p| p.id == spotify_id }
-      return found if found
-      return nil if page.size < limit
-
-      offset += limit
-    end
-  end
-
-  # Holt alle Tracks einer Spotify-Playlist über die 100er-Paginierung der API hinweg.
-  # rspotify überschreibt tracks_added_at bei jedem Seitenabruf, deshalb wird pro Seite gemerged.
-  def fetch_all_tracks(spot_playlist)
-    tracks = []
-    added_at_by_track_id = {}
-    offset = 0
-    limit = 100
-    loop do
-      page = spot_playlist.tracks(limit: limit, offset: offset)
-      tracks.concat(page)
-      added_at_by_track_id.merge!(spot_playlist.tracks_added_at || {})
-      break if page.size < limit
-
-      offset += limit
-    end
-    [tracks, added_at_by_track_id]
   end
 
   def try_fetch(object, attribute)
@@ -309,4 +257,3 @@ class BuildMusicNetService
 
 
 end
-
