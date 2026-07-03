@@ -64,6 +64,7 @@ class BuildMusicNetService
   # Sache des Aufrufers (der volle Sync räumt einmal am Schluss auf, nicht pro Playlist).
   def sync_playlist_with_spotify(playlist, spot_playlist)
     spot_tracks, added_at_by_track_id = @spotify_playlists_gateway.tracks_for(spot_playlist)
+    prefetched = prefetch_details(spot_tracks)
 
     # Gleiche Atomaritäts-Garantie wie beim vollen Sync (siehe build_playlist)
     ActiveRecord::Base.transaction(requires_new: true) do
@@ -71,7 +72,9 @@ class BuildMusicNetService
 
       existing_spotify_ids = playlist.tracks.pluck(:spotify_id)
       new_spot_tracks = spot_tracks.reject { |t| existing_spotify_ids.include?(t.id) }
-      new_spot_tracks.each { |t| build_track(playlist, t, added_at: added_at_by_track_id[t.id]) }
+      new_spot_tracks.each do |t|
+        build_track(playlist, t, added_at: added_at_by_track_id[t.id], prefetched: prefetched)
+      end
 
       playlist.update!(name: spot_playlist.name, snapshot_id: spot_playlist.snapshot_id)
       RefreshInfo.new(new_spot_tracks.map(&:name), removed_names)
@@ -95,6 +98,7 @@ class BuildMusicNetService
   def build_playlist(spot_playlist)
     Rails.logger.info "build_playlist: #{spot_playlist.name}"
     spot_tracks, added_at_by_track_id = @spotify_playlists_gateway.tracks_for(spot_playlist)
+    prefetched = prefetch_details(spot_tracks)
 
     # Eine Transaktion pro Playlist statt pro Datensatz: schneller (ein Commit) und atomar.
     # requires_new erzwingt einen Savepoint auch innerhalb einer umgebenden Transaktion.
@@ -107,9 +111,38 @@ class BuildMusicNetService
       end
 
       spot_tracks.each do |spot_track|
-        build_track(playlist, spot_track, added_at: added_at_by_track_id[spot_track.id])
+        build_track(playlist, spot_track, added_at: added_at_by_track_id[spot_track.id], prefetched: prefetched)
       end
     end
+  end
+
+  # Audio-Features, Alben und Artists der lokal noch nicht vorhandenen Tracks gebündelt
+  # vorladen: wenige Batch-Requests statt einem Request pro Track/Album/Artist - nur so
+  # bleibt der Erstimport im Minuten- statt Stundenbereich (Intent 33). Nur neue Datensätze
+  # brauchen die Details, weil find_or_create_by! bestehende Zeilen nicht aktualisiert.
+  def prefetch_details(spot_tracks)
+    new_spot_tracks = locally_missing_tracks(spot_tracks)
+
+    Prefetched.new(
+      @spotify_playlists_gateway.audio_features_by_track_id(new_spot_tracks.map(&:id)),
+      @spotify_playlists_gateway.albums_by_id(missing_album_ids(new_spot_tracks)),
+      @spotify_playlists_gateway.artists_by_id(missing_artist_ids(new_spot_tracks))
+    )
+  end
+
+  def locally_missing_tracks(spot_tracks)
+    existing_ids = Track.where(spotify_id: spot_tracks.map(&:id)).pluck(:spotify_id)
+    spot_tracks.uniq(&:id).reject { |t| existing_ids.include?(t.id) }
+  end
+
+  def missing_album_ids(new_spot_tracks)
+    ids = new_spot_tracks.map { |t| t.album.id }.uniq
+    ids - Album.where(spotify_id: ids).pluck(:spotify_id)
+  end
+
+  def missing_artist_ids(new_spot_tracks)
+    ids = new_spot_tracks.flat_map { |t| t.artists.map(&:id) }.uniq
+    ids - Artist.where(spotify_id: ids).pluck(:spotify_id)
   end
 
   # Für jeden Spot_track in der spot_playlist wird, falls noch nicht vorhanden:
@@ -117,14 +150,14 @@ class BuildMusicNetService
   # * Ein Album
   # * Die Artisten
   # erstellt
-  def build_track(playlist, spot_track, added_at:)
+  def build_track(playlist, spot_track, added_at:, prefetched:)
     Rails.logger.debug " build_track: #{spot_track.name}"
 
     track = Track.find_or_create_by!(spotify_id: spot_track.id) do |t|
-      album = build_album(spot_track.album)
-      artists = build_artists spot_track.artists
+      album = build_album(spot_track.album, prefetched.albums[spot_track.album.id])
+      artists = build_artists(spot_track.artists, prefetched.artists)
       popularity = try_fetch(spot_track, :popularity)
-      audio_features = try_fetch(spot_track, :audio_features)
+      audio_features = prefetched.audio_features[spot_track.id]
       @info.add_new_created_track(spot_track.name)
       t.name = spot_track.name
       t.url = spot_track.external_urls["spotify"]
@@ -133,7 +166,6 @@ class BuildMusicNetService
       t.audio_features = audio_features.to_json
       t.album = album
       t.artists = artists
-      t.duration_ms = spot_track.duration_ms
     end
 
     PlaylistTrack.find_or_create_by!(playlist: playlist, track: track) do |pt|
@@ -141,31 +173,30 @@ class BuildMusicNetService
     end
   end
 
-  def build_album spot_album
+  # full_album stammt aus dem Batch-Lookup: Das Album im Playlist-Payload ist nur ein
+  # simplified Objekt ohne popularity/release_date - jeder Zugriff darauf würde via
+  # RSpotifys method_missing einen einzelnen complete!-Request auslösen.
+  def build_album(spot_album, full_album)
     Rails.logger.debug "  build_album: #{spot_album.name}"
     Album.find_or_create_by!(spotify_id: spot_album.id) do |a|
-      popularity = try_fetch(spot_album, :popularity) # spot_album.popularity
-      release_date = try_fetch(spot_album, :release_date) # spot_album.release_date
       @info.add_new_created_album(spot_album.name)
       a.name = spot_album.name
-      a.release_date = release_date
-      a.popularity = popularity
+      a.release_date = full_album&.release_date
+      a.popularity = full_album&.popularity
       a.url = spot_album.external_urls["spotify"]
     end
   end
 
-  def build_artists spot_artists
-    artists = []
-    spot_artists.each do |spot_artist|
+  # full_artists_by_id stammt aus dem Batch-Lookup - gleiche Begründung wie bei build_album
+  def build_artists(spot_artists, full_artists_by_id)
+    spot_artists.map do |spot_artist|
       Rails.logger.debug "   build_artists: #{spot_artist.name}"
-      artist = Artist.find_or_create_by!(spotify_id: spot_artist.id) do |a|
+      Artist.find_or_create_by!(spotify_id: spot_artist.id) do |a|
         @info.add_new_created_artist(spot_artist.name)
         a.name = spot_artist.name
-        a.popularity = try_fetch(spot_artist, :popularity)
+        a.popularity = full_artists_by_id[spot_artist.id]&.popularity
       end
-      artists << artist
     end
-    artists
   end
 
   # Playlists löschen, die auf Spotify nicht mehr existieren oder entfolgt wurden
@@ -211,6 +242,9 @@ class BuildMusicNetService
 
   # Ergebnis eines Einzel-Playlist-Refreshs: Namen der hinzugekommenen und entfernten Tracks
   RefreshInfo = Struct.new(:added, :removed)
+
+  # Gebündelt vorgeladene Spotify-Details (je ein Hash spotify_id → Objekt), siehe prefetch_details
+  Prefetched = Struct.new(:audio_features, :albums, :artists)
 
   class ServiceInfo
     attr_reader :hash

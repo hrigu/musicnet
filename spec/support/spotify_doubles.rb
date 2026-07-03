@@ -48,4 +48,14 @@ end
 
 RSpec.configure do |config|
   config.include SpotifyDoubles
+
+  # Default-Stubs für die Batch-Lookups des Gateways: Der Sync lädt Audio-Features,
+  # Alben und Artists gebündelt über diese Klassenmethoden - ohne Stub würden Specs,
+  # die neue Tracks anlegen, echte HTTP-Requests auslösen. Einzelne Specs überschreiben
+  # die Stubs bei Bedarf mit konkreten Rückgabewerten.
+  config.before do
+    allow(RSpotify::AudioFeatures).to receive(:find).and_return([])
+    allow(RSpotify::Album).to receive(:find).and_return([])
+    allow(RSpotify::Artist).to receive(:find).and_return([])
+  end
 end

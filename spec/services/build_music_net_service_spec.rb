@@ -166,6 +166,86 @@ RSpec.describe BuildMusicNetService do
       end
     end
 
+    context "Batch-Lookups beim Anlegen neuer Tracks" do
+      # Wie in der echten API: Playlist-Payloads enthalten nur simplified Alben/Artists
+      # ohne popularity/release_date - diese Details dürfen nur aus den Batch-Lookups kommen.
+      let(:album) do
+        double("RSpotify::Album (simplified)", id: "alb1", name: "A Go Go",
+                                               external_urls: { "spotify" => "https://open.spotify.com/album/alb1" })
+      end
+      let(:artist) { double("RSpotify::Artist (simplified)", id: "art1", name: "John Scofield") }
+
+      before do
+        stub_spotify_playlists([playlist])
+        allow(RSpotify::AudioFeatures).to receive(:find).with(["trk1"])
+          .and_return([double("RSpotify::AudioFeatures", id: "trk1", to_json: '{"energy":0.8,"tempo":120.0}')])
+        allow(RSpotify::Album).to receive(:find).with(["alb1"])
+          .and_return([double("RSpotify::Album", id: "alb1", popularity: 44, release_date: "2019-05-01")])
+        allow(RSpotify::Artist).to receive(:find).with(["art1"])
+          .and_return([double("RSpotify::Artist", id: "art1", popularity: 61)])
+      end
+
+      it "speichert Audio-Features, Album- und Artist-Details aus den Batch-Lookups" do
+        BuildMusicNetService.new(user).build
+
+        track_record = Track.find_by(spotify_id: "trk1")
+        aggregate_failures do
+          expect(track_record.audio_features).to eq('{"energy":0.8,"tempo":120.0}')
+          expect(track_record.album.popularity).to eq(44)
+          expect(track_record.album.release_date).to eq(Date.new(2019, 5, 1))
+          expect(track_record.artists.first.popularity).to eq(61)
+        end
+      end
+
+      it "bündelt die Audio-Features aller neuen Tracks einer Playlist in einem Aufruf" do
+        second_track = spotify_track(id: "trk2", name: "Green Tea", album: album, artists: [artist])
+        two_track_playlist = spotify_playlist(id: "pl1", name: "Fusion Favorites", owner_id: spotify_user_id,
+                                              tracks: [track, second_track])
+        stub_spotify_playlists([two_track_playlist])
+        allow(RSpotify::AudioFeatures).to receive(:find).with(%w[trk1 trk2]).and_return([])
+
+        BuildMusicNetService.new(user).build
+
+        expect(RSpotify::AudioFeatures).to have_received(:find).once.with(%w[trk1 trk2])
+      end
+
+      it "fragt Audio-Features nur für lokal neue Tracks an" do
+        local_album = Album.create!(spotify_id: "alb1", name: "A Go Go")
+        Track.create!(spotify_id: "trk1", name: "Hottentot", album: local_album)
+
+        BuildMusicNetService.new(user).build
+
+        expect(RSpotify::AudioFeatures).to_not have_received(:find)
+      end
+
+      it "fragt lokal bereits vorhandene Alben und Artists nicht erneut an" do
+        Album.create!(spotify_id: "alb1", name: "A Go Go")
+        Artist.create!(spotify_id: "art1", name: "John Scofield")
+
+        BuildMusicNetService.new(user).build
+
+        aggregate_failures do
+          expect(RSpotify::Album).to_not have_received(:find)
+          expect(RSpotify::Artist).to_not have_received(:find)
+        end
+      end
+
+      it "läuft bei fehlgeschlagenen Batch-Aufrufen durch und lässt die Detail-Felder leer" do
+        allow(RSpotify::AudioFeatures).to receive(:find).and_raise(RestClient::Forbidden)
+        allow(RSpotify::Album).to receive(:find).and_raise(RestClient::Forbidden)
+        allow(RSpotify::Artist).to receive(:find).and_raise(RestClient::Forbidden)
+
+        BuildMusicNetService.new(user).build
+
+        track_record = Track.find_by(spotify_id: "trk1")
+        aggregate_failures do
+          expect(track_record).to be_present
+          expect(track_record.album.popularity).to be_nil
+          expect(track_record.artists.first.popularity).to be_nil
+        end
+      end
+    end
+
     context "ServiceInfo" do
       it "sammelt die Namen neu erstellter Datensätze" do
         stub_spotify_playlists([playlist])
