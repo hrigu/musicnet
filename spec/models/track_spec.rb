@@ -83,6 +83,20 @@ RSpec.describe Track, type: :model do
     end
   end
 
+  describe ".for_show" do
+    it "liefert streng geladene Tracks für die Show" do
+      album = Album.create!(name: "Album", spotify_id: "alb-show-strict")
+      artist = Artist.create!(name: "Artist", spotify_id: "art-show-strict")
+      track = Track.create!(name: "Track Show Strict", spotify_id: "trk-show-strict",
+                            album: album, artists: [artist], duration_ms: 200_000)
+
+      found = described_class.for_show.find_by!(spotify_id: track.spotify_id)
+
+      expect(found.strict_loading?).to be(true)
+      expect(found).to eq(track)
+    end
+  end
+
   describe ".for_download" do
     it "liefert streng geladene Tracks für den Download" do
       album = Album.create!(name: "Album", spotify_id: "alb-download-strict")

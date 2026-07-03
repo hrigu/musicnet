@@ -13,7 +13,7 @@ class Playlist < ApplicationRecord
   end
 
   def playlist_tracks_for_display
-    playlist_tracks.includes(track: [:artists, :album, { playlist_tracks: :playlist }]).strict_loading.tap do |records|
+    playlist_tracks.preload(track: [:artists, :album, { playlist_tracks: :playlist }]).strict_loading.tap do |records|
       Track.preload_track_paths(records.map(&:track))
     end
   end

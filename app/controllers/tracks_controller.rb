@@ -23,7 +23,7 @@ class TracksController < ApplicationController
   end
 
   def show
-    @track = Track.find(params[:id])
+    @track = Track.for_show.find(params[:id])
   end
 
   def stream

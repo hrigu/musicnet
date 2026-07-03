@@ -11,11 +11,15 @@ class Track < ApplicationRecord
   has_many :playlists, through: :playlist_tracks
 
   def self.for_index
-    includes(:artists, { playlist_tracks: :playlist }, :album).order(:name).strict_loading
+    preload(:artists, { playlist_tracks: :playlist }, :album).order(:name).strict_loading
+  end
+
+  def self.for_show
+    preload({ artists: :tracks }, :playlists, { album: [:artists] }).strict_loading
   end
 
   def self.for_download
-    tracks = includes(:playlists).strict_loading.to_a
+    tracks = preload(:playlists).strict_loading.to_a
     preload_track_paths(tracks)
     tracks
   end

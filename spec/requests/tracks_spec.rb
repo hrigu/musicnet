@@ -93,6 +93,30 @@ RSpec.describe "Tracks", type: :request do
       expect(response).to have_http_status(:success)
     end
 
+    it "lädt Album, Artists und Playlists für die Show ohne Lazy Loading" do
+      album = Album.create!(name: "Album Show", spotify_id: "alb-show-1")
+      artist = Artist.create!(name: "Artist Show", spotify_id: "art-show-1")
+      playlist = Playlist.create!(spotify_id: "pl-show-1", name: "Fusion Show")
+      track = Track.create!(name: "Track Show", spotify_id: "trk-show-1", album: album,
+                            artists: [artist], duration_ms: 200_000)
+      PlaylistTrack.create!(playlist: playlist, track: track, added_at: Time.current)
+
+      queries = []
+      callback = lambda do |_name, _start, _finish, _id, payload|
+        queries << payload[:sql] unless payload[:name] == "SCHEMA"
+      end
+      ActiveSupport::Notifications.subscribed(callback, "sql.active_record") do
+        get track_path(track)
+      end
+
+      expect(response).to have_http_status(:success)
+      aggregate_failures do
+        expect(queries.count { |sql| sql.include?('FROM "albums"') }).to eq(1)
+        expect(queries.count { |sql| sql.include?('FROM "artists"') }).to eq(2)
+        expect(queries.count { |sql| sql.include?('FROM "playlists"') }).to eq(1)
+      end
+    end
+
     it "rendert die Playlist-Zeile inkl. Track-Anzahl, wenn der Track in einer Playlist ist" do
       track = create_track
       playlist = Playlist.create!(spotify_id: "pl-t1", name: "Fusion Badge")
