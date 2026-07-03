@@ -83,7 +83,7 @@ users (separate: local login identity + holds serialized RSpotify::User via User
 Entry point: `PlaylistsController#fetch_all` → `BuildMusicNetService.new(current_user).build`.
 
 1. Fetches all of the current user's own Spotify playlists (paginated), filters to those whose name contains
-   "fusion" or "blues" (`fetch_all_playlists_from_spotify`).
+   "fusion" or "blues" (`SpotifyPlaylistsGateway#all`).
 2. Per playlist, compares the local `snapshot_id` with Spotify's (Spotify changes it on every playlist
    modification; delivered with the playlist list, no extra API call):
    - not present locally → created with all its tracks (`build_playlist`; `find_or_create_by!` for
@@ -95,6 +95,16 @@ Entry point: `PlaylistsController#fetch_all` → `BuildMusicNetService.new(curre
 3. Local playlists whose `spotify_id` is no longer in the Spotify list are destroyed
    (`delete_vanished_playlists`; `PlaylistTrack` rows go with them via `dependent: :destroy`), then any
    `Track`/`Artist`/`Album` left with zero associations is pruned (orphan cleanup).
+
+Before creating records, both `build_playlist` and `sync_playlist_with_spotify` call `prefetch_details` (Intent
+33), which fetches Spotify details for locally-new tracks in batches instead of one request per record:
+audio features, full albums, and full artists via `SpotifyPlaylistsGateway#audio_features_by_track_id` /
+`#albums_by_id` / `#artists_by_id` (100/20/50 ids per request respectively). Only tracks/albums/artists not yet
+in the local DB are looked up. This is what keeps a from-empty-DB first import in the minutes range instead of
+30–60+ minutes for a few thousand tracks (before: one serial request per new track/album/artist). A failed
+batch call (e.g. Spotify's audio-features endpoint, which returns 403 for apps without access as of late 2024)
+is logged and its slice is simply missing from the result — the affected fields stay `nil` and the import
+continues, same soft-failure semantics as the old per-record `try_fetch`.
 4. Returns a `ServiceInfo` object (created/deleted names per type) that the view renders as a sync summary.
 
 `find_or_create_by!` still means fields of already-existing rows are not updated when records are (re)created;
