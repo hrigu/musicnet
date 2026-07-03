@@ -25,11 +25,14 @@
       </ul>
       <div class="d-flex">
         <% if user_signed_in? %>
-          <img src="<%= current_user.spotify_user.images.first["url"] %>" alt="avatar" style="width:48px;height:48px;">
-            <%= link_to('Logout', destroy_user_session_path, data: { turbo_method: :delete }, class: "nav-link") %>
+          <% if current_user.spotify_avatar_url.present? %>
+            <img src="<%= current_user.spotify_avatar_url %>" alt="avatar" style="width:48px;height:48px;">
+          <% end %>
+          <%= link_to('Logout', destroy_user_session_path, data: { turbo_method: :delete }, class: "nav-link") %>
         <% else %>
-            <%= link_to('Login', new_user_session_path, class: "nav-link") %>
-        <% end %>      </div>
+          <%= link_to('Login', new_user_session_path, class: "nav-link") %>
+        <% end %>
+      </div>
     </div>
   </div>
 </nav>

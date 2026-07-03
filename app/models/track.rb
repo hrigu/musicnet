@@ -15,6 +15,16 @@ class Track < ApplicationRecord
   # Cryin\' The Blues") — das Matching muss das replizieren.
   FILE_NAME_REPLACEMENTS = { ':' => '-', '?' => '', '/' => '', '"' => '\'', '\\' => '' }.freeze
 
+  def self.for_index
+    includes(:artists, :playlists, :album).order(:name)
+  end
+
+  def self.for_download
+    tracks = all.to_a
+    preload_track_paths(tracks)
+    tracks
+  end
+
   # Löst die Pfade aller Tracks mit einem einzigen Verzeichnis-Scan auf. Ohne Preload liest
   # track_path das Verzeichnis pro Track — bei tausenden Tracks dauert die Index-Seite
   # sonst zwanzig Sekunden statt zwei.

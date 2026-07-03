@@ -22,4 +22,12 @@ class User < ApplicationRecord
   def spotify_user
     @spotify_user ||= RSpotify::User.new(JSON.parse(spotify_user_data))
   end
+
+  def spotify_avatar_url
+    return if spotify_user_data.blank?
+
+    JSON.parse(spotify_user_data).fetch("images", []).first&.fetch("url", nil)
+  rescue JSON::ParserError, TypeError
+    nil
+  end
 end
