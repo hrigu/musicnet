@@ -23,6 +23,32 @@ RSpec.describe "Tracks", type: :request do
 
       expect(response).to have_http_status(:success)
     end
+
+    it "zeigt die Playlist-Badges ohne eine Query pro Track" do
+      playlist = Playlist.create!(spotify_id: "pl-q1", name: "Fusion Badge")
+      other_playlist = Playlist.create!(spotify_id: "pl-q2", name: "Blues Badge")
+      3.times do |i|
+        track = create_track(name: "Track #{i}", spotify_id: "trk-q#{i}")
+        PlaylistTrack.create!(playlist: playlist, track: track, added_at: Time.current)
+        PlaylistTrack.create!(playlist: other_playlist, track: track, added_at: Time.current)
+      end
+
+      queries = []
+      callback = lambda do |_name, _start, _finish, _id, payload|
+        queries << payload[:sql] unless payload[:name] == "SCHEMA"
+      end
+      ActiveSupport::Notifications.subscribed(callback, "sql.active_record") do
+        get tracks_path
+      end
+
+      expect(response).to have_http_status(:success)
+      aggregate_failures do
+        expect(queries.count { |sql| sql.include?('FROM "playlist_tracks"') }).to eq(1)
+        expect(queries.count { |sql| sql.include?('FROM "playlists"') }).to eq(1)
+        expect(response.body).to include("F_Badge")
+        expect(response.body).to include("B_Badge")
+      end
+    end
   end
 
   describe "GET /tracks/:id" do
