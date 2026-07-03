@@ -60,10 +60,18 @@ playlists <-->> playlist_tracks <<--> tracks <<---> albums
 users (separate: local login identity + holds serialized RSpotify::User via User#spotify_user)
 ```
 
-- `Track#track_path` / `#genre`: there is no `file_path` column. The path to a downloaded audio file is derived
-  at runtime by globbing `downloads/tracks/*-?<sanitized-track-name>.m4a` — the download tool (`spotdl`) names
-  files that way. If a track hasn't been downloaded, or the sanitization doesn't match spotdl's actual filename,
-  this returns nil silently (logged, not raised).
+- `Track#track_path`: there is no `file_path` column. The path to a downloaded audio file is derived at
+  runtime by matching the sanitized track name against the files in `downloads/tracks/` (pattern
+  `*-?<sanitized-track-name>.m4a` — the download tool `spotdl` names files that way; matching is
+  case-insensitive, skips dotfiles, and treats backslashes in track names as escapes, replicating the
+  `Dir.glob` semantics it replaced). If a track hasn't been downloaded, or the sanitization doesn't match
+  spotdl's actual filename, this returns nil silently (logged, not raised). The result (including nil) is
+  memoized per instance. **Any view/loop that touches `track_path` or `genre` for many tracks must call
+  `Track.preload_track_paths(tracks)` first** — one directory scan for the whole batch instead of one per
+  track; `tracks#index/#download`, `playlists#show/#refresh` and `artists#show` do this.
+- `Track#genre`: read-through cache. Reads the `genre` DB column first; if empty, parses the downloaded
+  file's metadata (WahWah) and persists a present value via `update_column`. Invalidation is manual:
+  `Track.update_all(genre: nil)` in the console after re-downloads/re-tagging (see Intent 28).
 - `Track#af`/`#energy`/`#tempo`: `audio_features` is a JSON blob column from Spotify's Audio Features API,
   parsed lazily into an `OpenStruct`.
 - `User#spotify_user`: reconstructs an `RSpotify::User` from the `spotify_user_data` JSON column captured at
@@ -74,18 +82,24 @@ users (separate: local login identity + holds serialized RSpotify::User via User
 
 Entry point: `PlaylistsController#fetch_all` → `BuildMusicNetService.new(current_user).build`.
 
-1. Deletes all `PlaylistTrack` join rows (but not Track/Album/Artist — those are pruned later by orphan check).
-2. Fetches all of the current user's own Spotify playlists (paginated), filters to those whose name contains
+1. Fetches all of the current user's own Spotify playlists (paginated), filters to those whose name contains
    "fusion" or "blues" (`fetch_all_playlists_from_spotify`).
-3. For each matching playlist: `find_or_create_by!` the local `Playlist`, then for each Spotify track therein,
-   `find_or_create_by!` `Track`/`Album`/`Artist`(s) and a `PlaylistTrack` join row.
-4. Afterward, deletes any `Playlist`/`Track`/`Artist`/`Album` left with zero associated records (orphan cleanup)
-   — this is what actually removes playlists/tracks that were unfollowed/removed on Spotify since last sync.
-5. Returns a `ServiceInfo` object (created/deleted names per type) that the view renders as a sync summary.
+2. Per playlist, compares the local `snapshot_id` with Spotify's (Spotify changes it on every playlist
+   modification; delivered with the playlist list, no extra API call):
+   - not present locally → created with all its tracks (`build_playlist`; `find_or_create_by!` for
+     `Track`/`Album`/`Artist`(s) plus a `PlaylistTrack` join row).
+   - `snapshot_id` unchanged → **skipped entirely** (no tracks fetch, no DB writes) — this is what keeps a
+     typical sync at seconds instead of minutes (Intent 31; before: 95s for 234 playlists).
+   - `snapshot_id` changed → reconciled via `sync_playlist_with_spotify` (shared with `refresh_playlist`):
+     vanished tracks unlinked, new ones created, name + `snapshot_id` updated.
+3. Local playlists whose `spotify_id` is no longer in the Spotify list are destroyed
+   (`delete_vanished_playlists`; `PlaylistTrack` rows go with them via `dependent: :destroy`), then any
+   `Track`/`Artist`/`Album` left with zero associations is pruned (orphan cleanup).
+4. Returns a `ServiceInfo` object (created/deleted names per type) that the view renders as a sync summary.
 
-`find_or_create_by!` is used throughout so re-running `build` is idempotent for existing records but does
-**not** update fields on already-existing rows (e.g. renamed Spotify tracks/playlists won't be reflected locally
-until the old row is deleted and recreated).
+`find_or_create_by!` still means fields of already-existing rows are not updated when records are (re)created;
+renamed playlists **are** updated (step 2, changed snapshot), renamed tracks are not — a renamed track only
+corrects itself once the old row is orphaned and recreated.
 
 ### Download flow
 
