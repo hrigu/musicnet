@@ -1,5 +1,11 @@
 # Diary
 ## 2026-07-04
+* Rate-Limit-Fix zuerst: `release_date`/`popularity` bei Alben und Artists waren durchgehend
+  leer, weil bei einem vollen Sync über viele Playlists praktisch jeder Alben-/Artists-Batch
+  mit 429 (Rate Limit) fehlschlug (Requests liefen ohne Pause aufeinanderfolge). Fix:
+  `SpotifyPlaylistsGateway#fetch_in_slices` retryt 429 jetzt mit Backoff (`Retry-After`-Header
+  falls vorhanden, sonst exponentiell, max. 3 Versuche); dazu ein Backfill-Rake-Task
+  (`backfill_album_and_artist_details`) für die schon betroffenen Alben/Artists.
 * Spotifys `audio-features`-Endpoint (Tempo/Energy) ist für diese App dauerhaft gesperrt (seit
   27.11.2024, Extended Quota Mode seit Mai 2025 nur noch für Businesses mit ≥250'000 MAU
   erreichbar) - kein Workaround möglich.
@@ -35,6 +41,47 @@
   Tempo/Energy - u.a. `tonal.key_*` (Tonart/Dur-Moll, interessant fürs harmonische Mixen),
   `highlevel.danceability`/`mood_*`/`genre_rosamerica` (ML-Klassifikatoren). Aktuell nicht
   genutzt, evtl. später ein eigener Intent.
+
+## 2026-07-03
+* Grosser Performance-/Aufräum-Tag rund um die Index-Seiten: Tracks-Index und Artists-Index
+  liefen wegen fehlender Preloads und Verzeichnis-Scans pro Zeile lahm (Intents 26-30) -
+  Genre wird jetzt als Read-Through-Cache in der DB gehalten, Verzeichnis-Scans für
+  Track-Pfade werden pro Request gebündelt, fehlende Soundfiles zeigen ein Badge statt
+  stummem Player, Artists-Seiten laden gebündelt.
+* Sync überspringt unveränderte Playlists komplett anhand der `snapshot_id` (Intent 31) -
+  grosser Speedup für den normalen Sync.
+* Batch-API-Aufrufe beim Erstimport eingeführt (Intent 33) - Audio-Features/Alben/Artists
+  gebündelt statt einzeln pro Track angefragt (Grundlage für den Fix vom 04.07.).
+* Grosses Feature: Tracks-Index mit Paginierung (Pagy), Sortierung (inkl. Energie/Tempo aus
+  dem audio_features-JSON) und Volltextsuche (inkl. Playlist-Namen), dazu ein
+  Tabellen-Redesign (Intent 34).
+* Diverses Refactoring: `DownloadPlaylistCommandBuilder`, `SpotifyPlaylistsGateway` und
+  `TrackFileLocator` als eigene Services extrahiert.
+
+## 2026-07-02
+* Feature: einzelne Playlist manuell aktualisieren (Intent 19) - `refresh_playlist` in
+  `BuildMusicNetService`, Refresh-Button mit Diff-Panel auf der Playlist-Seite.
+* Bugfix: der volle Sync holte pro Playlist nur die ersten 100 Tracks statt zu paginieren
+  (Intent 20).
+* Reihe von Performance-Enhancements: spotdl-Downloads laufen playlist-weise statt pro Track
+  (Intent 21), N+1-Queries auf der Playlist-Seite beseitigt (Intent 22), Sync-Transaktionen/
+  Parallelitäts-Schutz/Log-Pegel überarbeitet (Intent 23), Track-Anzahl im Playlist-Index
+  gebündelt geladen (Intent 24).
+* Paralleler-Download-Schutz für Intent 25 geplant.
+
+## 2026-07-01
+* Migrations-Tag: Ruby- und Rails-Version sowie diverse Gems schrittweise angehoben (Intents
+  12-18, Phase A-E: Ruby/Dev-Tooling, Devise 4→5, omniauth-spotify, Rails 7.1→8.1.3,
+  verbleibende Gems).
+* Altlasten aufgeräumt: ungenutztes Api::V1-Namespace samt `ApiToken` komplett entfernt.
+* Testsuite massiv ausgebaut: Model-, Service- und Controller-Specs für so ziemlich die
+  ganze App neu geschrieben (Album/Artist/Track/PlaylistTrack, BuildMusicNetService,
+  Download-Services, Playlist/User-Model, alle Controller).
+* Ein paar Bugfixes nebenbei: `Dir.chdir`-Thread-Safety-Problem beseitigt, Logout-Link auf
+  `data-turbo-method` umgestellt, `spotify_user_data` wird jetzt bei jedem Login aktualisiert
+  statt nur beim Erstellen.
+* CLAUDE.md und CODE_GUIDELINES neu angelegt, bestehende Features rückwirkend als Intents
+  dokumentiert (IDD-Workflow für den Rest des Projekts etabliert).
 
 ## 2025-12-04
 * die Callback Adresse auf Spotify (und darum auch die Adresse, auf dem diese App läuft, geändert):
