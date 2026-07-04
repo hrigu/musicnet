@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_04_073717) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_04_191007) do
   create_table "albums", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name"
@@ -57,6 +57,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_04_073717) do
     t.string "url"
   end
 
+  create_table "queue_entries", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "track_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["track_id"], name: "index_queue_entries_on_track_id"
+  end
+
   create_table "tracks", force: :cascade do |t|
     t.integer "album_id", null: false
     t.json "audio_features"
@@ -88,5 +95,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_04_073717) do
 
   add_foreign_key "playlist_tracks", "playlists", on_delete: :cascade
   add_foreign_key "playlist_tracks", "tracks", on_delete: :cascade
+  add_foreign_key "queue_entries", "tracks"
   add_foreign_key "tracks", "albums", on_delete: :cascade
 end

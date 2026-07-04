@@ -1,0 +1,12 @@
+<% entries = QueueEntry.order(created_at: :desc) %>
+<%# Leere Queue rendert bewusst gar nichts (kein Platzhaltertext, kein Formular) - man muss eine
+    leere Queue weder sehen noch sichern koennen. %>
+<% if entries.any? %>
+  <div class="pt-2">
+    <%= render entries %>
+    <%= form_with url: save_as_playlist_queue_entries_path, method: :post, class: "d-flex gap-1 mt-1" do |f| %>
+      <%= f.text_field :name, placeholder: "Playlist-Name", class: "form-control form-control-sm", required: true %>
+      <%= f.submit "Als Playlist sichern", class: "btn btn-sm btn-outline-secondary text-nowrap" %>
+    <% end %>
+  </div>
+<% end %>

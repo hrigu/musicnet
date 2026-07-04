@@ -1,0 +1,9 @@
+<div id="<%= dom_id(queue_entry) %>" class="queue-entry d-flex align-items-center gap-2">
+  <div class="flex-grow-1 text-truncate">
+    <div class="text-truncate"><%= queue_entry.track.name %></div>
+    <div class="text-truncate text-muted small">
+      <%= [artist_names_for(queue_entry.track), playlist_names_for(queue_entry.track)].reject(&:blank?).join(" — ") %>
+    </div>
+  </div>
+  <%= button_to "×", queue_entry_path(queue_entry), method: :delete, class: "btn btn-sm btn-link p-0" %>
+</div>

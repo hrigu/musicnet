@@ -25,6 +25,13 @@ body {
   padding-top: 4.5rem;
 }
 
+// Reserviert Platz fuer die fixierte Player-/Queue-Leiste unten (layouts/_audio_player), sonst
+// verdeckt sie bei voller Queue (5 Eintraege + Speichern-Formular, gemessen ~210px) Inhalte wie
+// die Pagination am Seitenende. Grosszuegig bemessen, da die Leiste variabel hoch ist.
+.page-content {
+  padding-bottom: 16rem;
+}
+
 .table-tracks {
   font-size: 0.925rem;
   table-layout: fixed;

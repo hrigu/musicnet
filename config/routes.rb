@@ -26,4 +26,11 @@ Rails.application.routes.draw do
   end
   resources :artists, only: [:index, :show]
 
+  resources :queue_entries, only: [:create, :destroy] do
+    collection do
+      post :advance
+      post :save_as_playlist
+    end
+  end
+
 end

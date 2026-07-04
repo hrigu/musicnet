@@ -1,13 +1,19 @@
-<%# Einzige, dauerhafte Player-Leiste (Intent 40) inkl. Song-Queue (Intent 41). data-turbo-permanent
-    + stabile id: Turbo Drive erkennt das Element anhand der id zwischen altem und neuem Dokument
-    und uebernimmt den bestehenden DOM-Knoten (inkl. laufender Wiedergabe und Queue-Zustand)
-    unveraendert, statt ihn bei einem Seitenwechsel zu ersetzen. Liegt ausserdem ausserhalb von
-    turbo_frame_tag "tracks" - eine Suche/Sortierung dort ersetzt nur den Frame-Inhalt, dieses
-    Element wird gar nicht beruehrt. Die Queue-Liste selbst wird rein clientseitig (JS) gerendert,
-    kein Rails-Partial - sie ist reiner In-Memory-Zustand des Stimulus-Controllers. %>
+<%# Einzige, dauerhafte Player-Leiste (Intent 40). data-turbo-permanent + stabile id: Turbo Drive
+    erkennt das Element anhand der id zwischen altem und neuem Dokument und uebernimmt den
+    bestehenden DOM-Knoten (inkl. laufender Wiedergabe) unveraendert, statt ihn bei einem
+    Seitenwechsel zu ersetzen. Liegt ausserdem ausserhalb von turbo_frame_tag "tracks" - eine
+    Suche/Sortierung dort ersetzt nur den Frame-Inhalt, dieses Element wird gar nicht beruehrt.
+    Die Song-Queue (Intent 41, seit Intent 42 in der DB statt in JS) lebt zwar im selben
+    permanenten Element, ist aber unabhaengig davon korrekt: sie wird nicht durch Turbos
+    Permanent-Element-Mechanik aktuell gehalten, sondern durch echte Server-Rendern +
+    Turbo-Stream-Updates (siehe queue_entries_controller.rb) - eine reine Seitennavigation
+    veraendert die Queue-Daten ohnehin nicht, das alte, beibehaltene Markup bleibt also korrekt. %>
+<%= turbo_stream_from "queue" %>
 <div id="global-audio-player" data-turbo-permanent data-controller="audio-player" class="fixed-bottom bg-light border-top">
-  <div id="audio-player-queue" data-audio-player-target="queue" class="px-3 pt-2 small text-muted">
-    Queue leer
+  <div id="audio-player-queue" class="px-3 small text-muted">
+    <div id="audio-player-queue-list">
+      <%= render "queue_entries/queue_list" %>
+    </div>
   </div>
   <div class="d-flex align-items-center gap-2 px-3 py-2">
     <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle" title="Play/Pause"

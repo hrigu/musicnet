@@ -2,10 +2,52 @@
 
 require "rails_helper"
 
-RSpec.describe "Song-Queue (Intent 41)", type: :system do
+RSpec.describe "Song-Queue (Intent 41/42)", type: :system do
   fixtures :users
 
   before { login_as(users(:one), scope: :user) }
+
+  it "zeigt weder Platzhaltertext noch das Sichern-Formular, solange die Queue leer ist" do
+    create_playable_track("Queue Leer Check", spotify_id: "queue-leer-check")
+
+    visit tracks_path
+
+    within("#audio-player-queue") do
+      expect(page).to_not have_content("Queue leer")
+      expect(page).to_not have_button("Als Playlist sichern")
+    end
+  end
+
+  it "blendet das Sichern-Formular wieder aus, sobald die Queue durch Entfernen wieder leer wird" do
+    track = create_playable_track("Queue Leer Nach Entfernen", spotify_id: "queue-leer-entfernen")
+
+    visit tracks_path
+    enqueue_button_for(track.name).click
+    expect(page).to have_button("Als Playlist sichern")
+
+    within("#audio-player-queue") { click_button "×" }
+
+    expect(page).to_not have_button("Als Playlist sichern")
+  end
+
+  it "verdeckt die Pagination nicht, wenn die Queue voll ist" do
+    (1..50).each { |n| create_playable_track("Overlap Filler #{n}", spotify_id: "overlap-filler-#{n}") }
+    to_queue = %w[A B C D E].map do |letter|
+      create_playable_track("AAA Overlap Queue #{letter}", spotify_id: "overlap-queue-#{letter}")
+    end
+
+    visit tracks_path
+    to_queue.each { |t| enqueue_button_for(t.name).click }
+    expect(page).to have_selector("#audio-player-queue .queue-entry", count: 5)
+
+    page.scroll_to(page.find(".pagy-bootstrap"))
+    pagination_bottom = page.evaluate_script(
+      "document.querySelector('.pagy-bootstrap').getBoundingClientRect().bottom"
+    )
+    player_top = page.evaluate_script("document.getElementById('global-audio-player').getBoundingClientRect().top")
+
+    expect(pagination_bottom).to be <= player_top
+  end
 
   it "fuegt einen Track der Queue hinzu" do
     track = create_playable_track("Queue Track Alpha", spotify_id: "queue-alpha")
@@ -119,7 +161,7 @@ RSpec.describe "Song-Queue (Intent 41)", type: :system do
     end
   end
 
-  it "ueberlebt einen Seitenwechsel dank data-turbo-permanent" do
+  it "ueberlebt einen Seitenwechsel (server-gerendert, kein Client-Zustand mehr noetig)" do
     track = create_playable_track("Queue Ueberlebt", spotify_id: "queue-ueberlebt")
 
     visit tracks_path
@@ -132,7 +174,26 @@ RSpec.describe "Song-Queue (Intent 41)", type: :system do
     expect(page).to have_selector("#audio-player-queue", text: track.name)
   end
 
+  it "ueberlebt einen echten Reload (F5) - die urspruengliche Motivation fuer Intent 42" do
+    track = create_playable_track("Queue Reload", spotify_id: "queue-reload")
+
+    visit tracks_path
+    enqueue_button_for(track.name).click
+    expect(page).to have_selector("#audio-player-queue", text: track.name)
+
+    # Capybara/Cuprite fuehrt visit als echte Browser-Navigation aus (kein Turbo-Drive-Visit
+    # innerhalb der laufenden Seite) - im Gegensatz zu click_link/click_button oben entspricht das
+    # also einem echten Reload, nicht nur einer Turbo-Navigation.
+    visit tracks_path
+
+    expect(page).to have_selector("#audio-player-queue", text: track.name)
+  end
+
   it "ueberlebt eine Navigation ueber einen data-turbo-frame=_top-Link aus dem Tracks-Frame heraus" do
+    # Historischer Regressionstest (Intent 41 Nachtrag 3.5): mit der frueheren, rein clientseitigen
+    # Queue verlor genau dieser Navigationspfad den Queue-Zustand, weil Turbo den Stimulus-
+    # Controller dabei neu verbindet. Seit Intent 42 ist die Queue Server-Zustand, daher kann das
+    # strukturell nicht mehr passieren - der Test bleibt als Regressionsschutz bestehen.
     artist = Artist.create!(name: "Queue Bug Artist", spotify_id: "queue-bug-artist")
     first = create_playable_track("Queue TopLink Erster", spotify_id: "queue-toplink-1")
     first.update!(artists: [artist])
@@ -142,18 +203,12 @@ RSpec.describe "Song-Queue (Intent 41)", type: :system do
     enqueue_button_for(first.name).click
     enqueue_button_for(second.name).click
 
-    # Der Artist-Link in der Tracks-Tabelle nutzt data-turbo-frame: "_top", um aus
-    # turbo_frame_tag "tracks" auszubrechen - anders als ein gewoehnlicher Top-Level-Link.
     first(:link, artist.name).click
     expect(page).to have_current_path(artist_path(artist))
 
-    # Erneutes Enqueuen (hier: derselbe Track, der auf der Artist-Seite gelistet ist) erzwingt
-    # ein renderQueue() und deckt damit auf, ob der interne Zustand zwischenzeitlich verloren ging.
-    page.all("tr", text: first.name).first.find_button("Zur Queue hinzufügen").click
-
     aggregate_failures do
+      expect(page).to have_selector("#audio-player-queue", text: first.name)
       expect(page).to have_selector("#audio-player-queue", text: second.name)
-      expect(page).to have_selector("#audio-player-queue .queue-entry", count: 3)
     end
   end
 
@@ -169,5 +224,85 @@ RSpec.describe "Song-Queue (Intent 41)", type: :system do
 
     expect(page).to have_selector("table", text: track.name)
     expect(page).to have_selector("#audio-player-queue", text: track.name)
+  end
+
+  it "markiert einen Track sofort als 'in Queue', ohne dass ein Reload noetig ist" do
+    track = create_playable_track("Queue Markiert", spotify_id: "queue-markiert")
+
+    visit tracks_path
+    enqueue_button_for(track.name).click
+
+    expect(page).to have_selector("tr", text: "in Queue")
+  end
+
+  it "versteckt Play-/Queue-Button eines gequeueten Tracks und zeigt sie nach Entfernen wieder" do
+    track = create_playable_track("Queue Buttons Versteckt", spotify_id: "queue-buttons-versteckt")
+
+    visit tracks_path
+    row = page.find("tr", text: track.name)
+    expect(row).to have_button("Abspielen")
+    expect(row).to have_button("Zur Queue hinzufügen")
+
+    enqueue_button_for(track.name).click
+
+    row = page.find("tr", text: track.name)
+    aggregate_failures do
+      expect(row).to have_content("in Queue")
+      expect(row).to_not have_button("Abspielen")
+      expect(row).to_not have_button("Zur Queue hinzufügen")
+    end
+
+    within("#audio-player-queue") { click_button "×" }
+
+    row = page.find("tr", text: track.name)
+    aggregate_failures do
+      expect(row).to_not have_content("in Queue")
+      expect(row).to have_button("Abspielen")
+      expect(row).to have_button("Zur Queue hinzufügen")
+    end
+  end
+
+  it "entfernt die 'in Queue'-Markierung sofort wieder, wenn der Track aus der Queue genommen wird" do
+    track = create_playable_track("Queue Entmarkiert", spotify_id: "queue-entmarkiert")
+
+    visit tracks_path
+    enqueue_button_for(track.name).click
+    expect(page).to have_selector("tr", text: "in Queue")
+
+    within("#audio-player-queue") { click_button "×" }
+
+    expect(page).to_not have_selector("tr", text: "in Queue")
+  end
+
+  it "entfernt die Markierung auch, wenn der Track ueber den Player-Play-Button aus der Queue genommen wird" do
+    track = create_playable_track("Queue Advance Markiert", spotify_id: "queue-advance-markiert")
+
+    visit tracks_path
+    enqueue_button_for(track.name).click
+    expect(page).to have_selector("tr", text: "in Queue")
+
+    player_toggle_button.click
+
+    expect(page).to_not have_selector("tr", text: "in Queue")
+  end
+
+  it "legt beim Sichern eine lokale Playlist mit den gequeueten Tracks an, ohne die Queue zu leeren" do
+    first = create_playable_track("Queue Save Erster", spotify_id: "queue-save-1")
+    second = create_playable_track("Queue Save Zweiter", spotify_id: "queue-save-2")
+
+    visit tracks_path
+    enqueue_button_for(first.name).click
+    enqueue_button_for(second.name).click
+
+    fill_in "Playlist-Name", with: "Aus der Queue gesichert"
+    click_button "Als Playlist sichern"
+
+    expect(page).to have_content("Aus der Queue gesichert")
+    playlist = Playlist.find_by(name: "Aus der Queue gesichert")
+    expect(playlist.tracks).to contain_exactly(first, second)
+    expect(playlist.spotify_id).to be_nil
+
+    visit tracks_path
+    expect(page).to have_selector("#audio-player-queue", text: first.name)
   end
 end

@@ -2,7 +2,11 @@ development:
   adapter: async
 
 test:
-  adapter: test
+  # "test"-Adapter liefert Broadcasts nicht wirklich per WebSocket aus - System-Specs (Cuprite,
+  # echter Browser) brauchen das aber fuer die Queue-Turbo-Stream-Updates (Intent 42). Nichts im
+  # Projekt nutzt introspektive test-Adapter-Matcher wie have_broadcasted_to (siehe
+  # download_missing_tracks_job_spec.rb - stubbt Turbo::StreamsChannel direkt), daher unbedenklich.
+  adapter: async
 
 production:
   adapter: redis

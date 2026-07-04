@@ -263,35 +263,60 @@ runs the Rails app in-process for system specs, sharing Warden's test-mode state
 (`create_playable_track`, `play_button_for`, `enqueue_button_for`) live in
 `spec/support/playback_test_helpers.rb`.
 
-**Song queue (Intent 41):** builds on the persistent player above. The queue is pure client-side
-state, capped at 5 (`MAX_QUEUE_SIZE`) — not a DB column or a Rails-rendered partial. **It's stored
-as a property on the permanent DOM element itself (`this.element.audioPlayerQueueEntries`,
-exposed via a `queueEntries` getter), not as a plain Stimulus controller instance variable** — the
-element node reliably survives Turbo navigation, but the *controller instance* attached to it does
-not always: a link with `data-turbo-frame="_top"` that escapes an active `turbo_frame_tag` (e.g.
-the artist/track-name links in `tracks/_track.erb`) takes a different internal Turbo code path than
-a plain top-level link and reconnects the controller (`connect()` reruns) even though the element
-itself is untouched — an instance variable would silently reset to `[]` on that path (this was a
-real, reported, reproduced-in-spec bug). For the same reason, all `<audio>` element listeners are
-registered as named bound methods and explicitly removed in `disconnect()`, so a stray reconnect
-cleans up rather than duplicating them (an unremoved duplicate `ended` listener would advance the
-queue twice per track). Each track row gets a second button ("+", `audio-trigger#enqueue`)
-alongside the existing play button, both on the same `audio-trigger` controller instance,
-dispatching `audio-player:enqueue` instead of `audio-player:play`. The queue list itself
-(`#audio-player-queue`, above the playback bar so it's visually "over" the current track) is
-rendered directly via JS (`renderQueue()`), not ERB — each entry has a "×" button
-(`audio-player#removeFromQueue`, index passed as a Stimulus action param) to remove it before its
-turn; the list is displayed in reverse of play order (newest addition on top, next-to-play at the
-bottom, right above the player bar) even though the underlying array stays FIFO
-(`push`/`shift`) — this was flipped once already after user feedback found top-to-bottom-by-play-order
-counterintuitive. Enqueueing past the cap is a silent no-op (no error/toast). On the audio
-element's `ended` event, `playNextInQueue()` shifts and plays the first queued entry if any; the
-manual `toggle()` play/pause button does the same instead of a no-op `play()`/`pause()` when
-nothing has ever been loaded yet or the current track already ended. As with the player itself,
-this state is not persisted across a real page reload (F5) — only across Turbo navigation. Each
-queue entry also shows artist + playlist names under the title, via
-`TracksHelper#artist_names_for`/`#playlist_names_for` — the latter reads `track.playlist_tracks`
-if already preloaded (e.g. `/tracks`) or falls back to `track.playlists` (e.g. `tracks#show`),
-since only one of the two is preloaded depending on caller and the other would raise under
-`strict_loading`. Since `renderQueue()` builds markup via `innerHTML`, every interpolated value
-(title, artist, playlists) goes through an `escapeHtml()` helper first.
+**Song queue (Intent 41, moved to the DB in Intent 42):** builds on the persistent player above.
+Originally a pure client-side JS array on the permanent element (Intent 41) — moved to a real
+`QueueEntry` model (`belongs_to :track`, ordered by `created_at`, capped at
+`QueueEntry::MAX_SIZE`/5) once it became clear the DJ wants to (a) prepare a queue that survives a
+real page reload, not just Turbo navigation, (b) see already-queued tracks marked in track listings
+(needs server-side knowledge at render time — impossible with pure client JS state), and (c) save
+the current queue as a reusable local playlist. The queue is now server-rendered
+(`queue_entries/_queue_list.html.erb`, inside `#audio-player-queue-list` in
+`layouts/_audio_player.html.erb`) and kept live via Turbo Streams — `QueueEntriesController#create`/
+`#destroy` respond with `turbo_stream.update` re-rendering the list (simplest correct approach for
+a 5-row-max table; no surgical prepend/remove needed), and `#advance` (called by the player's JS
+when a track ends or the play button is pressed with nothing loaded) additionally broadcasts a
+`broadcast_remove_to("queue", ...)` so any other open tab/page reflects the dequeue too. Because of
+this, **`audio-trigger` and `audio-player` Stimulus controllers no longer manage the queue at
+all** — the "+" button in `components/_audio_file.html.erb` is a plain `button_to` POST (Turbo
+intercepts it and negotiates the `turbo_stream` format automatically, no custom JS), and the only
+remaining JS/queue interaction is `audio_player_controller.js#playNextInQueue`, an async
+`fetch("/queue_entries/advance", …)` that plays whatever track JSON comes back (204 = nothing
+queued, silently do nothing) — note the CSRF meta tag is only present when
+`allow_forgery_protection` is on, which Rails' test env disables by default, so the fetch reads it
+via `?.content` rather than assuming it exists (`document.querySelector('meta[name="csrf-token"]')`
+returns `null` in system specs otherwise, and `.content` on that throws, silently swallowing the
+whole fetch). `ApplicationHelper#queued_track_ids` (`QueueEntry.pluck(:track_id)`, memoized per
+request — the table is tiny so one query is enough) drives the "in Queue" badge on already-queued
+rows; `components/_audio_file.html.erb` wraps its content in `dom_id(track, :audio_file)` so
+`QueueEntriesController#broadcast_badge_update` can `broadcast_replace_to("queue", target: ...,
+partial: "components/audio_file", ...)` and update that badge live too, on every page currently
+showing that track — first shipped as a reload-only badge, then made live after the DJ pointed out
+having to reload to see it (and to see it disappear again) defeated the point. The badge also
+*replaces* the play/"+" buttons entirely for an already-queued track rather than sitting next to
+them (deliberate: saves space, and a queued track doesn't need re-queuing). The queue widget itself
+renders nothing at all — no placeholder text, no "save as playlist" form — while the queue is
+empty (`queue_entries/_queue_list.html.erb` returns blank rather than "Queue leer"), so it doesn't
+take any vertical space when there's nothing to show; `.page-content` in `application.scss` still
+reserves a fixed 16rem of bottom padding site-wide sized for the *full* 5-entries-plus-form case
+(measured ~210px), since the fixed-bottom bar would otherwise cover page content like pagination
+controls whenever the queue is non-empty.
+`QueueEntriesController#save_as_playlist` creates a plain local `Playlist.create!(spotify_id: nil)`
++ `PlaylistTrack` per queued track in order, and does *not* clear the queue afterward (accepted
+design: saving is a snapshot, not a "finish and reset" action) — `spotify_id: nil` is safe against
+`BuildMusicNetService#delete_vanished_playlists`'s `Playlist.where.not(spotify_id: [...])`, since
+SQL's `NOT IN` semantics exclude `NULL` rows from matching (verified directly against the dev DB
+before relying on it). Uploading the saved playlist back to Spotify itself is out of scope — the
+app has never had Spotify *write* access, only reads.
+
+Each queue entry also shows artist + playlist names under the title, via
+`TracksHelper#artist_names_for`/`#playlist_names_for` — the latter reads `track.playlist_tracks` if
+already preloaded (e.g. `/tracks`) or falls back to `track.playlists` (e.g. `tracks#show`), since
+only one of the two is preloaded depending on caller and the other would raise under
+`strict_loading`.
+
+**ActionCable in test env uses `async`, not `test` (`config/cable.yml`):** the default `test`
+adapter never actually delivers broadcasts over a real WebSocket, which silently breaks any system
+spec (Cuprite, a real browser) that depends on a live Turbo Stream update (like the queue's
+`advance` broadcast above) — nothing in the suite relies on the `test` adapter's introspection
+matchers (the one broadcast-related job spec stubs `Turbo::StreamsChannel` directly), so switching
+was safe project-wide.
