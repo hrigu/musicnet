@@ -14,13 +14,6 @@ class SpotifyPlaylistsGateway
     fetch_pages(:playlists).find { |playlist| playlist.id == spotify_id }
   end
 
-  # Spotify erlaubt beim Audio-Features-Endpoint maximal 100 Ids pro Request
-  AUDIO_FEATURES_BATCH_SIZE = 100
-
-  def audio_features_by_track_id(track_ids)
-    fetch_in_slices(track_ids, AUDIO_FEATURES_BATCH_SIZE) { |slice| RSpotify::AudioFeatures.find(slice) }
-  end
-
   # Spotify erlaubt beim Alben-Endpoint maximal 20 Ids pro Request
   ALBUMS_BATCH_SIZE = 20
 
@@ -64,11 +57,11 @@ class SpotifyPlaylistsGateway
   MAX_RETRY_WAIT_SECONDS = 30
 
   # Holt Objekte gebündelt in Slices und liefert sie als Hash nach spotify_id. Fehler pro
-  # Slice werden nur geloggt (weiche Semantik wie try_fetch im Service): z. B. darf ein 403
-  # des abgeschalteten Audio-Features-Endpoints den Import nicht stoppen. Ein 429 (Rate
-  # Limit) wird dagegen mit Backoff retryt statt die Slice sofort verloren zu geben - sonst
-  # schlägt bei einem vollen Sync mit vielen Playlists praktisch jeder Alben-/Artists-Batch
-  # fehl, weil die Requests ohne Pause aufeinanderfolgen.
+  # Slice werden nur geloggt (weiche Semantik wie try_fetch im Service), damit ein
+  # einzelner fehlgeschlagener Batch den Import nicht stoppt. Ein 429 (Rate Limit) wird
+  # dagegen mit Backoff retryt statt die Slice sofort verloren zu geben - sonst schlägt
+  # bei einem vollen Sync mit vielen Playlists praktisch jeder Alben-/Artists-Batch fehl,
+  # weil die Requests ohne Pause aufeinanderfolgen.
   def fetch_in_slices(ids, batch_size, &fetcher)
     ids.uniq.each_slice(batch_size).each_with_object({}) do |slice, result|
       objects = fetch_slice_with_retry(slice, &fetcher)

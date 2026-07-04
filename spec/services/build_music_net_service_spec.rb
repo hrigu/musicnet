@@ -177,45 +177,21 @@ RSpec.describe BuildMusicNetService do
 
       before do
         stub_spotify_playlists([playlist])
-        allow(RSpotify::AudioFeatures).to receive(:find).with(["trk1"])
-          .and_return([double("RSpotify::AudioFeatures", id: "trk1", to_json: '{"energy":0.8,"tempo":120.0}')])
         allow(RSpotify::Album).to receive(:find).with(["alb1"])
           .and_return([double("RSpotify::Album", id: "alb1", popularity: 44, release_date: "2019-05-01")])
         allow(RSpotify::Artist).to receive(:find).with(["art1"])
           .and_return([double("RSpotify::Artist", id: "art1", popularity: 61)])
       end
 
-      it "speichert Audio-Features, Album- und Artist-Details aus den Batch-Lookups" do
+      it "speichert Album- und Artist-Details aus den Batch-Lookups" do
         BuildMusicNetService.new(user).build
 
         track_record = Track.find_by(spotify_id: "trk1")
         aggregate_failures do
-          expect(track_record.audio_features).to eq('{"energy":0.8,"tempo":120.0}')
           expect(track_record.album.popularity).to eq(44)
           expect(track_record.album.release_date).to eq(Date.new(2019, 5, 1))
           expect(track_record.artists.first.popularity).to eq(61)
         end
-      end
-
-      it "bündelt die Audio-Features aller neuen Tracks einer Playlist in einem Aufruf" do
-        second_track = spotify_track(id: "trk2", name: "Green Tea", album: album, artists: [artist])
-        two_track_playlist = spotify_playlist(id: "pl1", name: "Fusion Favorites", owner_id: spotify_user_id,
-                                              tracks: [track, second_track])
-        stub_spotify_playlists([two_track_playlist])
-        allow(RSpotify::AudioFeatures).to receive(:find).with(%w[trk1 trk2]).and_return([])
-
-        BuildMusicNetService.new(user).build
-
-        expect(RSpotify::AudioFeatures).to have_received(:find).once.with(%w[trk1 trk2])
-      end
-
-      it "fragt Audio-Features nur für lokal neue Tracks an" do
-        local_album = Album.create!(spotify_id: "alb1", name: "A Go Go")
-        Track.create!(spotify_id: "trk1", name: "Hottentot", album: local_album)
-
-        BuildMusicNetService.new(user).build
-
-        expect(RSpotify::AudioFeatures).to_not have_received(:find)
       end
 
       it "fragt lokal bereits vorhandene Alben und Artists nicht erneut an" do
@@ -231,7 +207,6 @@ RSpec.describe BuildMusicNetService do
       end
 
       it "läuft bei fehlgeschlagenen Batch-Aufrufen durch und lässt die Detail-Felder leer" do
-        allow(RSpotify::AudioFeatures).to receive(:find).and_raise(RestClient::Forbidden)
         allow(RSpotify::Album).to receive(:find).and_raise(RestClient::Forbidden)
         allow(RSpotify::Artist).to receive(:find).and_raise(RestClient::Forbidden)
 

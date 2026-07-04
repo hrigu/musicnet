@@ -116,15 +116,15 @@ class BuildMusicNetService
     end
   end
 
-  # Audio-Features, Alben und Artists der lokal noch nicht vorhandenen Tracks gebündelt
-  # vorladen: wenige Batch-Requests statt einem Request pro Track/Album/Artist - nur so
-  # bleibt der Erstimport im Minuten- statt Stundenbereich (Intent 33). Nur neue Datensätze
-  # brauchen die Details, weil find_or_create_by! bestehende Zeilen nicht aktualisiert.
+  # Alben und Artists der lokal noch nicht vorhandenen Tracks gebündelt vorladen: wenige
+  # Batch-Requests statt einem Request pro Album/Artist - nur so bleibt der Erstimport im
+  # Minuten- statt Stundenbereich (Intent 33). Nur neue Datensätze brauchen die Details,
+  # weil find_or_create_by! bestehende Zeilen nicht aktualisiert. Tempo/Energy kommen seit
+  # Intent 35 nicht mehr von hier, sondern lokal via Essentia nach dem Download.
   def prefetch_details(spot_tracks)
     new_spot_tracks = locally_missing_tracks(spot_tracks)
 
     Prefetched.new(
-      @spotify_playlists_gateway.audio_features_by_track_id(new_spot_tracks.map(&:id)),
       @spotify_playlists_gateway.albums_by_id(missing_album_ids(new_spot_tracks)),
       @spotify_playlists_gateway.artists_by_id(missing_artist_ids(new_spot_tracks))
     )
@@ -157,13 +157,11 @@ class BuildMusicNetService
       album = build_album(spot_track.album, prefetched.albums[spot_track.album.id])
       artists = build_artists(spot_track.artists, prefetched.artists)
       popularity = try_fetch(spot_track, :popularity)
-      audio_features = prefetched.audio_features[spot_track.id]
       @info.add_new_created_track(spot_track.name)
       t.name = spot_track.name
       t.url = spot_track.external_urls["spotify"]
       t.duration_ms = spot_track.duration_ms
       t.popularity = popularity
-      t.audio_features = audio_features.to_json
       t.album = album
       t.artists = artists
     end
@@ -244,7 +242,7 @@ class BuildMusicNetService
   RefreshInfo = Struct.new(:added, :removed)
 
   # Gebündelt vorgeladene Spotify-Details (je ein Hash spotify_id → Objekt), siehe prefetch_details
-  Prefetched = Struct.new(:audio_features, :albums, :artists)
+  Prefetched = Struct.new(:albums, :artists)
 
   class ServiceInfo
     attr_reader :hash

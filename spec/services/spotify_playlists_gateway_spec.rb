@@ -46,83 +46,6 @@ RSpec.describe SpotifyPlaylistsGateway do
     end
   end
 
-  describe "#audio_features_by_track_id" do
-    it "holt die Audio-Features in 100er-Slices und liefert sie als Hash nach Track-Id" do
-      ids = (1..150).map { |i| "trk-#{i}" }
-      first_batch = ids.first(100).map { |id| double("RSpotify::AudioFeatures", id: id) }
-      second_batch = ids.last(50).map { |id| double("RSpotify::AudioFeatures", id: id) }
-
-      allow(RSpotify::AudioFeatures).to receive(:find).with(ids.first(100)).and_return(first_batch)
-      allow(RSpotify::AudioFeatures).to receive(:find).with(ids.last(50)).and_return(second_batch)
-
-      result = gateway.audio_features_by_track_id(ids)
-
-      aggregate_failures do
-        expect(result.keys).to eq(ids)
-        expect(result["trk-1"]).to eq(first_batch.first)
-        expect(result["trk-150"]).to eq(second_batch.last)
-      end
-    end
-
-    it "überspringt Tracks, für die die API keine Audio-Features liefert (nil-Einträge)" do
-      allow(RSpotify::AudioFeatures).to receive(:find).with(%w[trk-1 trk-2])
-        .and_return([double("RSpotify::AudioFeatures", id: "trk-1"), nil])
-
-      expect(gateway.audio_features_by_track_id(%w[trk-1 trk-2]).keys).to eq(["trk-1"])
-    end
-
-    it "loggt einen fehlgeschlagenen Batch-Aufruf und lässt dessen Slice im Ergebnis weg" do
-      allow(RSpotify::AudioFeatures).to receive(:find).and_raise(RestClient::Forbidden)
-      allow(Rails.logger).to receive(:warn)
-
-      aggregate_failures do
-        expect(gateway.audio_features_by_track_id(["trk-1"])).to eq({})
-        expect(Rails.logger).to have_received(:warn)
-      end
-    end
-
-    it "macht ohne Ids keinen API-Aufruf" do
-      expect(RSpotify::AudioFeatures).to_not receive(:find)
-
-      expect(gateway.audio_features_by_track_id([])).to eq({})
-    end
-
-    it "retryt bei 429 (Rate Limit) mit Backoff und liefert beim späteren Erfolg das Ergebnis" do
-      success = [double("RSpotify::AudioFeatures", id: "trk-1")]
-      call_count = 0
-
-      allow(RSpotify::AudioFeatures).to receive(:find) do
-        call_count += 1
-        raise RestClient::TooManyRequests.new(nil, 429) if call_count < 3
-
-        success
-      end
-      allow(gateway).to receive(:sleep)
-      allow(Rails.logger).to receive(:warn)
-
-      result = gateway.audio_features_by_track_id(["trk-1"])
-
-      aggregate_failures do
-        expect(result["trk-1"]).to eq(success.first)
-        expect(gateway).to have_received(:sleep).twice
-      end
-    end
-
-    it "gibt nach Ausschöpfen der Retries auf und loggt den letzten Fehler" do
-      too_many_requests = RestClient::TooManyRequests.new(nil, 429)
-
-      allow(RSpotify::AudioFeatures).to receive(:find).and_raise(too_many_requests)
-      allow(gateway).to receive(:sleep)
-      allow(Rails.logger).to receive(:warn)
-
-      aggregate_failures do
-        expect(gateway.audio_features_by_track_id(["trk-1"])).to eq({})
-        expect(gateway).to have_received(:sleep).exactly(3).times
-        expect(Rails.logger).to have_received(:warn).with(/Spotify-Batch-Lookup fehlgeschlagen/)
-      end
-    end
-  end
-
   describe "#albums_by_id" do
     it "holt die vollen Alben in 20er-Slices und liefert sie als Hash nach Album-Id" do
       ids = (1..25).map { |i| "alb-#{i}" }
@@ -147,6 +70,54 @@ RSpec.describe SpotifyPlaylistsGateway do
       aggregate_failures do
         expect(gateway.albums_by_id(["alb-1"])).to eq({})
         expect(Rails.logger).to have_received(:warn)
+      end
+    end
+
+    it "überspringt Ids, für die die API kein Album liefert (nil-Einträge)" do
+      allow(RSpotify::Album).to receive(:find).with(%w[alb-1 alb-2])
+        .and_return([double("RSpotify::Album", id: "alb-1"), nil])
+
+      expect(gateway.albums_by_id(%w[alb-1 alb-2]).keys).to eq(["alb-1"])
+    end
+
+    it "macht ohne Ids keinen API-Aufruf" do
+      expect(RSpotify::Album).to_not receive(:find)
+
+      expect(gateway.albums_by_id([])).to eq({})
+    end
+
+    it "retryt bei 429 (Rate Limit) mit Backoff und liefert beim späteren Erfolg das Ergebnis" do
+      success = [double("RSpotify::Album", id: "alb-1")]
+      call_count = 0
+
+      allow(RSpotify::Album).to receive(:find) do
+        call_count += 1
+        raise RestClient::TooManyRequests.new(nil, 429) if call_count < 3
+
+        success
+      end
+      allow(gateway).to receive(:sleep)
+      allow(Rails.logger).to receive(:warn)
+
+      result = gateway.albums_by_id(["alb-1"])
+
+      aggregate_failures do
+        expect(result["alb-1"]).to eq(success.first)
+        expect(gateway).to have_received(:sleep).twice
+      end
+    end
+
+    it "gibt nach Ausschöpfen der Retries auf und loggt den letzten Fehler" do
+      too_many_requests = RestClient::TooManyRequests.new(nil, 429)
+
+      allow(RSpotify::Album).to receive(:find).and_raise(too_many_requests)
+      allow(gateway).to receive(:sleep)
+      allow(Rails.logger).to receive(:warn)
+
+      aggregate_failures do
+        expect(gateway.albums_by_id(["alb-1"])).to eq({})
+        expect(gateway).to have_received(:sleep).exactly(3).times
+        expect(Rails.logger).to have_received(:warn).with(/Spotify-Batch-Lookup fehlgeschlagen/)
       end
     end
   end
