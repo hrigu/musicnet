@@ -86,6 +86,41 @@ RSpec.describe SpotifyPlaylistsGateway do
 
       expect(gateway.audio_features_by_track_id([])).to eq({})
     end
+
+    it "retryt bei 429 (Rate Limit) mit Backoff und liefert beim späteren Erfolg das Ergebnis" do
+      success = [double("RSpotify::AudioFeatures", id: "trk-1")]
+      call_count = 0
+
+      allow(RSpotify::AudioFeatures).to receive(:find) do
+        call_count += 1
+        raise RestClient::TooManyRequests.new(nil, 429) if call_count < 3
+
+        success
+      end
+      allow(gateway).to receive(:sleep)
+      allow(Rails.logger).to receive(:warn)
+
+      result = gateway.audio_features_by_track_id(["trk-1"])
+
+      aggregate_failures do
+        expect(result["trk-1"]).to eq(success.first)
+        expect(gateway).to have_received(:sleep).twice
+      end
+    end
+
+    it "gibt nach Ausschöpfen der Retries auf und loggt den letzten Fehler" do
+      too_many_requests = RestClient::TooManyRequests.new(nil, 429)
+
+      allow(RSpotify::AudioFeatures).to receive(:find).and_raise(too_many_requests)
+      allow(gateway).to receive(:sleep)
+      allow(Rails.logger).to receive(:warn)
+
+      aggregate_failures do
+        expect(gateway.audio_features_by_track_id(["trk-1"])).to eq({})
+        expect(gateway).to have_received(:sleep).exactly(3).times
+        expect(Rails.logger).to have_received(:warn).with(/Spotify-Batch-Lookup fehlgeschlagen/)
+      end
+    end
   end
 
   describe "#albums_by_id" do

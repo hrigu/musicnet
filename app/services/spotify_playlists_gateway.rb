@@ -56,19 +56,53 @@ class SpotifyPlaylistsGateway
 
   private
 
+  # Anzahl Retries bei 429 (Rate Limit), bevor eine Slice endgültig aufgegeben wird
+  MAX_RATE_LIMIT_RETRIES = 3
+
+  # Obergrenze für die Wartezeit zwischen Retries - ein sehr hoher Retry-After-Header
+  # von Spotify soll den (synchron laufenden) Sync nicht über Gebühr blockieren
+  MAX_RETRY_WAIT_SECONDS = 30
+
   # Holt Objekte gebündelt in Slices und liefert sie als Hash nach spotify_id. Fehler pro
   # Slice werden nur geloggt (weiche Semantik wie try_fetch im Service): z. B. darf ein 403
-  # des abgeschalteten Audio-Features-Endpoints den Import nicht stoppen.
-  def fetch_in_slices(ids, batch_size)
+  # des abgeschalteten Audio-Features-Endpoints den Import nicht stoppen. Ein 429 (Rate
+  # Limit) wird dagegen mit Backoff retryt statt die Slice sofort verloren zu geben - sonst
+  # schlägt bei einem vollen Sync mit vielen Playlists praktisch jeder Alben-/Artists-Batch
+  # fehl, weil die Requests ohne Pause aufeinanderfolgen.
+  def fetch_in_slices(ids, batch_size, &fetcher)
     ids.uniq.each_slice(batch_size).each_with_object({}) do |slice, result|
-      objects = begin
-        yield slice
-      rescue RestClient::Exception => e
-        Rails.logger.warn("Spotify-Batch-Lookup fehlgeschlagen (#{slice.size} Ids): #{e.message}")
-        []
-      end
+      objects = fetch_slice_with_retry(slice, &fetcher)
       objects.compact.each { |object| result[object.id] = object }
     end
+  end
+
+  def fetch_slice_with_retry(slice, attempt: 0, &fetcher)
+    fetcher.call(slice)
+  rescue RestClient::Exception => e
+    return give_up_on_slice(slice, e) unless e.http_code == 429 && attempt < MAX_RATE_LIMIT_RETRIES
+
+    wait_before_retry(slice, e, attempt)
+    fetch_slice_with_retry(slice, attempt: attempt + 1, &fetcher)
+  end
+
+  def wait_before_retry(slice, exception, attempt)
+    wait_seconds = [retry_after_seconds(exception) || 2**(attempt + 1), MAX_RETRY_WAIT_SECONDS].min
+    Rails.logger.warn(
+      "Spotify-Rate-Limit (429, #{slice.size} Ids) - warte #{wait_seconds}s " \
+      "(Versuch #{attempt + 1}/#{MAX_RATE_LIMIT_RETRIES})"
+    )
+    sleep(wait_seconds)
+  end
+
+  def give_up_on_slice(slice, exception)
+    Rails.logger.warn("Spotify-Batch-Lookup fehlgeschlagen (#{slice.size} Ids): #{exception.message}")
+    []
+  end
+
+  def retry_after_seconds(exception)
+    Integer(exception.http_headers&.[](:retry_after))
+  rescue ArgumentError, TypeError
+    nil
   end
 
   def fetch_pages(method_name)
