@@ -2,18 +2,20 @@
 
 <h1>Meine Tracks</h1>
 
-<%= form_with url: tracks_path, method: :get, id: "tracks-search", class: "mb-3" do %>
-  <%= hidden_field_tag :sort, params[:sort] %>
-  <%= hidden_field_tag :direction, params[:direction] %>
-  <%= text_field_tag :q, params[:q], placeholder: "Suche nach Name, Künstler, Album oder Genre", class: "form-control d-inline-block w-auto" %>
-  <%= select_tag :available,
-        options_for_select(
-          [["Alle", ""], ["Nur heruntergeladen", "downloaded"], ["Nur fehlend", "missing"]],
-          params[:available]
-        ), class: "form-select d-inline-block w-auto" %>
-  <%= submit_tag "Suchen", class: "btn btn-outline-secondary" %>
+<%= turbo_frame_tag "tracks" do %>
+  <%= form_with url: tracks_path, method: :get, id: "tracks-search", class: "mb-3" do %>
+    <%= hidden_field_tag :sort, params[:sort] %>
+    <%= hidden_field_tag :direction, params[:direction] %>
+    <%= text_field_tag :q, params[:q], placeholder: "Suche nach Name, Künstler, Album oder Genre", class: "form-control d-inline-block w-auto" %>
+    <%= select_tag :available,
+          options_for_select(
+            [["Alle", ""], ["Nur heruntergeladen", "downloaded"], ["Nur fehlend", "missing"]],
+            params[:available]
+          ), class: "form-select d-inline-block w-auto" %>
+    <%= submit_tag "Suchen", class: "btn btn-outline-secondary" %>
+  <% end %>
+
+  <%= render 'tracks', tracks: @tracks %>
+
+  <%== @pagy.series_nav(:bootstrap) %>
 <% end %>
-
-<%= render 'tracks', tracks: @tracks %>
-
-<%== @pagy.series_nav(:bootstrap) %>

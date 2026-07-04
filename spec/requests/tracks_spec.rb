@@ -248,6 +248,27 @@ RSpec.describe "Tracks", type: :request do
     end
   end
 
+  describe "GET /tracks - Turbo Frame" do
+    it "rendert die volle Seite inklusive Navbar bei einem normalen Request" do
+      get tracks_path
+
+      aggregate_failures do
+        expect(response.body).to include("navbar-brand")
+        expect(response.body).to include('id="tracks"')
+      end
+    end
+
+    it "rendert nur den Frame-Inhalt ohne Navbar, wenn der Turbo-Frame-Header gesetzt ist" do
+      get tracks_path, headers: { "Turbo-Frame" => "tracks" }
+
+      aggregate_failures do
+        expect(response.body).to_not include("navbar-brand")
+        expect(response.body).to include('id="tracks"')
+        expect(response.body).to include("<table")
+      end
+    end
+  end
+
   describe "GET /tracks/:id" do
     it "liefert Erfolg" do
       track = create_track
