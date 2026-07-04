@@ -1,6 +1,6 @@
 <%# Repräsentiert einen Eintrag in der Tabelle %>
 <tr>
-  <th scope="row"><%= link_to(track.name, track_path(track.id)) %></th>
+  <th scope="row"><%= link_to(track.name, track_path(track.id), data: { turbo_frame: "_top" }) %></th>
   <td class="text-end text-muted font-monospace"><%= track.dauer %></td>
   <td class="text-muted">
     <%= l(track.added_at.to_date) if track.added_at %>
@@ -17,14 +17,14 @@
   </td>
   <td>
     <% track.artists.each do |a| %>
-      <%= link_to a.name, artist_path(a.id), class: "d-inline-block me-2" %>
+      <%= link_to a.name, artist_path(a.id), class: "d-inline-block me-2", data: { turbo_frame: "_top" } %>
     <% end %>
   </td>
   <td><%= track.album.name %></td>
   <td>
     <div class="d-flex flex-wrap gap-1">
       <% track.playlist_tracks.each do |pt| %>
-        <%= link_to playlist_path(pt.playlist.id) do %>
+        <%= link_to playlist_path(pt.playlist.id), data: { turbo_frame: "_top" } do %>
           <span class="badge <%= playlist_color_class(pt.playlist) %>"><%= playlist_short_name(pt.playlist) %></span>
         <% end %>
       <% end %>
