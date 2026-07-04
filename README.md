@@ -59,6 +59,12 @@ Siehe [Spotify doc](https://developer.spotify.com/documentation/web-api/concepts
 [spotdl](https://github.com/spotDL/spotify-downloader) ist ein Command-Line Tool welches Tracks runterlädt.
 In Python geschrieben.
 
+### Essentia
+[Essentia](https://essentia.upf.edu/) berechnet Tempo/Energy lokal aus den heruntergeladenen Audiodateien
+(Ersatz für Spotifys für diese App dauerhaft gesperrten `audio-features`-Endpunkt, siehe Intent 35). Genutzt
+wird das mitgelieferte CLI-Tool `essentia_streaming_extractor_music`, z.B. via `brew install essentia`
+installierbar. Muss wie `spotdl` separat installiert sein und auf dem `PATH` liegen, ist kein Gem.
+
 
 ## Tables
 ```

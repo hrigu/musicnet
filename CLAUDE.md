@@ -72,8 +72,17 @@ users (separate: local login identity + holds serialized RSpotify::User via User
 - `Track#genre`: read-through cache. Reads the `genre` DB column first; if empty, parses the downloaded
   file's metadata (WahWah) and persists a present value via `update_column`. Invalidation is manual:
   `Track.update_all(genre: nil)` in the console after re-downloads/re-tagging (see Intent 28).
-- `Track#af`/`#energy`/`#tempo`: `audio_features` is a JSON blob column from Spotify's Audio Features API,
-  parsed lazily into an `OpenStruct`.
+- `Track#af`/`#energy`/`#tempo`: `audio_features` is a JSON blob column, wrapped lazily into an `OpenStruct`.
+  Populated locally via Essentia (`AudioFeaturesExtractor`/`AudioFeaturesExtractionService`, Intent 35) right
+  after a track's file is downloaded — not by Spotify: its `audio-features` endpoint has been permanently
+  locked for apps without Extended Quota Mode access since November 2024 (a personal single-user app like
+  this one cannot qualify). `AudioFeaturesExtractor` shells out to `essentia_streaming_extractor_music`
+  (must be installed and on PATH, e.g. `brew install essentia`; not a gem/bundled dependency, same pattern as
+  `spotdl`), parses its YAML output and stores `{"tempo" => ..., "energy" => ...}` (from `rhythm.bpm` /
+  `lowlevel.average_loudness`) via `update_column` — no callbacks, same cache semantics as `#genre`. Failure
+  (command fails, output unreadable, neither value present) is logged and leaves `audio_features` nil, same
+  soft-failure style as the rest of the app. `rake extract_missing_audio_features` backfills tracks that were
+  downloaded before this existed.
 - `User#spotify_user`: reconstructs an `RSpotify::User` from the `spotify_user_data` JSON column captured at
   OAuth login time (`UsersController#spotify`). This is how the app acts as "the logged-in Spotify user" for
   API calls elsewhere (e.g. `BuildMusicNetService`, recently-played).
@@ -97,14 +106,15 @@ Entry point: `PlaylistsController#fetch_all` → `BuildMusicNetService.new(curre
    `Track`/`Artist`/`Album` left with zero associations is pruned (orphan cleanup).
 
 Before creating records, both `build_playlist` and `sync_playlist_with_spotify` call `prefetch_details` (Intent
-33), which fetches Spotify details for locally-new tracks in batches instead of one request per record:
-audio features, full albums, and full artists via `SpotifyPlaylistsGateway#audio_features_by_track_id` /
-`#albums_by_id` / `#artists_by_id` (100/20/50 ids per request respectively). Only tracks/albums/artists not yet
-in the local DB are looked up. This is what keeps a from-empty-DB first import in the minutes range instead of
-30–60+ minutes for a few thousand tracks (before: one serial request per new track/album/artist). A failed
-batch call (e.g. Spotify's audio-features endpoint, which returns 403 for apps without access as of late 2024)
-is logged and its slice is simply missing from the result — the affected fields stay `nil` and the import
-continues, same soft-failure semantics as the old per-record `try_fetch`.
+33), which fetches Spotify details for locally-new tracks in batches instead of one request per record: full
+albums and full artists via `SpotifyPlaylistsGateway#albums_by_id` / `#artists_by_id` (20/50 ids per request
+respectively). Only albums/artists not yet in the local DB are looked up. This is what keeps a from-empty-DB
+first import in the minutes range instead of 30–60+ minutes for a few thousand tracks (before: one serial
+request per new album/artist). A failed batch call is logged and its slice is simply missing from the result
+— the affected fields stay `nil` and the import continues, same soft-failure semantics as the old per-record
+`try_fetch`; a 429 (rate limit) is instead retried with backoff (`SpotifyPlaylistsGateway#fetch_in_slices`)
+since a full sync across many playlists otherwise exhausts Spotify's rate limit on almost every batch. Track
+audio features (tempo/energy) are no longer part of this prefetch — see `Track#af` above (Intent 35).
 4. Returns a `ServiceInfo` object (created/deleted names per type) that the view renders as a sync summary.
 
 `find_or_create_by!` still means fields of already-existing rows are not updated when records are (re)created;
@@ -117,9 +127,11 @@ Both download services shell out to the external `spotdl` Python CLI (must be in
 gem/bundled dependency) via `system(...)`, always after `Dir.chdir`-ing into `downloads/tracks`:
 
 - `DownloadPlaylistService` (`playlists#download`) — `spotdl sync <playlist_url> --save-file <name>.spotdl
-  --user-auth --format m4a`. Uses spotdl's own sync/save-file state to skip already-downloaded tracks.
-- `DownloadTrackService` (`tracks#download`) — downloads only tracks for which `Track#track_path` currently
-  returns nil (i.e. not yet found on disk), one `spotdl download` call for the whole batch.
+  --user-auth --format m4a`. Uses spotdl's own sync/save-file state to skip already-downloaded tracks. After a
+  successful run it also calls `AudioFeaturesExtractionService.new(@playlist.tracks).extract_missing` (Intent
+  35), so newly-downloaded tracks get their Essentia-based audio features right away.
+- `DownloadTrackService` (`tracks#download`) — delegates to `DownloadPlaylistService` per affected playlist
+  (so the audio-features extraction above applies here too), rather than invoking `spotdl` directly itself.
 
 ### Mixxx crate export
 
