@@ -62,11 +62,11 @@ group :development do
 end
 
 group :test do
-  # Adds support for Capybara system testing and selenium driver
-  # gem 'capybara'#, '>= 3.26'
-  # gem 'selenium-webdriver'
-  # Easy installation and use of web drivers to run system tests with browsers
-  # gem 'webdrivers'
+  # System-Specs mit echtem JS/Browser (Intent 40: Turbo-Permanent-Element-Verhalten laesst sich
+  # nur mit einem echten Browser pruefen). Cuprite steuert das lokal installierte Chrome direkt
+  # per CDP an - kein Selenium/separater Webdriver-Download noetig.
+  gem 'capybara'
+  gem 'cuprite'
   gem 'rspec-rails'
 end
 

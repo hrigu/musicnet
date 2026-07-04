@@ -231,3 +231,22 @@ Per the README, the operator then manually clears Mixxx's existing crates (delet
 ### Frontend
 
 Server-rendered ERB views + Bootstrap 5 + Hotwire (Turbo/Stimulus via importmap-rails, no Node/yarn build step).
+
+**Persistent audio player (Intent 40):** a single global mini-player lives in the shared layout
+(`layouts/_audio_player.html.erb`, rendered once in `application.html.erb`), not per track row.
+It's marked `data-turbo-permanent` with a stable `id="global-audio-player"` — Turbo Drive matches
+elements by id between the old and new document on a full page visit and reuses the existing DOM
+node (including in-progress playback) instead of replacing it; being outside
+`turbo_frame_tag "tracks"` additionally means a search/sort/pagination frame update never touches
+it at all. Per-track play buttons (`components/_audio_file.html.erb`) don't own an `<audio>`
+element anymore — they carry a tiny `audio-trigger` Stimulus controller that only dispatches an
+`audio-player:play` event (`{ url, name }`) on `document`; the single `audio-player` controller
+instance on the persistent bar listens for that event and does the actual `src`/play switch. This
+event-based decoupling avoids needing a direct reference (e.g. a Stimulus outlet) between
+controllers that live in unrelated parts of the DOM. Row buttons always show "▶" — play/pause
+state is only ever shown in the global bar, avoiding needing to sync state across every row.
+**System-spec / JS testing:** `capybara` + `cuprite` (`spec/support/capybara.rb`) — Cuprite drives
+a real, separate headless Chrome via CDP directly (no Selenium/webdriver binaries). This is the
+first and only place in the suite verifying real browser/Turbo/Stimulus behavior; everything else
+is request/model/service specs. `login_as` works with the real-browser driver because Capybara
+runs the Rails app in-process for system specs, sharing Warden's test-mode state.

@@ -40,7 +40,7 @@ RSpec.describe "Tracks", type: :request do
 
       aggregate_failures do
         expect(response.body).to include("kein File")
-        expect(response.body).to_not include("<audio")
+        expect(response.body).to_not include("audio-trigger")
       end
     end
 
@@ -52,7 +52,7 @@ RSpec.describe "Tracks", type: :request do
       end
 
       aggregate_failures do
-        expect(response.body).to include("<audio")
+        expect(response.body).to include("audio-trigger")
         expect(response.body).to_not include("kein File")
       end
     end

@@ -1,14 +1,14 @@
-<%# Seit preload="none" laedt der Player die Datei erst beim Abspielen — ohne diese
-    Fallunterscheidung saehe ein Track ohne Soundfile wie ein abspielbarer aus. %>
+<%# Kein eigenes <audio> mehr pro Zeile (Intent 40) - der Button dispatcht nur ein Event, die
+    eigentliche Wiedergabe laeuft im dauerhaften globalen Player (layouts/_audio_player). Zeigt
+    bewusst immer "▶", nicht den Play/Pause-Status - der wird nur in der globalen Leiste angezeigt. %>
 <% if track.track_path %>
-  <div data-controller="audio-player">
-    <audio data-audio-player-target="audio" preload="none">
-      <source src="<%= stream_track_path(track.id) %>"></source>
-    </audio>
-    <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle" data-action="audio-player#toggle">
-      <span data-audio-player-target="icon">▶</span>
-    </button>
-  </div>
+  <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle"
+          data-controller="audio-trigger"
+          data-audio-trigger-url-value="<%= stream_track_path(track.id) %>"
+          data-audio-trigger-name-value="<%= track.name %>"
+          data-action="audio-trigger#play">
+    ▶
+  </button>
 <% else %>
   <span class="badge bg-danger">kein File</span>
 <% end %>

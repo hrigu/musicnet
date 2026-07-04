@@ -136,7 +136,7 @@ RSpec.describe "Playlists", type: :request do
 
       aggregate_failures do
         expect(response.body).to include("kein File")
-        expect(response.body).to_not include("<audio")
+        expect(response.body).to_not include("audio-trigger")
       end
     end
 
