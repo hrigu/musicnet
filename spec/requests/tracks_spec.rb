@@ -191,6 +191,63 @@ RSpec.describe "Tracks", type: :request do
     end
   end
 
+  describe "GET /tracks - Verfügbarkeits-Filter" do
+    before do
+      create_track(name: "RSpec Vorhanden", spotify_id: "avail-hit")
+      create_track(name: "RSpec Fehlend", spotify_id: "avail-miss")
+    end
+
+    it "zeigt nur heruntergeladene Tracks bei available=downloaded" do
+      with_download_file("RSpec Artist - RSpec Vorhanden.m4a") do
+        get tracks_path(available: "downloaded")
+      end
+
+      names = Nokogiri::HTML(response.body).css("tbody tr th a").map(&:text)
+      expect(names).to eq(["RSpec Vorhanden"])
+    end
+
+    it "zeigt nur fehlende Tracks bei available=missing" do
+      with_download_file("RSpec Artist - RSpec Vorhanden.m4a") do
+        get tracks_path(available: "missing")
+      end
+
+      names = Nokogiri::HTML(response.body).css("tbody tr th a").map(&:text)
+      expect(names).to eq(["RSpec Fehlend"])
+    end
+
+    it "zeigt alle Tracks bei unbekanntem available-Wert" do
+      get tracks_path(available: "quatsch")
+
+      names = Nokogiri::HTML(response.body).css("tbody tr th a").map(&:text)
+      expect(names).to contain_exactly("RSpec Vorhanden", "RSpec Fehlend")
+    end
+
+    it "kombiniert den Filter mit Suche und Sortierung" do
+      with_download_file("RSpec Artist - RSpec Vorhanden.m4a") do
+        get tracks_path(available: "downloaded", q: "RSpec", sort: "name", direction: "asc")
+      end
+
+      names = Nokogiri::HTML(response.body).css("tbody tr th a").map(&:text)
+      expect(names).to eq(["RSpec Vorhanden"])
+    end
+
+    it "paginiert das gefilterte Ergebnis korrekt" do
+      with_download_file("RSpec Artist - RSpec Vorhanden.m4a") do
+        get tracks_path(available: "downloaded")
+      end
+
+      rows = Nokogiri::HTML(response.body).css("tbody tr")
+      expect(rows.size).to eq(1)
+    end
+
+    it "rendert das Filter-Dropdown mit dem aktuellen Wert vorausgewählt" do
+      get tracks_path(available: "missing")
+
+      selected = Nokogiri::HTML(response.body).at_css("select[name='available'] option[selected]")
+      expect(selected[:value]).to eq("missing")
+    end
+  end
+
   describe "GET /tracks/:id" do
     it "liefert Erfolg" do
       track = create_track
