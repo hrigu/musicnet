@@ -16,12 +16,14 @@ class PlaylistsController < ApplicationController
     @playlist_tracks = @playlist.playlist_tracks_for_display
   end
 
-  # Gleicht die Playlist mit Spotify ab und zeigt sie mit den Änderungen an
+  # Gleicht die Playlist mit Spotify ab; das Ergebnis wird als Flash auf die
+  # (redirectete) Playlist-Seite mitgegeben - direktes render nach einem POST
+  # spielt schlecht mit Turbo zusammen (siehe Intent 37).
   def refresh
     @playlist = Playlist.find(params[:id])
-    @refresh_info = BuildMusicNetService.new(current_user).refresh_playlist(@playlist)
-    @playlist_tracks = @playlist.playlist_tracks_for_display
-    render :show
+    info = BuildMusicNetService.new(current_user).refresh_playlist(@playlist)
+    set_refresh_flash(info)
+    redirect_to playlist_path(@playlist)
   rescue BuildMusicNetService::PlaylistNotFoundError, BuildMusicNetService::SyncAlreadyRunningError => e
     redirect_to playlist_path(@playlist), alert: e.message
   end
@@ -44,5 +46,12 @@ class PlaylistsController < ApplicationController
     redirect_to playlist_path(@playlist)
   rescue DownloadPlaylistService::DownloadAlreadyRunningError => e
     redirect_to playlist_path(@playlist), alert: e.message
+  end
+
+  private
+
+  def set_refresh_flash(info)
+    flash[:refresh_added] = info.added
+    flash[:refresh_removed] = info.removed
   end
 end

@@ -121,6 +121,18 @@ since a full sync across many playlists otherwise exhausts Spotify's rate limit 
 audio features (tempo/energy) are no longer part of this prefetch — see `Track#af` above (Intent 35).
 4. Returns a `ServiceInfo` object (created/deleted names per type) that the view renders as a sync summary.
 
+`PlaylistsController#refresh` (single-playlist "Playlist aktualisieren" button) always calls `refresh_playlist`
+→ `sync_playlist_with_spotify` in full, skipping the snapshot-unchanged fast path above (it's an explicit,
+one-off user action, not the bulk sync) — this also means `updated_at` is a reliable "last synced" timestamp
+for a single playlist (shown on `playlists#show`), since it's touched on every explicit refresh regardless of
+whether anything actually changed, and on the bulk path only when `sync_playlist_with_spotify`/`build_playlist`
+actually run. On success `refresh` **redirects** to `playlist_path` with the `RefreshInfo` (added/removed track
+names) passed via `flash[:refresh_added]`/`flash[:refresh_removed]`, rendered as an alert on the next page load
+— it does not `render :show` directly. Every action with side effects (`download`, `refresh`, `fetch_all`) is
+routed as `POST` and must redirect rather than render inline: Turbo 8 prefetches plain `GET` links on hover
+(Intent 34), and a direct 200 render after a `POST`/`data-turbo-method` submission is a Turbo/Rails
+anti-pattern that can silently fail to show feedback (Intent 37) — redirect-after-mutation sidesteps both.
+
 `find_or_create_by!` still means fields of already-existing rows are not updated when records are (re)created;
 renamed playlists **are** updated (step 2, changed snapshot), renamed tracks are not — a renamed track only
 corrects itself once the old row is orphaned and recreated.

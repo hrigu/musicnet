@@ -191,7 +191,15 @@ RSpec.describe "Playlists", type: :request do
       expect(response.body).to include("Playlist aktualisieren")
     end
 
-    it "POST /playlists/:id/refresh ruft refresh_playlist auf und rendert die Playlist-Seite" do
+    it "GET /playlists/:id zeigt, wann die Playlist zuletzt aktualisiert wurde" do
+      playlist = playlists(:dark)
+
+      get playlist_path(playlist)
+
+      expect(response.body).to include(I18n.l(playlist.updated_at))
+    end
+
+    it "POST /playlists/:id/refresh ruft refresh_playlist auf, redirected und zeigt die Änderungen" do
       info = BuildMusicNetService::RefreshInfo.new(["Green Tea"], ["Hottentot"])
       service = instance_double(BuildMusicNetService, refresh_playlist: info)
       allow(BuildMusicNetService).to receive(:new).and_return(service)
@@ -199,8 +207,11 @@ RSpec.describe "Playlists", type: :request do
 
       post refresh_playlist_path(playlist)
 
-      expect(response).to have_http_status(:success)
+      expect(response).to redirect_to(playlist_path(playlist))
       expect(service).to have_received(:refresh_playlist).with(playlist)
+
+      follow_redirect!
+
       expect(response.body).to include("Green Tea")
       expect(response.body).to include("Hottentot")
     end
@@ -211,6 +222,7 @@ RSpec.describe "Playlists", type: :request do
       allow(BuildMusicNetService).to receive(:new).and_return(service)
 
       post refresh_playlist_path(playlists(:dark))
+      follow_redirect!
 
       expect(response.body).to include("Keine Änderungen")
     end

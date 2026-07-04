@@ -10,24 +10,25 @@
     <%= link_to("Playlist aktualisieren", refresh_playlist_path(@playlist.id), data: { turbo_method: :post }, class: "btn btn-outline-secondary") %>
   </div>
 </div>
+<p class="text-muted small mb-3">Zuletzt aktualisiert: <%= l(@playlist.updated_at) %></p>
 
-<% if @refresh_info %>
+<% if flash[:refresh_added] || flash[:refresh_removed] %>
   <div class="alert alert-info mt-3">
-    <% if @refresh_info.added.empty? && @refresh_info.removed.empty? %>
+    <% if flash[:refresh_added].blank? && flash[:refresh_removed].blank? %>
       Keine Änderungen — die Playlist ist auf dem aktuellen Stand.
     <% else %>
-      <% if @refresh_info.added.any? %>
+      <% if flash[:refresh_added].present? %>
         <strong>Hinzugekommen:</strong>
         <ul class="mb-2">
-          <% @refresh_info.added.each do |name| %>
+          <% flash[:refresh_added].each do |name| %>
             <li><%= name %></li>
           <% end %>
         </ul>
       <% end %>
-      <% if @refresh_info.removed.any? %>
+      <% if flash[:refresh_removed].present? %>
         <strong>Entfernt:</strong>
         <ul class="mb-0">
-          <% @refresh_info.removed.each do |name| %>
+          <% flash[:refresh_removed].each do |name| %>
             <li><%= name %></li>
           <% end %>
         </ul>
