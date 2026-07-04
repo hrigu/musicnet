@@ -7,18 +7,18 @@ Rails.application.routes.draw do
 
   resources :playlists do
     collection do
-      get 'fetch_all'
+      post 'fetch_all'
     end
     member do
-      get :download
-      get :refresh
+      post :download
+      post :refresh
     end
   end
 
   resources :tracks, only: [:index, :show] do
     collection do
       get :recently_played_index
-      get :download
+      post :download
     end
     member do
       get :stream

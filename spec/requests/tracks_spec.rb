@@ -327,12 +327,12 @@ RSpec.describe "Tracks", type: :request do
     end
   end
 
-  describe "GET /tracks/download" do
+  describe "POST /tracks/download" do
     it "ruft DownloadTrackService auf und redirected zu tracks_path" do
       service = instance_double(DownloadTrackService, download: true)
       allow(DownloadTrackService).to receive(:new).and_return(service)
 
-      get download_tracks_path
+      post download_tracks_path
 
       expect(service).to have_received(:download)
       expect(response).to redirect_to(tracks_path)
@@ -344,7 +344,7 @@ RSpec.describe "Tracks", type: :request do
         .and_raise(DownloadPlaylistService::DownloadAlreadyRunningError, "Es läuft bereits ein Download")
       allow(DownloadTrackService).to receive(:new).and_return(service)
 
-      get download_tracks_path
+      post download_tracks_path
 
       expect(response).to redirect_to(tracks_path)
       expect(flash[:alert]).to include("läuft bereits")

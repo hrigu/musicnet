@@ -73,12 +73,12 @@ RSpec.describe "Playlists", type: :request do
       expect(response.body).to include("Fusion Dark")
     end
 
-    it "GET /playlists/fetch_all ruft BuildMusicNetService auf und liefert Erfolg" do
+    it "POST /playlists/fetch_all ruft BuildMusicNetService auf und liefert Erfolg" do
       info = BuildMusicNetService::ServiceInfo.new
       service = instance_double(BuildMusicNetService, build: info)
       allow(BuildMusicNetService).to receive(:new).and_return(service)
 
-      get fetch_all_playlists_path
+      post fetch_all_playlists_path
 
       expect(response).to have_http_status(:success)
       expect(service).to have_received(:build)
@@ -163,13 +163,13 @@ RSpec.describe "Playlists", type: :request do
       expect(response.body).to include("Playlist aktualisieren")
     end
 
-    it "GET /playlists/:id/refresh ruft refresh_playlist auf und rendert die Playlist-Seite" do
+    it "POST /playlists/:id/refresh ruft refresh_playlist auf und rendert die Playlist-Seite" do
       info = BuildMusicNetService::RefreshInfo.new(["Green Tea"], ["Hottentot"])
       service = instance_double(BuildMusicNetService, refresh_playlist: info)
       allow(BuildMusicNetService).to receive(:new).and_return(service)
       playlist = playlists(:dark)
 
-      get refresh_playlist_path(playlist)
+      post refresh_playlist_path(playlist)
 
       expect(response).to have_http_status(:success)
       expect(service).to have_received(:refresh_playlist).with(playlist)
@@ -177,73 +177,73 @@ RSpec.describe "Playlists", type: :request do
       expect(response.body).to include("Hottentot")
     end
 
-    it "GET /playlists/:id/refresh zeigt einen Hinweis, wenn es keine Änderungen gibt" do
+    it "POST /playlists/:id/refresh zeigt einen Hinweis, wenn es keine Änderungen gibt" do
       info = BuildMusicNetService::RefreshInfo.new([], [])
       service = instance_double(BuildMusicNetService, refresh_playlist: info)
       allow(BuildMusicNetService).to receive(:new).and_return(service)
 
-      get refresh_playlist_path(playlists(:dark))
+      post refresh_playlist_path(playlists(:dark))
 
       expect(response.body).to include("Keine Änderungen")
     end
 
-    it "GET /playlists/:id/refresh zeigt bei nicht mehr existierender Spotify-Playlist einen Alert" do
+    it "POST /playlists/:id/refresh zeigt bei nicht mehr existierender Spotify-Playlist einen Alert" do
       service = instance_double(BuildMusicNetService)
       allow(service).to receive(:refresh_playlist)
         .and_raise(BuildMusicNetService::PlaylistNotFoundError, "Playlist 'Fusion Dark' wurde auf Spotify nicht gefunden")
       allow(BuildMusicNetService).to receive(:new).and_return(service)
       playlist = playlists(:dark)
 
-      get refresh_playlist_path(playlist)
+      post refresh_playlist_path(playlist)
 
       expect(response).to redirect_to(playlist_path(playlist))
       expect(flash[:alert]).to include("nicht gefunden")
     end
 
-    it "GET /playlists/fetch_all zeigt einen Alert, wenn bereits ein Sync läuft" do
+    it "POST /playlists/fetch_all zeigt einen Alert, wenn bereits ein Sync läuft" do
       service = instance_double(BuildMusicNetService)
       allow(service).to receive(:build)
         .and_raise(BuildMusicNetService::SyncAlreadyRunningError, "Es läuft bereits ein Sync")
       allow(BuildMusicNetService).to receive(:new).and_return(service)
 
-      get fetch_all_playlists_path
+      post fetch_all_playlists_path
 
       expect(response).to redirect_to(playlists_path)
       expect(flash[:alert]).to include("läuft bereits")
     end
 
-    it "GET /playlists/:id/refresh zeigt einen Alert, wenn bereits ein Sync läuft" do
+    it "POST /playlists/:id/refresh zeigt einen Alert, wenn bereits ein Sync läuft" do
       service = instance_double(BuildMusicNetService)
       allow(service).to receive(:refresh_playlist)
         .and_raise(BuildMusicNetService::SyncAlreadyRunningError, "Es läuft bereits ein Sync")
       allow(BuildMusicNetService).to receive(:new).and_return(service)
       playlist = playlists(:dark)
 
-      get refresh_playlist_path(playlist)
+      post refresh_playlist_path(playlist)
 
       expect(response).to redirect_to(playlist_path(playlist))
       expect(flash[:alert]).to include("läuft bereits")
     end
 
-    it "GET /playlists/:id/download ruft DownloadPlaylistService auf und redirected zur Playlist" do
+    it "POST /playlists/:id/download ruft DownloadPlaylistService auf und redirected zur Playlist" do
       service = instance_double(DownloadPlaylistService, download: true)
       allow(DownloadPlaylistService).to receive(:new).and_return(service)
       playlist = playlists(:dark)
 
-      get download_playlist_path(playlist)
+      post download_playlist_path(playlist)
 
       expect(service).to have_received(:download)
       expect(response).to redirect_to(playlist_path(playlist))
     end
 
-    it "GET /playlists/:id/download zeigt einen Alert, wenn bereits ein Download läuft" do
+    it "POST /playlists/:id/download zeigt einen Alert, wenn bereits ein Download läuft" do
       service = instance_double(DownloadPlaylistService)
       allow(service).to receive(:download)
         .and_raise(DownloadPlaylistService::DownloadAlreadyRunningError, "Es läuft bereits ein Download")
       allow(DownloadPlaylistService).to receive(:new).and_return(service)
       playlist = playlists(:dark)
 
-      get download_playlist_path(playlist)
+      post download_playlist_path(playlist)
 
       expect(response).to redirect_to(playlist_path(playlist))
       expect(flash[:alert]).to include("läuft bereits")
