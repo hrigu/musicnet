@@ -2,31 +2,53 @@ import { Controller } from "@hotwired/stimulus"
 
 const MAX_QUEUE_SIZE = 5
 
-// Einzige Instanz, dauerhaft im Layout (data-turbo-permanent) - ueberlebt Turbo-Drive-Visits.
-// Empfaengt "audio-player:play"/"audio-player:enqueue"-Events von den einzelnen Track-Buttons
-// (audio_trigger_controller.js). Die Queue ist reiner In-Memory-Zustand dieses Controllers - sie
-// ueberlebt Navigation automatisch mit, weil Turbo dieses permanente Element nie neu verbindet.
+// Einzige Instanz, dauerhaft im Layout (data-turbo-permanent) - der DOM-Knoten selbst ueberlebt
+// Turbo-Drive-Visits. Stimulus' eigener Connect/Disconnect-Zyklus fuer diesen Knoten tut das aber
+// NICHT immer mit: ein Link mit data-turbo-frame="_top", der aus einem aktiven turbo_frame_tag
+// ausbricht (z.B. die Artist-/Tracknamen-Links in tracks/_track.erb), loest bei Turbo einen
+// anderen internen Ablauf aus als ein gewoehnlicher Top-Level-Link-Klick und verbindet diesen
+// Controller dabei neu - ein zweites Mal "connect()" auf demselben Element. Deshalb lebt die
+// Queue nicht in einer Instanzvariable (die waere nach so einem Reconnect weg), sondern direkt
+// auf dem Element selbst, das nachweislich immer derselbe Knoten bleibt. Aus demselben Grund
+// werden alle Event-Listener ueber benannte, gebundene Methoden registriert, damit disconnect()
+// sie bei einem Reconnect sauber entfernen kann statt sie zu duplizieren.
 export default class extends Controller {
   static targets = ["audio", "icon", "name", "progress", "currentTime", "duration", "queue"]
 
   connect() {
-    this.queueEntries = []
+    this.element.audioPlayerQueueEntries ??= []
 
     this.handlePlayEvent = this.handlePlayEvent.bind(this)
     this.handleEnqueueEvent = this.handleEnqueueEvent.bind(this)
+    this.handleAudioPlay = () => (this.iconTarget.textContent = "⏸")
+    this.handleAudioPause = () => (this.iconTarget.textContent = "▶")
+    this.handleAudioEnded = () => this.playNextInQueue()
+    this.handleTimeUpdate = () => this.updateProgress()
+    this.handleLoadedMetadata = () => this.updateDuration()
+
     document.addEventListener("audio-player:play", this.handlePlayEvent)
     document.addEventListener("audio-player:enqueue", this.handleEnqueueEvent)
 
-    this.audioTarget.addEventListener("play", () => (this.iconTarget.textContent = "⏸"))
-    this.audioTarget.addEventListener("pause", () => (this.iconTarget.textContent = "▶"))
-    this.audioTarget.addEventListener("ended", () => this.playNextInQueue())
-    this.audioTarget.addEventListener("timeupdate", () => this.updateProgress())
-    this.audioTarget.addEventListener("loadedmetadata", () => this.updateDuration())
+    this.audioTarget.addEventListener("play", this.handleAudioPlay)
+    this.audioTarget.addEventListener("pause", this.handleAudioPause)
+    this.audioTarget.addEventListener("ended", this.handleAudioEnded)
+    this.audioTarget.addEventListener("timeupdate", this.handleTimeUpdate)
+    this.audioTarget.addEventListener("loadedmetadata", this.handleLoadedMetadata)
   }
 
   disconnect() {
     document.removeEventListener("audio-player:play", this.handlePlayEvent)
     document.removeEventListener("audio-player:enqueue", this.handleEnqueueEvent)
+
+    this.audioTarget.removeEventListener("play", this.handleAudioPlay)
+    this.audioTarget.removeEventListener("pause", this.handleAudioPause)
+    this.audioTarget.removeEventListener("ended", this.handleAudioEnded)
+    this.audioTarget.removeEventListener("timeupdate", this.handleTimeUpdate)
+    this.audioTarget.removeEventListener("loadedmetadata", this.handleLoadedMetadata)
+  }
+
+  get queueEntries() {
+    return this.element.audioPlayerQueueEntries
   }
 
   handlePlayEvent(event) {

@@ -264,16 +264,28 @@ runs the Rails app in-process for system specs, sharing Warden's test-mode state
 `spec/support/playback_test_helpers.rb`.
 
 **Song queue (Intent 41):** builds on the persistent player above. The queue is pure client-side
-state — an in-memory array on the same `audio-player` Stimulus controller instance, capped at 5
-(`MAX_QUEUE_SIZE`) — not a DB column or a Rails-rendered partial; it survives Turbo navigation for
-the same reason playback does (the permanent element, and thus the controller instance holding
-the array, is never disconnected). Each track row gets a second button ("+", `audio-trigger#enqueue`)
-alongside the existing play button, both on the same `audio-trigger` controller instance, dispatching
-`audio-player:enqueue` instead of `audio-player:play`. The queue list itself
+state, capped at 5 (`MAX_QUEUE_SIZE`) — not a DB column or a Rails-rendered partial. **It's stored
+as a property on the permanent DOM element itself (`this.element.audioPlayerQueueEntries`,
+exposed via a `queueEntries` getter), not as a plain Stimulus controller instance variable** — the
+element node reliably survives Turbo navigation, but the *controller instance* attached to it does
+not always: a link with `data-turbo-frame="_top"` that escapes an active `turbo_frame_tag` (e.g.
+the artist/track-name links in `tracks/_track.erb`) takes a different internal Turbo code path than
+a plain top-level link and reconnects the controller (`connect()` reruns) even though the element
+itself is untouched — an instance variable would silently reset to `[]` on that path (this was a
+real, reported, reproduced-in-spec bug). For the same reason, all `<audio>` element listeners are
+registered as named bound methods and explicitly removed in `disconnect()`, so a stray reconnect
+cleans up rather than duplicating them (an unremoved duplicate `ended` listener would advance the
+queue twice per track). Each track row gets a second button ("+", `audio-trigger#enqueue`)
+alongside the existing play button, both on the same `audio-trigger` controller instance,
+dispatching `audio-player:enqueue` instead of `audio-player:play`. The queue list itself
 (`#audio-player-queue`, above the playback bar so it's visually "over" the current track) is
 rendered directly via JS (`renderQueue()`), not ERB — each entry has a "×" button
 (`audio-player#removeFromQueue`, index passed as a Stimulus action param) to remove it before its
-turn. Enqueueing past the cap is a silent no-op (no error/toast). On the audio element's `ended`
-event, `playNextInQueue()` shifts and plays the first queued entry if any; the manual `toggle()`
-play/pause button is unaffected. As with the player itself, this state is not persisted across a
-real page reload (F5) — only across Turbo navigation.
+turn; the list is displayed in reverse of play order (newest addition on top, next-to-play at the
+bottom, right above the player bar) even though the underlying array stays FIFO
+(`push`/`shift`) — this was flipped once already after user feedback found top-to-bottom-by-play-order
+counterintuitive. Enqueueing past the cap is a silent no-op (no error/toast). On the audio
+element's `ended` event, `playNextInQueue()` shifts and plays the first queued entry if any; the
+manual `toggle()` play/pause button does the same instead of a no-op `play()`/`pause()` when
+nothing has ever been loaded yet or the current track already ended. As with the player itself,
+this state is not persisted across a real page reload (F5) — only across Turbo navigation.

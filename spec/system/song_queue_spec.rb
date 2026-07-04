@@ -117,6 +117,31 @@ RSpec.describe "Song-Queue (Intent 41)", type: :system do
     expect(page).to have_selector("#audio-player-queue", text: track.name)
   end
 
+  it "ueberlebt eine Navigation ueber einen data-turbo-frame=_top-Link aus dem Tracks-Frame heraus" do
+    artist = Artist.create!(name: "Queue Bug Artist", spotify_id: "queue-bug-artist")
+    first = create_playable_track("Queue TopLink Erster", spotify_id: "queue-toplink-1")
+    first.update!(artists: [artist])
+    second = create_playable_track("Queue TopLink Zweiter", spotify_id: "queue-toplink-2")
+
+    visit tracks_path
+    enqueue_button_for(first.name).click
+    enqueue_button_for(second.name).click
+
+    # Der Artist-Link in der Tracks-Tabelle nutzt data-turbo-frame: "_top", um aus
+    # turbo_frame_tag "tracks" auszubrechen - anders als ein gewoehnlicher Top-Level-Link.
+    first(:link, artist.name).click
+    expect(page).to have_current_path(artist_path(artist))
+
+    # Erneutes Enqueuen (hier: derselbe Track, der auf der Artist-Seite gelistet ist) erzwingt
+    # ein renderQueue() und deckt damit auf, ob der interne Zustand zwischenzeitlich verloren ging.
+    page.all("tr", text: first.name).first.find_button("Zur Queue hinzufügen").click
+
+    aggregate_failures do
+      expect(page).to have_selector("#audio-player-queue", text: second.name)
+      expect(page).to have_selector("#audio-player-queue .queue-entry", count: 3)
+    end
+  end
+
   it "ueberlebt eine Suche auf /tracks (Turbo-Frame-Update)" do
     track = create_playable_track("Queue Suche", spotify_id: "queue-suche")
 
