@@ -14,11 +14,9 @@ RSpec.describe AudioFeaturesExtractor do
     FileUtils.rm_f(downloads_dir.join(file_name))
   end
 
-  def stub_essentia_output(extractor, yaml_content)
-    allow(extractor).to receive(:system) do |*args|
-      File.write(args[2], yaml_content)
-      true
-    end
+  def stub_essentia_output(json_content, success: true)
+    status = instance_double(Process::Status, success?: success)
+    allow(Open3).to receive(:capture2).and_return([json_content, status])
   end
 
   describe "#extract" do
@@ -28,29 +26,48 @@ RSpec.describe AudioFeaturesExtractor do
       file_name = "RSpec Artist - Hottentot.m4a"
 
       with_download_file(file_name) do
-        extractor = described_class.new(track)
-        stub_essentia_output(extractor, <<~YAML)
-          rhythm:
-            bpm: 128.3
-          lowlevel:
-            average_loudness: 0.62
-        YAML
+        stub_essentia_output({ rhythm: { bpm: 128.3 }, lowlevel: { average_loudness: 0.62 } }.to_json)
 
-        extractor.extract
+        described_class.new(track).extract
       end
 
       expect(track.reload.audio_features).to eq("tempo" => 128.3, "energy" => 0.62)
     end
 
+    it "ruft docker run mit dem Track-Verzeichnis als Read-Only-Mount auf" do
+      track = Track.create!(name: "Hottentot Docker", spotify_id: "trk-audio-features-docker", album: album,
+                            duration_ms: 200_000)
+      file_name = "RSpec Artist - Hottentot Docker.m4a"
+      captured_args = nil
+
+      with_download_file(file_name) do
+        allow(Open3).to receive(:capture2) do |*args|
+          captured_args = args
+          status = instance_double(Process::Status, success?: true)
+          [{ rhythm: { bpm: 100.0 } }.to_json, status]
+        end
+
+        described_class.new(track).extract
+      end
+
+      expect(captured_args).to eq([
+        "docker", "run", "--rm", "-v", "#{downloads_dir}:/audio:ro",
+        "ghcr.io/mgoltzsche/essentia",
+        "essentia_streaming_extractor_music", "/audio/#{file_name}", "-", "/etc/essentia/profile.yaml"
+      ])
+    end
+
     it "macht nichts, wenn keine Datei zum Track gefunden wird" do
       track = Track.create!(name: "RSpec Unbekannt", spotify_id: "trk-audio-features-missing",
                             album: album, duration_ms: 200_000)
-      extractor = described_class.new(track)
-      expect(extractor).to_not receive(:system)
+      allow(Open3).to receive(:capture2)
 
-      extractor.extract
+      described_class.new(track).extract
 
-      expect(track.reload.audio_features).to be_nil
+      aggregate_failures do
+        expect(Open3).to_not have_received(:capture2)
+        expect(track.reload.audio_features).to be_nil
+      end
     end
 
     it "lässt audio_features leer, wenn der essentia-Aufruf fehlschlägt" do
@@ -59,27 +76,24 @@ RSpec.describe AudioFeaturesExtractor do
       file_name = "RSpec Artist - RSpec Fehlschlag.m4a"
 
       with_download_file(file_name) do
-        extractor = described_class.new(track)
-        allow(extractor).to receive(:system).and_return(false)
-        allow(Rails.logger).to receive(:warn)
+        stub_essentia_output("", success: false)
 
-        extractor.extract
+        described_class.new(track).extract
       end
 
       expect(track.reload.audio_features).to be_nil
     end
 
-    it "lässt audio_features leer und loggt, wenn der Output kein verwertbares YAML ist" do
+    it "lässt audio_features leer und loggt, wenn der Output kein verwertbares JSON ist" do
       track = Track.create!(name: "RSpec Kaputt", spotify_id: "trk-audio-features-broken",
                             album: album, duration_ms: 200_000)
       file_name = "RSpec Artist - RSpec Kaputt.m4a"
 
       with_download_file(file_name) do
-        extractor = described_class.new(track)
-        stub_essentia_output(extractor, "not: [valid, yaml, :")
+        stub_essentia_output("not valid json")
         allow(Rails.logger).to receive(:warn)
 
-        extractor.extract
+        described_class.new(track).extract
 
         expect(Rails.logger).to have_received(:warn)
       end
@@ -93,29 +107,12 @@ RSpec.describe AudioFeaturesExtractor do
       file_name = "RSpec Artist - RSpec Leer.m4a"
 
       with_download_file(file_name) do
-        extractor = described_class.new(track)
-        stub_essentia_output(extractor, "metadata:\n  version: 2.1\n")
+        stub_essentia_output({ metadata: { version: "2.1" } }.to_json)
 
-        extractor.extract
+        described_class.new(track).extract
       end
 
       expect(track.reload.audio_features).to be_nil
-    end
-
-    it "räumt die temporäre Essentia-Ausgabedatei nach dem Lauf auf" do
-      track = Track.create!(name: "RSpec Cleanup", spotify_id: "trk-audio-features-cleanup",
-                            album: album, duration_ms: 200_000)
-      file_name = "RSpec Artist - RSpec Cleanup.m4a"
-      output_path = Rails.root.join("tmp", "essentia_track_#{track.id}.yaml").to_s
-
-      with_download_file(file_name) do
-        extractor = described_class.new(track)
-        stub_essentia_output(extractor, "rhythm:\n  bpm: 100.0\n")
-
-        extractor.extract
-      end
-
-      expect(File).to_not exist(output_path)
     end
   end
 end

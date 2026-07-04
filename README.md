@@ -61,9 +61,11 @@ In Python geschrieben.
 
 ### Essentia
 [Essentia](https://essentia.upf.edu/) berechnet Tempo/Energy lokal aus den heruntergeladenen Audiodateien
-(Ersatz für Spotifys für diese App dauerhaft gesperrten `audio-features`-Endpunkt, siehe Intent 35). Genutzt
-wird das mitgelieferte CLI-Tool `essentia_streaming_extractor_music`, z.B. via `brew install essentia`
-installierbar. Muss wie `spotdl` separat installiert sein und auf dem `PATH` liegen, ist kein Gem.
+(Ersatz für Spotifys für diese App dauerhaft gesperrten `audio-features`-Endpunkt, siehe Intent 35). Läuft als
+Docker-Image `ghcr.io/mgoltzsche/essentia` (multi-arch, auch nativ auf Apple Silicon) — der offizielle
+Essentia-Homebrew-Tap (`MTG/essentia`) lässt sich dort nicht zuverlässig aus dem Quellcode kompilieren
+(bekannte, offene Upstream-Issues). Voraussetzung ist eine installierte und laufende Docker-Installation
+(z.B. Docker Desktop); wie `spotdl` kein Gem, sondern ein separat zu installierendes externes Tool.
 
 
 ## Tables

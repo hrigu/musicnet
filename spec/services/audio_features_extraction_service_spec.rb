@@ -20,10 +20,9 @@ RSpec.describe AudioFeaturesExtractionService do
       FileUtils.mkdir_p(downloads_dir)
       files.each { |f| FileUtils.touch(downloads_dir.join(f)) }
 
-      allow_any_instance_of(AudioFeaturesExtractor).to receive(:system) do |_instance, *args|
-        File.write(args[2], "rhythm:\n  bpm: 128.0\nlowlevel:\n  average_loudness: 0.5\n")
-        true
-      end
+      status = instance_double(Process::Status, success?: true)
+      output = { rhythm: { bpm: 128.0 }, lowlevel: { average_loudness: 0.5 } }.to_json
+      allow(Open3).to receive(:capture2).and_return([output, status])
 
       begin
         tracks = [downloaded_without_features, downloaded_with_features, not_downloaded]

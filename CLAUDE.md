@@ -76,12 +76,16 @@ users (separate: local login identity + holds serialized RSpotify::User via User
   Populated locally via Essentia (`AudioFeaturesExtractor`/`AudioFeaturesExtractionService`, Intent 35) right
   after a track's file is downloaded — not by Spotify: its `audio-features` endpoint has been permanently
   locked for apps without Extended Quota Mode access since November 2024 (a personal single-user app like
-  this one cannot qualify). `AudioFeaturesExtractor` shells out to `essentia_streaming_extractor_music`
-  (must be installed and on PATH, e.g. `brew install essentia`; not a gem/bundled dependency, same pattern as
-  `spotdl`), parses its YAML output and stores `{"tempo" => ..., "energy" => ...}` (from `rhythm.bpm` /
-  `lowlevel.average_loudness`) via `update_column` — no callbacks, same cache semantics as `#genre`. Failure
-  (command fails, output unreadable, neither value present) is logged and leaves `audio_features` nil, same
-  soft-failure style as the rest of the app. `rake extract_missing_audio_features` backfills tracks that were
+  this one cannot qualify). `AudioFeaturesExtractor` runs the `ghcr.io/mgoltzsche/essentia` **Docker image**
+  (Docker must be installed and running; not a gem/bundled dependency, same "external tool" pattern as
+  `spotdl`) via `Open3.capture2`, mounting the track's directory read-only and invoking
+  `essentia_streaming_extractor_music` with `-` as the output path so the result comes back as JSON on
+  stdout. The Homebrew tap (`MTG/essentia`) was tried first but doesn't reliably compile on Apple Silicon
+  (known open upstream issues) — Docker's multi-arch image sidesteps that. Parses `rhythm.bpm` /
+  `lowlevel.average_loudness` and stores `{"tempo" => ..., "energy" => ...}` via `update_column` — no
+  callbacks, same cache semantics as `#genre`. Failure (command fails, output unreadable, neither value
+  present) is logged and leaves `audio_features` nil, same soft-failure style as the rest of the app.
+  `rake extract_missing_audio_features` backfills tracks that were
   downloaded before this existed.
 - `User#spotify_user`: reconstructs an `RSpotify::User` from the `spotify_user_data` JSON column captured at
   OAuth login time (`UsersController#spotify`). This is how the app acts as "the logged-in Spotify user" for
