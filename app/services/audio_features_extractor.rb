@@ -18,21 +18,29 @@ class AudioFeaturesExtractor
   def extract
     return unless @track.track_path
 
-    output, status = run_essentia
+    output, _stderr, status = run_essentia
     return unless status.success?
 
     features = parse_features(output)
-    @track.update_column(:audio_features, features) if features
+    return unless features
+
+    @track.update_column(:audio_features, features)
+    Rails.logger.info(
+      "AudioFeaturesExtractor: #{@track.name} -> tempo=#{features['tempo']}, energy=#{features['energy']}"
+    )
   end
 
   private
 
-  # "-" als Output-Pfad schreibt das Ergebnis als JSON auf stdout statt in eine Datei.
+  # "-" als Output-Pfad schreibt das Ergebnis als JSON auf stdout statt in eine Datei. capture3
+  # (statt capture2) faengt zusaetzlich stderr ab - Essentia schreibt seine sehr ausfuehrlichen
+  # [INFO]-Fortschrittszeilen dorthin; unabgefangen wuerden die (da nicht redirected) direkt in
+  # den Rails-Log-Stream durchsickern. Wir loggen stattdessen selbst eine einzige Ergebniszeile.
   def run_essentia
     dir = File.dirname(@track.track_path)
     file_name = File.basename(@track.track_path)
 
-    Open3.capture2(
+    Open3.capture3(
       "docker", "run", "--rm", "-v", "#{dir}:/audio:ro", DOCKER_IMAGE,
       "essentia_streaming_extractor_music", "/audio/#{file_name}", "-", "/etc/essentia/profile.yaml"
     )

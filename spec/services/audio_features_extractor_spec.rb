@@ -14,9 +14,9 @@ RSpec.describe AudioFeaturesExtractor do
     FileUtils.rm_f(downloads_dir.join(file_name))
   end
 
-  def stub_essentia_output(json_content, success: true)
+  def stub_essentia_output(json_content, success: true, stderr: "")
     status = instance_double(Process::Status, success?: success)
-    allow(Open3).to receive(:capture2).and_return([json_content, status])
+    allow(Open3).to receive(:capture3).and_return([json_content, stderr, status])
   end
 
   describe "#extract" do
@@ -41,10 +41,10 @@ RSpec.describe AudioFeaturesExtractor do
       captured_args = nil
 
       with_download_file(file_name) do
-        allow(Open3).to receive(:capture2) do |*args|
+        allow(Open3).to receive(:capture3) do |*args|
           captured_args = args
           status = instance_double(Process::Status, success?: true)
-          [{ rhythm: { bpm: 100.0 } }.to_json, status]
+          [{ rhythm: { bpm: 100.0 } }.to_json, "", status]
         end
 
         described_class.new(track).extract
@@ -57,15 +57,33 @@ RSpec.describe AudioFeaturesExtractor do
       ])
     end
 
+    it "loggt genau eine Zeile mit dem Ergebnis, statt Essentias stderr-Ausgabe durchzulassen" do
+      track = Track.create!(name: "Hottentot Leise", spotify_id: "trk-audio-features-quiet", album: album,
+                            duration_ms: 200_000)
+      file_name = "RSpec Artist - Hottentot Leise.m4a"
+
+      with_download_file(file_name) do
+        stub_essentia_output({ rhythm: { bpm: 128.3 }, lowlevel: { average_loudness: 0.62 } }.to_json,
+                             stderr: "[   INFO   ] MusicExtractorSVM: adding SVM model ...\n[   INFO   ] All done")
+        allow(Rails.logger).to receive(:info).and_call_original
+
+        described_class.new(track).extract
+      end
+
+      expect(Rails.logger).to have_received(:info).with(
+        "AudioFeaturesExtractor: Hottentot Leise -> tempo=128.3, energy=0.62"
+      ).once
+    end
+
     it "macht nichts, wenn keine Datei zum Track gefunden wird" do
       track = Track.create!(name: "RSpec Unbekannt", spotify_id: "trk-audio-features-missing",
                             album: album, duration_ms: 200_000)
-      allow(Open3).to receive(:capture2)
+      allow(Open3).to receive(:capture3)
 
       described_class.new(track).extract
 
       aggregate_failures do
-        expect(Open3).to_not have_received(:capture2)
+        expect(Open3).to_not have_received(:capture3)
         expect(track.reload.audio_features).to be_nil
       end
     end

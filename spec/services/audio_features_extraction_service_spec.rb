@@ -22,7 +22,7 @@ RSpec.describe AudioFeaturesExtractionService do
 
       status = instance_double(Process::Status, success?: true)
       output = { rhythm: { bpm: 128.0 }, lowlevel: { average_loudness: 0.5 } }.to_json
-      allow(Open3).to receive(:capture2).and_return([output, status])
+      allow(Open3).to receive(:capture3).and_return([output, "", status])
 
       begin
         tracks = [downloaded_without_features, downloaded_with_features, not_downloaded]
