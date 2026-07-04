@@ -265,8 +265,12 @@ RSpec.describe "Playlists", type: :request do
       expect(flash[:alert]).to include("läuft bereits")
     end
 
-    it "POST /playlists/:id/download ruft DownloadPlaylistService auf und redirected zur Playlist" do
-      service = instance_double(DownloadPlaylistService, download: true)
+    it "POST /playlists/:id/download ruft DownloadPlaylistService auf, redirected und zeigt das Ergebnis" do
+      result = DownloadResultParser::Result.new(
+        [{ name: "Minor Swing", provider: "YouTube" }],
+        [{ name: "Sweet Life Blues", reason: "Kein Treffer gefunden" }]
+      )
+      service = instance_double(DownloadPlaylistService, download: result)
       allow(DownloadPlaylistService).to receive(:new).and_return(service)
       playlist = playlists(:dark)
 
@@ -274,6 +278,51 @@ RSpec.describe "Playlists", type: :request do
 
       expect(service).to have_received(:download)
       expect(response).to redirect_to(playlist_path(playlist))
+
+      follow_redirect!
+
+      expect(response.body).to include("Minor Swing")
+      expect(response.body).to include("YouTube")
+      expect(response.body).to include("Sweet Life Blues")
+      expect(response.body).to include("Kein Treffer gefunden")
+    end
+
+    it "POST /playlists/:id/download begrenzt die Anzahl der im Flash gespeicherten Eintraege" do
+      downloaded = Array.new(178) { |i| { name: "Track #{i}", provider: "YouTube" } }
+      result = DownloadResultParser::Result.new(downloaded, [])
+      service = instance_double(DownloadPlaylistService, download: result)
+      allow(DownloadPlaylistService).to receive(:new).and_return(service)
+      playlist = playlists(:dark)
+
+      expect { post download_playlist_path(playlist) }.to_not raise_error
+      follow_redirect!
+
+      expect(response.body).to include("und 170 weitere")
+    end
+
+    it "POST /playlists/:id/download ueberschreitet das Cookie-Limit auch im Worst-Case nicht" do
+      downloaded = Array.new(8) { |i| { name: "Ein Ziemlich Langer Tracktitel Nummer #{i}", provider: "YouTube" } }
+      failed = Array.new(8) do |i|
+        { name: "Noch Ein Langer Tracktitel #{i}", reason: "x" * 80 }
+      end
+      result = DownloadResultParser::Result.new(downloaded, failed)
+      service = instance_double(DownloadPlaylistService, download: result)
+      allow(DownloadPlaylistService).to receive(:new).and_return(service)
+      playlist = playlists(:dark)
+
+      expect { post download_playlist_path(playlist) }.to_not raise_error
+      expect(response).to redirect_to(playlist_path(playlist))
+    end
+
+    it "POST /playlists/:id/download zeigt keinen Ergebnis-Alert, wenn der Download fehlschlägt" do
+      service = instance_double(DownloadPlaylistService, download: nil)
+      allow(DownloadPlaylistService).to receive(:new).and_return(service)
+      playlist = playlists(:dark)
+
+      post download_playlist_path(playlist)
+      follow_redirect!
+
+      expect(response.body).to_not include("Heruntergeladen")
     end
 
     it "POST /playlists/:id/download zeigt einen Alert, wenn bereits ein Download läuft" do

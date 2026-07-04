@@ -36,6 +36,34 @@ RSpec.describe Playlist, type: :model do
     end
   end
 
+  describe "#missing_tracks" do
+    let(:downloads_dir) { Rails.root.join("downloads/tracks") }
+
+    def with_download_file(file_name)
+      FileUtils.mkdir_p(downloads_dir)
+      FileUtils.touch(downloads_dir.join(file_name))
+      yield
+    ensure
+      FileUtils.rm_f(downloads_dir.join(file_name))
+    end
+
+    it "liefert nur Tracks ohne lokale Datei" do
+      album = Album.create!(spotify_id: "alb-mt-1", name: "Album")
+      playlist = Playlist.create!(spotify_id: "pl-mt-1", name: "Fusion Missing")
+      artist = Artist.create!(spotify_id: "art-mt-1", name: "RSpec Artist")
+      present = Track.create!(spotify_id: "trk-mt-present", name: "RSpec Vorhanden", album: album,
+                              artists: [artist], duration_ms: 200_000)
+      missing = Track.create!(spotify_id: "trk-mt-missing", name: "RSpec Fehlend", album: album,
+                              artists: [artist], duration_ms: 200_000)
+      PlaylistTrack.create!(playlist: playlist, track: present, added_at: Time.current)
+      PlaylistTrack.create!(playlist: playlist, track: missing, added_at: Time.current)
+
+      with_download_file("RSpec Artist - RSpec Vorhanden.m4a") do
+        expect(playlist.missing_tracks).to contain_exactly(missing)
+      end
+    end
+  end
+
   describe "#playlist_tracks_for_display" do
     it "liefert streng geladene PlaylistTracks mit vorab geladenen Daten" do
       album = Album.create!(spotify_id: "alb-ptfd-1", name: "Album")

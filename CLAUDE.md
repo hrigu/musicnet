@@ -142,10 +142,36 @@ corrects itself once the old row is orphaned and recreated.
 Both download services shell out to the external `spotdl` Python CLI (must be installed and on PATH; not a
 gem/bundled dependency) via `system(...)`, always after `Dir.chdir`-ing into `downloads/tracks`:
 
-- `DownloadPlaylistService` (`playlists#download`) — `spotdl sync <playlist_url> --save-file <name>.spotdl
-  --user-auth --format m4a`. Uses spotdl's own sync/save-file state to skip already-downloaded tracks. After a
-  successful run it also calls `AudioFeaturesExtractionService.new(@playlist.tracks).extract_missing` (Intent
-  35), so newly-downloaded tracks get their Essentia-based audio features right away.
+- `DownloadPlaylistService` (`playlists#download`) — command built by `DownloadPlaylistCommandBuilder`, which
+  branches on `Playlist#missing_tracks` (tracks without a local file, see `Track#track_path`):
+  - **1–10 missing tracks** (`SMALL_BATCH_THRESHOLD`): `spotdl download <track_url> <track_url> ...` for just
+    those tracks — no `--user-auth` (Spotify track metadata is always public, unlike playlists) and no
+    `--sync-without-deleting` (no deletion reconciliation needed for an explicit, targeted download).
+  - **0 or >10 missing tracks**: falls back to the previous `spotdl sync <playlist_url> --save-file
+    <name>.spotdl --sync-without-deleting [--user-auth] --format m4a`. Individual track URLs each cost spotdl
+    their own separate Spotify API calls (track/album/artist), while a playlist sync fetches everything
+    bundled in one request — with ~37 individual track URLs at once this caused a 24h rate-limit ban in 2024
+    (Intent 21), hence the threshold; `DownloadTrackService` below is deliberately **not** switched to
+    per-track URLs for the same reason.
+  Both branches also pass `--save-errors <file>`. After a successful run, `DownloadResultParser` decides
+  success per track from **`Track#track_path` re-checked fresh after the run** (`Track.preload_track_paths`),
+  not from the `--save-file` JSON's `download_url` — that field is `null` both for a genuine failure *and*
+  when spotdl skips a track because the file already exists (e.g. downloaded in an earlier run), and the JSON
+  gives no way to tell those apart. `download_url`, when present, is only used to name the provider (its host,
+  e.g. `youtube.com` → "YouTube"); a track with a file but no `download_url` shows as downloaded with provider
+  "unbekannt". The `--save-file` JSON itself comes in two shapes depending on operation — `spotdl sync` writes
+  `{"songs": [...]}`, `spotdl download` (small-batch) writes a bare array, `song_id` matches `Track#spotify_id`
+  either way. The `--save-errors` text is matched to a track name best-effort for the failure reason. Temp
+  files (`--save-errors` always; `--save-file` only for the small-batch branch, since the sync branch's
+  save-file is the playlist's persistent state) are deleted after parsing. It also calls
+  `AudioFeaturesExtractionService.new(@playlist.tracks).extract_missing` (Intent 35), so newly-downloaded
+  tracks get their Essentia-based audio features right away.
+  The result is rendered via `flash[:download_added]`/`flash[:download_failed]` on `playlists#show` (Intent
+  38, same redirect+flash pattern as `refresh` below) — since flash lives in the client-side session cookie
+  (~4KB limit, and encryption+Base64 cost roughly 1.5–2× the raw payload size in practice), both lists are
+  capped at `PlaylistsController::MAX_FLASH_ENTRIES` (8, with a "+N more" note and a `..._total` count) and
+  each entry's name/reason is truncated (`DownloadResultParser::MAX_NAME_LENGTH`/`MAX_REASON_LENGTH`) — a real
+  `CookieOverflow` 500 was hit in testing with a 178-track playlist before this was added.
 - `DownloadTrackService` (`tracks#download`) — delegates to `DownloadPlaylistService` per affected playlist
   (so the audio-features extraction above applies here too), rather than invoking `spotdl` directly itself.
 

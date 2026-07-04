@@ -13,19 +13,32 @@ class DownloadPlaylistService
   end
 
   # lädt die Songs der @playlist runter und speichert sie unter downloads/tracks.
-  # Tracks die schon vorhanden sind werden nicht nochmals runtergeladen
+  # Tracks die schon vorhanden sind werden nicht nochmals runtergeladen. Gibt bei Erfolg
+  # das per DownloadResultParser ausgewertete Ergebnis zurück (siehe Intent 38), sonst nil.
   def download
     with_download_lock do
       tracks_dir = Rails.root.join(TRACKS_DIR)
+      builder = DownloadPlaylistCommandBuilder.new(@playlist)
       Rails.logger.info "DownloadPlaylistService#download: current_dir = #{tracks_dir}"
-      result = system(DownloadPlaylistCommandBuilder.new(@playlist).build, chdir: tracks_dir)
+      result = system(builder.build, chdir: tracks_dir)
       Rails.logger.info(result)
-      AudioFeaturesExtractionService.new(@playlist.tracks).extract_missing if result
+      next unless result
+
+      AudioFeaturesExtractionService.new(@playlist.tracks).extract_missing
+      parse_download_result(builder)
     end
   end
 
-
   private
+
+  def parse_download_result(builder)
+    DownloadResultParser.new(
+      builder.missing_tracks,
+      save_file_path: builder.save_file_path,
+      errors_file_path: builder.errors_file_path,
+      cleanup_save_file: builder.small_batch?
+    ).parse
+  end
 
   # Verhindert parallele spotdl-Prozesse. try_lock statt lock, damit der zweite Aufruf
   # sofort mit einer verständlichen Meldung scheitert statt zu warten.

@@ -17,4 +17,11 @@ class Playlist < ApplicationRecord
       Track.preload_track_paths(records.map(&:track))
     end
   end
+
+  # Tracks dieser Playlist ohne lokale Audiodatei (siehe Track#track_path).
+  def missing_tracks
+    all_tracks = tracks.to_a
+    Track.preload_track_paths(all_tracks)
+    all_tracks.reject(&:track_path)
+  end
 end

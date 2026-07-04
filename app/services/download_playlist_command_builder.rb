@@ -19,16 +19,60 @@ class DownloadPlaylistCommandBuilder
   # zum naechsten Provider (bandcamp) zu wechseln.
   AUDIO_PROVIDERS = 'youtube bandcamp'
 
+  # Ab wie vielen fehlenden Tracks weiterhin die ganze Playlist gesynct wird statt
+  # gezielter Track-URLs. Einzelne Track-URLs loesen bei spotdl pro URL eigene
+  # Spotify-API-Calls aus (Track/Album/Artist), waehrend ein Playlist-Sync die ganze
+  # Playlist gebuendelt holt - mit ~37 Track-URLs auf einmal gab es deswegen 2024
+  # eine 24h-Rate-Limit-Sperre (Intent 21). 10 haelt deutlich Abstand dazu.
+  SMALL_BATCH_THRESHOLD = 10
+
+  attr_reader :save_file_path, :errors_file_path, :missing_tracks
+
   def initialize(playlist)
     @playlist = playlist
+    @missing_tracks = playlist.missing_tracks
+    @save_file_path = small_batch? ? "playlist_#{@playlist.id}_missing.spotdl" : save_file
+    @errors_file_path = small_batch? ? "playlist_#{@playlist.id}_missing-errors.txt" : sync_errors_file_path
   end
 
   def build
-    "spotdl sync #{playlist_url} --save-file #{save_file} --sync-without-deleting" \
-      "#{user_auth_flag} --format m4a --audio #{AUDIO_PROVIDERS}"
+    if small_batch?
+      build_track_urls_command
+    else
+      build_sync_command
+    end
+  end
+
+  # true, wenn gezielte Track-URLs statt eines vollen Playlist-Syncs gebaut werden -
+  # bestimmt, ob die Save-Datei danach als temporaer (loeschbar) gilt (siehe
+  # DownloadResultParser#cleanup_save_file).
+  def small_batch?
+    @missing_tracks.any? && @missing_tracks.size <= SMALL_BATCH_THRESHOLD
   end
 
   private
+
+  # Track-Metadaten sind auf Spotify immer oeffentlich (anders als Playlists) -
+  # kein --user-auth noetig. Kein --sync-without-deleting, da hier explizit nur
+  # die fehlenden Tracks angefragt werden, keine Lösch-Reconciliation stattfindet.
+  def build_track_urls_command
+    urls = @missing_tracks.map { |track| track_url(track) }.join(' ')
+    "spotdl download #{urls} --format m4a --audio #{AUDIO_PROVIDERS} " \
+      "--save-file #{save_file_path} --save-errors #{errors_file_path}"
+  end
+
+  def build_sync_command
+    "spotdl sync #{playlist_url} --save-file #{save_file_path} --sync-without-deleting" \
+      "#{user_auth_flag} --format m4a --audio #{AUDIO_PROVIDERS} --save-errors #{errors_file_path}"
+  end
+
+  def track_url(track)
+    track.url || "https://open.spotify.com/track/#{track.spotify_id}"
+  end
+
+  def sync_errors_file_path
+    "#{@playlist.name_path_ready}-errors.txt"
+  end
 
   # --user-auth loest bei spotdl einen Browser-OAuth-Login gegen die eigene
   # Spotify-App aus, dessen fest einprogrammierte Redirect-URI (127.0.0.1:9900)

@@ -26,7 +26,7 @@ RSpec.describe DownloadPlaylistService do
       expect(service).to have_received(:system).with(
         "spotdl sync https://open.spotify.com/playlist/abc123 --save-file FusionDark.spotdl " \
         "--sync-without-deleting --user-auth --format m4a " \
-        "--audio youtube bandcamp",
+        "--audio youtube bandcamp --save-errors FusionDark-errors.txt",
         chdir: Rails.root.join("downloads/tracks")
       )
     end
@@ -41,7 +41,7 @@ RSpec.describe DownloadPlaylistService do
       expect(service).to have_received(:system).with(
         "spotdl sync https://open.spotify.com/playlist/spotify_id_1 --save-file FusionDark.spotdl " \
         "--sync-without-deleting --user-auth --format m4a " \
-        "--audio youtube bandcamp",
+        "--audio youtube bandcamp --save-errors FusionDark-errors.txt",
         chdir: Rails.root.join("downloads/tracks")
       )
     end
@@ -99,6 +99,28 @@ RSpec.describe DownloadPlaylistService do
       service.download
 
       expect(AudioFeaturesExtractionService).to_not have_received(:new)
+    end
+
+    it "gibt nil zurueck, wenn der Download fehlschlägt" do
+      playlist = build_playlist(url: "https://open.spotify.com/playlist/abc123")
+      service = described_class.new(playlist)
+      allow(service).to receive(:system).and_return(false)
+
+      expect(service.download).to be_nil
+    end
+
+    it "gibt das per DownloadResultParser ausgewertete Ergebnis zurueck" do
+      playlist = build_playlist(url: "https://open.spotify.com/playlist/abc123")
+      service = described_class.new(playlist)
+      allow(service).to receive(:system).and_return(true)
+      result = DownloadResultParser::Result.new([{ name: "Track", provider: "YouTube" }], [])
+      parser = instance_double(DownloadResultParser, parse: result)
+      allow(DownloadResultParser).to receive(:new).and_return(parser)
+
+      expect(service.download).to eq(result)
+      expect(DownloadResultParser).to have_received(:new).with(
+        [], save_file_path: "FusionDark.spotdl", errors_file_path: "FusionDark-errors.txt", cleanup_save_file: false
+      )
     end
   end
 end

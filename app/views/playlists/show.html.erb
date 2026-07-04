@@ -36,6 +36,36 @@
     <% end %>
   </div>
 <% end %>
+
+<%# String-Keys ("name"/"provider"/"reason") noetig, nicht Symbole: der Flash haelt die Hashes
+    aus DownloadResultParser ueber den Redirect hinweg in der Session, deren cookies_serializer
+    auf :json steht - Symbol-Keys werden dabei zu Strings. %>
+<% if flash[:download_added] || flash[:download_failed] %>
+  <div class="alert alert-info mt-3">
+    <% if flash[:download_added].present? %>
+      <strong>Heruntergeladen:</strong>
+      <ul class="mb-2">
+        <% flash[:download_added].each do |entry| %>
+          <li><%= entry["name"] %> (<%= entry["provider"] %>)</li>
+        <% end %>
+        <% if flash[:download_added_total].to_i > flash[:download_added].size %>
+          <li>… und <%= flash[:download_added_total] - flash[:download_added].size %> weitere</li>
+        <% end %>
+      </ul>
+    <% end %>
+    <% if flash[:download_failed].present? %>
+      <strong>Fehlgeschlagen:</strong>
+      <ul class="mb-0">
+        <% flash[:download_failed].each do |entry| %>
+          <li><%= entry["name"] %> — <%= entry["reason"] %></li>
+        <% end %>
+        <% if flash[:download_failed_total].to_i > flash[:download_failed].size %>
+          <li>… und <%= flash[:download_failed_total] - flash[:download_failed].size %> weitere</li>
+        <% end %>
+      </ul>
+    <% end %>
+  </div>
+<% end %>
 <div class="table-responsive rounded border">
   <table class="table table-hover align-middle mb-0 table-tracks table-tracks-detailed">
     <thead class="table-light">

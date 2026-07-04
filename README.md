@@ -66,6 +66,10 @@ Docker-Image `ghcr.io/mgoltzsche/essentia` (multi-arch, auch nativ auf Apple Sil
 Essentia-Homebrew-Tap (`MTG/essentia`) lässt sich dort nicht zuverlässig aus dem Quellcode kompilieren
 (bekannte, offene Upstream-Issues). Voraussetzung ist eine installierte und laufende Docker-Installation
 (z.B. Docker Desktop); wie `spotdl` kein Gem, sondern ein separat zu installierendes externes Tool.
+Docker Desktop starten: `open -a Docker` (oder über Spotlight/Applications), dann ca. 20-60s warten, bis
+das Wal-Icon in der Menüleiste anzeigt, dass es bereit ist (`docker info` liefert dann keinen Fehler mehr).
+Ohne laufendes Docker schlägt die Essentia-Extraktion pro Track mit `failed to connect to the docker API`
+fehl — das ist ein Soft-Failure (Download selbst gelingt trotzdem), nur Tempo/Energy bleiben leer.
 
 **Status (2026-07-04):** Docker Desktop installiert, Image gezogen, end-to-end mit echten Tracks getestet -
 funktioniert. Der volle Backfill für die bestehende Track-Bibliothek (`rake extract_missing_audio_features`,
