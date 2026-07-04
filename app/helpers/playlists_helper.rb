@@ -29,6 +29,12 @@ module PlaylistsHelper
     end
   end
 
+  # playlist_tracks braucht bereits preload_track_paths (siehe
+  # Playlist#playlist_tracks_for_display), sonst pro Track ein Verzeichnis-Scan.
+  def all_tracks_downloaded?(playlist_tracks)
+    playlist_tracks.all? { |pt| pt.track.track_path.present? }
+  end
+
   private
 
   def checksum(str)

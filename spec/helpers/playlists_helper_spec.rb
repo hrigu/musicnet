@@ -24,4 +24,24 @@ RSpec.describe PlaylistsHelper, type: :helper do
       expect(PlaylistsHelper::CONTEXT).to include(helper.playlist_color_class(playlist))
     end
   end
+
+  describe "#all_tracks_downloaded?" do
+    it "gibt true zurück, wenn alle Tracks einen track_path haben" do
+      pt1 = instance_double(PlaylistTrack, track: instance_double(Track, track_path: "/a.m4a"))
+      pt2 = instance_double(PlaylistTrack, track: instance_double(Track, track_path: "/b.m4a"))
+
+      expect(helper.all_tracks_downloaded?([pt1, pt2])).to be true
+    end
+
+    it "gibt false zurück, wenn mindestens ein Track keinen track_path hat" do
+      pt1 = instance_double(PlaylistTrack, track: instance_double(Track, track_path: "/a.m4a"))
+      pt2 = instance_double(PlaylistTrack, track: instance_double(Track, track_path: nil))
+
+      expect(helper.all_tracks_downloaded?([pt1, pt2])).to be false
+    end
+
+    it "gibt true zurück für eine leere Playlist" do
+      expect(helper.all_tracks_downloaded?([])).to be true
+    end
+  end
 end

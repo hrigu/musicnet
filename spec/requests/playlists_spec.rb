@@ -140,6 +140,34 @@ RSpec.describe "Playlists", type: :request do
       end
     end
 
+    it "GET /playlists/:id deaktiviert den Download-Button, wenn alle Tracks schon ein File haben" do
+      album = Album.create!(spotify_id: "alb-d1", name: "A Go Go")
+      playlist = Playlist.create!(spotify_id: "pl-d1", name: "Fusion Downloaded")
+      track = Track.create!(spotify_id: "trk-d1", name: "RSpec Vorhanden", album: album, duration_ms: 200_000)
+      PlaylistTrack.create!(playlist: playlist, track: track, added_at: Time.current)
+
+      with_download_file("RSpec Artist - RSpec Vorhanden.m4a") do
+        get playlist_path(playlist)
+      end
+
+      aggregate_failures do
+        expect(response.body).to include("<button")
+        expect(response.body).to include("disabled")
+        expect(response.body).to_not include(download_playlist_path(playlist))
+      end
+    end
+
+    it "GET /playlists/:id zeigt den aktiven Download-Button, wenn mindestens ein Track fehlt" do
+      album = Album.create!(spotify_id: "alb-e1", name: "A Go Go")
+      playlist = Playlist.create!(spotify_id: "pl-e1", name: "Fusion Missing")
+      track = Track.create!(spotify_id: "trk-e1", name: "RSpec Fehlend", album: album, duration_ms: 200_000)
+      PlaylistTrack.create!(playlist: playlist, track: track, added_at: Time.current)
+
+      get playlist_path(playlist)
+
+      expect(response.body).to include(download_playlist_path(playlist))
+    end
+
     it "GET /playlists/:id löst die Track-Pfade mit einem einzigen Verzeichnis-Scan auf" do
       album = Album.create!(spotify_id: "alb-s1", name: "A Go Go")
       playlist = Playlist.create!(spotify_id: "pl-s1", name: "Fusion Scan")
