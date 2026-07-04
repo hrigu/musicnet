@@ -5,24 +5,6 @@ require "rails_helper"
 RSpec.describe "Dauerhafte Track-Wiedergabe (Intent 40)", type: :system do
   fixtures :users
 
-  let(:album) { Album.create!(spotify_id: "alb-player-1", name: "Album") }
-  let(:downloads_dir) { Rails.root.join("downloads/tracks") }
-
-  def create_playable_track(name, spotify_id:)
-    track = Track.create!(name: name, spotify_id: spotify_id, album: album, duration_ms: 200_000)
-    FileUtils.mkdir_p(downloads_dir)
-    FileUtils.touch(downloads_dir.join("RSpec Artist - #{name}.m4a"))
-    track
-  end
-
-  def play_button_for(track_name)
-    page.find("tr", text: track_name).find("button")
-  end
-
-  after do
-    Dir.glob(downloads_dir.join("RSpec Artist - *.m4a")).each { |f| FileUtils.rm_f(f) }
-  end
-
   before { login_as(users(:one), scope: :user) }
 
   it "ueberlebt eine Suche auf /tracks (Turbo-Frame-Update)" do
@@ -72,5 +54,23 @@ RSpec.describe "Dauerhafte Track-Wiedergabe (Intent 40)", type: :system do
       expect(page).to have_selector("#global-audio-player", text: track_b.name)
       expect(page).to_not have_selector("#global-audio-player", text: track_a.name)
     end
+  end
+
+  it "springt an die per Slider gewaehlte Position im Track (Seek)" do
+    track = create_track_with_real_audio("System Spec Seek", spotify_id: "sys-seek")
+
+    visit tracks_path
+    play_button_for(track.name).click
+    sleep 1 # Metadaten (Dauer) muessen geladen sein, bevor der Slider einen sinnvollen max-Wert hat
+
+    page.execute_script(<<~JS)
+      const range = document.querySelector('#global-audio-player [data-audio-player-target=progress]')
+      range.value = 3
+      range.dispatchEvent(new Event('input', { bubbles: true }))
+    JS
+    sleep 0.5
+
+    current_time = page.evaluate_script("document.querySelector('#global-audio-player audio').currentTime")
+    expect(current_time).to be >= 2.9
   end
 end

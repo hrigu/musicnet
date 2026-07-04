@@ -12,9 +12,13 @@ RSpec.describe "Tracks", type: :request do
     Track.create!(name: name, spotify_id: spotify_id, album: album, duration_ms: 200_000)
   end
 
-  def with_download_file(file_name)
+  def with_download_file(file_name, content: nil)
     FileUtils.mkdir_p(downloads_dir)
-    FileUtils.touch(downloads_dir.join(file_name))
+    if content
+      File.binwrite(downloads_dir.join(file_name), content)
+    else
+      FileUtils.touch(downloads_dir.join(file_name))
+    end
     yield
   ensure
     FileUtils.rm_f(downloads_dir.join(file_name))
@@ -361,6 +365,30 @@ RSpec.describe "Tracks", type: :request do
       end
 
       expect(response).to have_http_status(:success)
+    end
+
+    it "kuendigt Range-Unterstuetzung an, auch ohne Range-Header" do
+      track = create_track
+
+      with_download_file("RSpec Artist - Song.m4a", content: "0123456789") do
+        get stream_track_path(track)
+      end
+
+      expect(response.headers["Accept-Ranges"]).to eq("bytes")
+    end
+
+    it "liefert bei einem Range-Header nur den angeforderten Byte-Bereich (Status 206)" do
+      track = create_track
+
+      with_download_file("RSpec Artist - Song.m4a", content: "0123456789") do
+        get stream_track_path(track), headers: { "Range" => "bytes=2-4" }
+      end
+
+      aggregate_failures do
+        expect(response).to have_http_status(:partial_content)
+        expect(response.headers["Content-Range"]).to eq("bytes 2-4/10")
+        expect(response.body).to eq("234")
+      end
     end
   end
 end

@@ -1,17 +1,24 @@
-<%# Einzige, dauerhafte Player-Leiste (Intent 40). data-turbo-permanent + stabile id: Turbo
-    Drive erkennt das Element anhand der id zwischen altem und neuem Dokument und uebernimmt
-    den bestehenden DOM-Knoten (inkl. laufender Wiedergabe) unveraendert, statt ihn bei einem
-    Seitenwechsel zu ersetzen. Liegt ausserdem ausserhalb von turbo_frame_tag "tracks" - eine
-    Suche/Sortierung dort ersetzt nur den Frame-Inhalt, dieses Element wird gar nicht beruehrt. %>
-<div id="global-audio-player" data-turbo-permanent data-controller="audio-player"
-     class="fixed-bottom bg-light border-top d-flex align-items-center gap-2 px-3 py-2">
-  <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle" data-action="audio-player#toggle">
-    <span data-audio-player-target="icon">▶</span>
-  </button>
-  <span data-audio-player-target="name" class="text-truncate" style="max-width: 200px;">–</span>
-  <span data-audio-player-target="currentTime" class="small text-muted">0:00</span>
-  <input type="range" value="0" class="form-range flex-grow-1"
-         data-audio-player-target="progress" data-action="input->audio-player#seek">
-  <span data-audio-player-target="duration" class="small text-muted">0:00</span>
-  <audio data-audio-player-target="audio" preload="none"></audio>
+<%# Einzige, dauerhafte Player-Leiste (Intent 40) inkl. Song-Queue (Intent 41). data-turbo-permanent
+    + stabile id: Turbo Drive erkennt das Element anhand der id zwischen altem und neuem Dokument
+    und uebernimmt den bestehenden DOM-Knoten (inkl. laufender Wiedergabe und Queue-Zustand)
+    unveraendert, statt ihn bei einem Seitenwechsel zu ersetzen. Liegt ausserdem ausserhalb von
+    turbo_frame_tag "tracks" - eine Suche/Sortierung dort ersetzt nur den Frame-Inhalt, dieses
+    Element wird gar nicht beruehrt. Die Queue-Liste selbst wird rein clientseitig (JS) gerendert,
+    kein Rails-Partial - sie ist reiner In-Memory-Zustand des Stimulus-Controllers. %>
+<div id="global-audio-player" data-turbo-permanent data-controller="audio-player" class="fixed-bottom bg-light border-top">
+  <div id="audio-player-queue" data-audio-player-target="queue" class="px-3 pt-2 small text-muted">
+    Queue leer
+  </div>
+  <div class="d-flex align-items-center gap-2 px-3 py-2">
+    <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle" title="Play/Pause"
+            data-action="audio-player#toggle">
+      <span data-audio-player-target="icon">▶</span>
+    </button>
+    <span data-audio-player-target="name" class="text-truncate" style="max-width: 200px;">–</span>
+    <span data-audio-player-target="currentTime" class="small text-muted">0:00</span>
+    <input type="range" value="0" class="form-range flex-grow-1"
+           data-audio-player-target="progress" data-action="input->audio-player#seek">
+    <span data-audio-player-target="duration" class="small text-muted">0:00</span>
+    <audio data-audio-player-target="audio" preload="none"></audio>
+  </div>
 </div>

@@ -1,14 +1,20 @@
-<%# Kein eigenes <audio> mehr pro Zeile (Intent 40) - der Button dispatcht nur ein Event, die
-    eigentliche Wiedergabe laeuft im dauerhaften globalen Player (layouts/_audio_player). Zeigt
-    bewusst immer "▶", nicht den Play/Pause-Status - der wird nur in der globalen Leiste angezeigt. %>
+<%# Kein eigenes <audio> mehr pro Zeile (Intent 40) - die Buttons dispatchen nur Events, die
+    eigentliche Wiedergabe/Queue laeuft im dauerhaften globalen Player (layouts/_audio_player).
+    Play-Button zeigt bewusst immer "▶", nicht den Play/Pause-Status - der wird nur in der
+    globalen Leiste angezeigt. %>
 <% if track.track_path %>
-  <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle"
-          data-controller="audio-trigger"
-          data-audio-trigger-url-value="<%= stream_track_path(track.id) %>"
-          data-audio-trigger-name-value="<%= track.name %>"
-          data-action="audio-trigger#play">
-    ▶
-  </button>
+  <div data-controller="audio-trigger"
+       data-audio-trigger-url-value="<%= stream_track_path(track.id) %>"
+       data-audio-trigger-name-value="<%= track.name %>">
+    <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle" title="Abspielen"
+            data-action="audio-trigger#play">
+      ▶
+    </button>
+    <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle" title="Zur Queue hinzufügen"
+            data-action="audio-trigger#enqueue">
+      +
+    </button>
+  </div>
 <% else %>
   <span class="badge bg-danger">kein File</span>
 <% end %>

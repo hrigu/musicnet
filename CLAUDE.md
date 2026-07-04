@@ -245,8 +245,35 @@ instance on the persistent bar listens for that event and does the actual `src`/
 event-based decoupling avoids needing a direct reference (e.g. a Stimulus outlet) between
 controllers that live in unrelated parts of the DOM. Row buttons always show "▶" — play/pause
 state is only ever shown in the global bar, avoiding needing to sync state across every row.
+**Seeking (`TracksController#stream`):** plain `send_file` only ever returns the full file
+(`ActionDispatch::Response::FileBody`, no partial-content handling) unless a reverse proxy adds
+`X-Sendfile`/`X-Accel-Redirect` support, which this single-user local app doesn't have — so
+without extra work, dragging the player's progress slider had no effect: `<audio>` needs the
+server to honor `Range` requests to fetch just the bytes around a new position, and a plain 200
+response with the whole body doesn't satisfy that. `stream` now parses a single `Range` header via
+`Rack::Utils.get_byte_ranges` and returns `206 Partial Content` with `Content-Range`/`Accept-Ranges`
+when present, falling back to a normal full-file `send_file` otherwise (multi-range requests, which
+browsers don't send for `<audio>`, also fall back to the full file rather than implementing
+`multipart/byteranges`).
 **System-spec / JS testing:** `capybara` + `cuprite` (`spec/support/capybara.rb`) — Cuprite drives
 a real, separate headless Chrome via CDP directly (no Selenium/webdriver binaries). This is the
 first and only place in the suite verifying real browser/Turbo/Stimulus behavior; everything else
 is request/model/service specs. `login_as` works with the real-browser driver because Capybara
-runs the Rails app in-process for system specs, sharing Warden's test-mode state.
+runs the Rails app in-process for system specs, sharing Warden's test-mode state. Shared helpers
+(`create_playable_track`, `play_button_for`, `enqueue_button_for`) live in
+`spec/support/playback_test_helpers.rb`.
+
+**Song queue (Intent 41):** builds on the persistent player above. The queue is pure client-side
+state — an in-memory array on the same `audio-player` Stimulus controller instance, capped at 5
+(`MAX_QUEUE_SIZE`) — not a DB column or a Rails-rendered partial; it survives Turbo navigation for
+the same reason playback does (the permanent element, and thus the controller instance holding
+the array, is never disconnected). Each track row gets a second button ("+", `audio-trigger#enqueue`)
+alongside the existing play button, both on the same `audio-trigger` controller instance, dispatching
+`audio-player:enqueue` instead of `audio-player:play`. The queue list itself
+(`#audio-player-queue`, above the playback bar so it's visually "over" the current track) is
+rendered directly via JS (`renderQueue()`), not ERB — each entry has a "×" button
+(`audio-player#removeFromQueue`, index passed as a Stimulus action param) to remove it before its
+turn. Enqueueing past the cap is a silent no-op (no error/toast). On the audio element's `ended`
+event, `playNextInQueue()` shifts and plays the first queued entry if any; the manual `toggle()`
+play/pause button is unaffected. As with the player itself, this state is not persisted across a
+real page reload (F5) — only across Turbo navigation.
