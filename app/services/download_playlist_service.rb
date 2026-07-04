@@ -20,6 +20,7 @@ class DownloadPlaylistService
       Rails.logger.info "DownloadPlaylistService#download: current_dir = #{tracks_dir}"
       result = system(DownloadPlaylistCommandBuilder.new(@playlist).build, chdir: tracks_dir)
       Rails.logger.info(result)
+      AudioFeaturesExtractionService.new(@playlist.tracks).extract_missing if result
     end
   end
 
