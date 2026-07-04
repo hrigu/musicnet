@@ -328,24 +328,25 @@ RSpec.describe "Tracks", type: :request do
   end
 
   describe "POST /tracks/download" do
-    it "ruft DownloadTrackService auf und redirected zu tracks_path" do
-      service = instance_double(DownloadTrackService, download: true)
-      allow(DownloadTrackService).to receive(:new).and_return(service)
+    it "reiht DownloadMissingTracksJob ein und redirected sofort zu tracks_path" do
+      allow(DownloadMissingTracksJob).to receive(:perform_later)
 
       post download_tracks_path
 
-      expect(service).to have_received(:download)
+      expect(DownloadMissingTracksJob).to have_received(:perform_later)
       expect(response).to redirect_to(tracks_path)
     end
 
-    it "zeigt einen Alert, wenn bereits ein Download läuft" do
-      service = instance_double(DownloadTrackService)
-      allow(service).to receive(:download)
-        .and_raise(DownloadPlaylistService::DownloadAlreadyRunningError, "Es läuft bereits ein Download")
-      allow(DownloadTrackService).to receive(:new).and_return(service)
+    it "zeigt einen Alert und startet keinen Job, wenn bereits ein Download läuft" do
+      allow(DownloadMissingTracksJob).to receive(:perform_later)
+      DownloadPlaylistService::DOWNLOAD_LOCK.lock
+      begin
+        post download_tracks_path
+      ensure
+        DownloadPlaylistService::DOWNLOAD_LOCK.unlock
+      end
 
-      post download_tracks_path
-
+      expect(DownloadMissingTracksJob).to_not have_received(:perform_later)
       expect(response).to redirect_to(tracks_path)
       expect(flash[:alert]).to include("läuft bereits")
     end

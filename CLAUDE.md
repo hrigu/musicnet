@@ -151,7 +151,7 @@ gem/bundled dependency) via `system(...)`, always after `Dir.chdir`-ing into `do
     <name>.spotdl --sync-without-deleting [--user-auth] --format m4a`. Individual track URLs each cost spotdl
     their own separate Spotify API calls (track/album/artist), while a playlist sync fetches everything
     bundled in one request — with ~37 individual track URLs at once this caused a 24h rate-limit ban in 2024
-    (Intent 21), hence the threshold; `DownloadTrackService` below is deliberately **not** switched to
+    (Intent 21), hence the threshold; `DownloadMissingTracksJob` below is deliberately **not** switched to
     per-track URLs for the same reason.
   Both branches also pass `--save-errors <file>`. After a successful run, `DownloadResultParser` decides
   success per track from **`Track#track_path` re-checked fresh after the run** (`Track.preload_track_paths`),
@@ -172,8 +172,20 @@ gem/bundled dependency) via `system(...)`, always after `Dir.chdir`-ing into `do
   capped at `PlaylistsController::MAX_FLASH_ENTRIES` (8, with a "+N more" note and a `..._total` count) and
   each entry's name/reason is truncated (`DownloadResultParser::MAX_NAME_LENGTH`/`MAX_REASON_LENGTH`) — a real
   `CookieOverflow` 500 was hit in testing with a 178-track playlist before this was added.
-- `DownloadTrackService` (`tracks#download`) — delegates to `DownloadPlaylistService` per affected playlist
-  (so the audio-features extraction above applies here too), rather than invoking `spotdl` directly itself.
+- `DownloadMissingTracksJob` (`tracks#download`, Intent 39) — runs in the background (`ActiveJob`, the
+  built-in `:async` in-process adapter; no Sidekiq/Solid Queue/Redis needed for this single-user local app)
+  instead of blocking the request: with many affected playlists the old synchronous
+  `DownloadTrackService` could take hours (one playlist sync alone took ~27 min in testing due to Spotify
+  rate limits) with the browser tab hanging and zero feedback. The job delegates to `DownloadPlaylistService`
+  per affected playlist (so the audio-features extraction above applies here too) rather than invoking
+  `spotdl` directly, and after each playlist finishes broadcasts a Turbo Stream
+  (`Turbo::StreamsChannel.broadcast_append_to("downloads", ...)`) with that playlist's result (from
+  `DownloadResultParser`, Intent 38); a final broadcast marks completion. `TracksController#download` checks
+  `DownloadPlaylistService::DOWNLOAD_LOCK.locked?` **before** enqueueing and shows an alert instead of
+  starting a second job, since a lock error inside an already-running background job can no longer be
+  rescued synchronously in the controller. `/tracks` subscribes via `turbo_stream_from "downloads"` and an
+  empty `#download-log` container placed **outside** `turbo_frame_tag "tracks"` — inside it, a search/sort/
+  page change would replace the frame's content and wipe the accumulated live log.
 
 ### Tracks index (`TracksController#index`, Intent 34)
 

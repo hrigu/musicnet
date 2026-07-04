@@ -15,14 +15,16 @@ class TracksController < ApplicationController
     @pagy, @tracks = paginate_for_index(tracks)
   end
 
+  # Laeuft im Hintergrund (DownloadMissingTracksJob, Intent 39) statt den Request zu blockieren -
+  # ein Fehler im Job ist dadurch nicht mehr synchron abfangbar, daher der Guard vorab.
   def download
-    tracks_without_file = Track.for_download.reject(&:track_path)
+    if DownloadPlaylistService::DOWNLOAD_LOCK.locked?
+      return redirect_to tracks_path, alert: "Es läuft bereits ein Download - bitte warten, bis er fertig ist"
+    end
 
-    service = DownloadTrackService.new(tracks_without_file)
-    service.download
+    tracks_without_file = Track.for_download.reject(&:track_path)
+    DownloadMissingTracksJob.perform_later(tracks_without_file)
     redirect_to tracks_path
-  rescue DownloadPlaylistService::DownloadAlreadyRunningError => e
-    redirect_to tracks_path, alert: e.message
   end
 
   def show

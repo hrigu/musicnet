@@ -1,6 +1,14 @@
-<%= link_to(" download_files", download_tracks_path, data: { turbo_method: :post })  %>
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <h1 class="mb-0">Meine Tracks</h1>
+  <div class="d-flex gap-2">
+    <%= link_to("Download Files", download_tracks_path, data: { turbo_method: :post }, class: "btn btn-outline-secondary") %>
+  </div>
+</div>
 
-<h1>Meine Tracks</h1>
+<%# Bewusst ausserhalb des turbo_frame_tag "tracks": Suche/Sortierung/Pagination ersetzen dessen
+    Inhalt komplett - der Live-Log wuerde sonst bei jeder Aktion verloren gehen. %>
+<%= turbo_stream_from "downloads" %>
+<div id="download-log" class="mb-3"></div>
 
 <%= turbo_frame_tag "tracks" do %>
   <%= form_with url: tracks_path, method: :get, id: "tracks-search", class: "mb-3" do %>
