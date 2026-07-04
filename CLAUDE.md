@@ -288,4 +288,10 @@ counterintuitive. Enqueueing past the cap is a silent no-op (no error/toast). On
 element's `ended` event, `playNextInQueue()` shifts and plays the first queued entry if any; the
 manual `toggle()` play/pause button does the same instead of a no-op `play()`/`pause()` when
 nothing has ever been loaded yet or the current track already ended. As with the player itself,
-this state is not persisted across a real page reload (F5) — only across Turbo navigation.
+this state is not persisted across a real page reload (F5) — only across Turbo navigation. Each
+queue entry also shows artist + playlist names under the title, via
+`TracksHelper#artist_names_for`/`#playlist_names_for` — the latter reads `track.playlist_tracks`
+if already preloaded (e.g. `/tracks`) or falls back to `track.playlists` (e.g. `tracks#show`),
+since only one of the two is preloaded depending on caller and the other would raise under
+`strict_loading`. Since `renderQueue()` builds markup via `innerHTML`, every interpolated value
+(title, artist, playlists) goes through an `escapeHtml()` helper first.

@@ -16,6 +16,21 @@ RSpec.describe "Song-Queue (Intent 41)", type: :system do
     expect(page).to have_selector("#audio-player-queue", text: track.name)
   end
 
+  it "zeigt Kuenstler und Playlist zusaetzlich zum Titel in der Queue an" do
+    attrs = { spotify_id: "queue-details", artist_name: "Queue Details Artist", playlist_name: "Fusion Details" }
+    track = create_playable_track("Queue Track Details", **attrs)
+    playlist = Playlist.find_by(name: "Fusion Details")
+
+    visit tracks_path
+    enqueue_button_for(track.name).click
+
+    within("#audio-player-queue") do
+      expect(page).to have_content(track.name)
+      expect(page).to have_content("Queue Details Artist")
+      expect(page).to have_content(ApplicationController.helpers.playlist_short_name(playlist))
+    end
+  end
+
   it "startet den ersten Track der Queue per Player-Play-Button, ohne dass zuvor je etwas gespielt wurde" do
     first = create_playable_track("Queue Direktstart Erster", spotify_id: "queue-direktstart-1")
     second = create_playable_track("Queue Direktstart Zweiter", spotify_id: "queue-direktstart-2")

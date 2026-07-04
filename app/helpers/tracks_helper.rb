@@ -27,6 +27,22 @@ module TracksHelper
     end
   end
 
+  def artist_names_for(track)
+    track.artists.map(&:name).join(", ")
+  end
+
+  # Nutzt playlist_tracks, falls das (z.B. auf /tracks) bereits preloaded ist, sonst playlists
+  # (z.B. auf tracks#show) - je nach Aufrufkontext ist nur eine der beiden Assoziationen preloaded
+  # und die andere wuerde mit strict_loading einen Fehler auslösen.
+  def playlist_names_for(track)
+    playlists = if track.association(:playlist_tracks).loaded?
+                  track.playlist_tracks.map(&:playlist)
+                else
+                  track.playlists
+                end
+    playlists.map { |playlist| playlist_short_name(playlist) }.join(", ")
+  end
+
   private
 
   def sort_indicator(active)

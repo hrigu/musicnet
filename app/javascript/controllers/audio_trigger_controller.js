@@ -5,17 +5,17 @@ import { Controller } from "@hotwired/stimulus"
 // audio_player_controller.js lauscht. Entkoppelt, da Buttons ueberall verstreut sind (Tracks-
 // Tabelle, Playlist-Tracks-Tabelle, Track-Detailseite).
 export default class extends Controller {
-  static values = { url: String, name: String }
+  static values = { url: String, name: String, artist: String, playlists: String }
 
   play() {
-    document.dispatchEvent(
-      new CustomEvent("audio-player:play", { detail: { url: this.urlValue, name: this.nameValue } })
-    )
+    document.dispatchEvent(new CustomEvent("audio-player:play", { detail: this.trackDetail }))
   }
 
   enqueue() {
-    document.dispatchEvent(
-      new CustomEvent("audio-player:enqueue", { detail: { url: this.urlValue, name: this.nameValue } })
-    )
+    document.dispatchEvent(new CustomEvent("audio-player:enqueue", { detail: this.trackDetail }))
+  }
+
+  get trackDetail() {
+    return { url: this.urlValue, name: this.nameValue, artist: this.artistValue, playlists: this.playlistsValue }
   }
 }

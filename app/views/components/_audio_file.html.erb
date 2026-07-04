@@ -5,7 +5,9 @@
 <% if track.track_path %>
   <div data-controller="audio-trigger"
        data-audio-trigger-url-value="<%= stream_track_path(track.id) %>"
-       data-audio-trigger-name-value="<%= track.name %>">
+       data-audio-trigger-name-value="<%= track.name %>"
+       data-audio-trigger-artist-value="<%= artist_names_for(track) %>"
+       data-audio-trigger-playlists-value="<%= playlist_names_for(track) %>">
     <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle" title="Abspielen"
             data-action="audio-trigger#play">
       ▶

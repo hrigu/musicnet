@@ -98,13 +98,28 @@ export default class extends Controller {
       .map(
         ({ entry, index }) => `
           <div class="queue-entry d-flex align-items-center gap-2">
-            <span class="text-truncate">${entry.name}</span>
+            <div class="flex-grow-1 text-truncate">
+              <div class="text-truncate">${this.escapeHtml(entry.name)}</div>
+              <div class="text-truncate text-muted small">${this.escapeHtml(this.subtitleFor(entry))}</div>
+            </div>
             <button type="button" class="btn btn-sm btn-link p-0"
                     data-action="audio-player#removeFromQueue" data-audio-player-index-param="${index}">×</button>
           </div>
         `
       )
       .join("")
+  }
+
+  subtitleFor(entry) {
+    return [entry.artist, entry.playlists].filter((part) => part).join(" — ")
+  }
+
+  // entry.name wird an anderer Stelle sicher per textContent gesetzt (Intent 40) - hier via
+  // innerHTML zusammengesetzt, deshalb muss jeder eingefuegte Wert escaped werden.
+  escapeHtml(value) {
+    const div = document.createElement("div")
+    div.textContent = value ?? ""
+    return div.innerHTML
   }
 
   // Ohne jemals geladenen Track (frischer Player, leere src) oder nach einem zu Ende gespielten
