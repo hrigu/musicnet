@@ -67,6 +67,11 @@ Essentia-Homebrew-Tap (`MTG/essentia`) lässt sich dort nicht zuverlässig aus d
 (bekannte, offene Upstream-Issues). Voraussetzung ist eine installierte und laufende Docker-Installation
 (z.B. Docker Desktop); wie `spotdl` kein Gem, sondern ein separat zu installierendes externes Tool.
 
+**Status (2026-07-04):** Docker Desktop installiert, Image gezogen, end-to-end mit echten Tracks getestet -
+funktioniert. Der volle Backfill für die bestehende Track-Bibliothek (`rake extract_missing_audio_features`,
+geschätzt 6-7 Std. für ~2500 Tracks wegen Docker-Container-Start-Overhead pro Track) läuft noch nicht,
+bisher nur einzelne Tracks von Hand getestet. Details siehe [Diary](doc/diary.md).
+
 
 ## Tables
 ```
