@@ -24,8 +24,8 @@ RSpec.describe Track, type: :model do
   end
 
   describe "#af, #energy, #tempo" do
-    it "parst audio_features in ein OpenStruct" do
-      track = Track.new(audio_features: { energy: 0.7, tempo: 120.5 }.to_json)
+    it "liest audio_features direkt als Hash in ein OpenStruct" do
+      track = Track.new(audio_features: { "energy" => 0.7, "tempo" => 120.5 })
 
       expect(track.energy).to eq(0.7)
       expect(track.tempo).to eq(120.5)
@@ -77,7 +77,7 @@ RSpec.describe Track, type: :model do
       album = Album.create!(name: "Album #{spotify_id}", spotify_id: "alb-#{spotify_id}", release_date: release_date)
       Track.create!(name: name, spotify_id: spotify_id, album: album, duration_ms: duration_ms,
                     genre: genre, popularity: popularity,
-                    audio_features: { energy: energy, tempo: tempo }.to_json)
+                    audio_features: { "energy" => energy, "tempo" => tempo })
     end
 
     before do

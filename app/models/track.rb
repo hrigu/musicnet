@@ -32,12 +32,8 @@ class Track < ApplicationRecord
     "artist" => "(SELECT MIN(artists.name) FROM artists_tracks " \
                 "INNER JOIN artists ON artists.id = artists_tracks.artist_id " \
                 "WHERE artists_tracks.track_id = tracks.id)",
-    # audio_features wird immer per `.to_json` auf eine bereits-serialisierte Spalte
-    # geschrieben (siehe BuildMusicNetService#build_track) und landet dadurch doppelt
-    # JSON-kodiert in der DB (ein JSON-String, der selbst wieder JSON-Text enthaelt) - der
-    # erste json_extract(..., '$') entfernt nur diese aeussere String-Verpackung.
-    "energy" => "json_extract(json_extract(tracks.audio_features, '$'), '$.energy')",
-    "tempo" => "json_extract(json_extract(tracks.audio_features, '$'), '$.tempo')"
+    "energy" => "json_extract(tracks.audio_features, '$.energy')",
+    "tempo" => "json_extract(tracks.audio_features, '$.tempo')"
   }.freeze
   DEFAULT_SORT_COLUMN = "name"
 
@@ -114,7 +110,7 @@ class Track < ApplicationRecord
   # - type
   # - uri
   def af
-    @af ||= audio_features.present? ? JSON.parse(audio_features, object_class: OpenStruct) : nil
+    @af ||= audio_features.present? ? OpenStruct.new(audio_features) : nil
   end
 
   def energy
