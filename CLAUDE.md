@@ -137,6 +137,33 @@ gem/bundled dependency) via `system(...)`, always after `Dir.chdir`-ing into `do
 - `DownloadTrackService` (`tracks#download`) — delegates to `DownloadPlaylistService` per affected playlist
   (so the audio-features extraction above applies here too), rather than invoking `spotdl` directly itself.
 
+### Tracks index (`TracksController#index`, Intent 34)
+
+`/tracks` is paginated (Pagy, `TracksController::PAGE_SIZE = 50`), sortable and searchable via
+query params, all wrapped in a `turbo_frame_tag "tracks"` so sorting/searching/filtering/paging
+update only the table, not the whole page (navbar included) — this needs no controller code:
+`turbo-rails` auto-includes `Turbo::Frames::FrameRequest` in `ActionController::Base`, which
+swaps in a minimal layout whenever a request carries a `Turbo-Frame` header.
+
+Query params:
+- `q` — full-text search (`Track.search`), case-insensitive over name/artist/album/genre/
+  playlist name, `LEFT JOIN` + `distinct` (a track with several artists or in several playlists
+  must not appear twice). Blank query returns the relation unchanged (no join overhead).
+- `sort`/`direction` — `Track.sorted`, driven by the `Track::SORT_COLUMNS` whitelist (never raw
+  param into `order()`); unknown column/direction silently falls back to the default (`name`,
+  `asc`). `energy`/`tempo` sort via `json_extract(tracks.audio_features, '$.energy'/'$.tempo')`
+  since they live in the `audio_features` JSON blob, not their own column.
+- `available` (`downloaded`/`missing`, whitelisted via `TracksController::AVAILABLE_FILTERS`) —
+  whether a track's file exists on disk is deliberately **not** a DB column (see `Track#track_path`
+  above), so this filter can't be pushed into SQL/Pagy's normal offset pagination. Instead,
+  `TracksController#filter_by_availability` loads the already searched/sorted relation as an
+  `Array`, does one `Track.preload_track_paths` scan for all matches, filters in Ruby, and hands
+  the resulting `Array` to `pagy(:offset, ...)` — no special "array adapter" needed, the
+  installed Pagy version (43.x) already paginates plain Arrays the same way as
+  `ActiveRecord::Relation` (`Pagy::OffsetPaginator#paginate` slices `collection[offset, limit]`
+  when `collection.instance_of?(Array)`). Without this filter, pagination stays on the normal,
+  cheaper SQL path.
+
 ### Mixxx crate export
 
 `lib/tasks/write_mixxx_files.rake` (`create_crates_lists`) writes one `.m3u` file per `Playlist` to a hardcoded
