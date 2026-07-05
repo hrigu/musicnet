@@ -18,6 +18,9 @@ export default class extends Controller {
   ]
 
   connect() {
+    console.log("[audio-diagnostic]", {
+      channel: "main", lifecycle: "connect", timestamp: new Date().toISOString(),
+    })
     this.handlePlayEvent = this.handlePlayEvent.bind(this)
     this.handleAudioPlay = () => (this.iconTarget.textContent = "⏸")
     this.handleAudioPause = () => (this.iconTarget.textContent = "▶")
@@ -43,6 +46,9 @@ export default class extends Controller {
   }
 
   disconnect() {
+    console.log("[audio-diagnostic]", {
+      channel: "main", lifecycle: "disconnect", timestamp: new Date().toISOString(),
+    })
     document.removeEventListener("audio-player:play", this.handlePlayEvent)
 
     this.audioTarget.removeEventListener("play", this.handleAudioPlay)

@@ -15,6 +15,9 @@ export default class extends Controller {
   static targets = ["audio", "icon", "name", "deviceSelect", "chooseButton", "toggleButton"]
 
   connect() {
+    console.log("[audio-diagnostic]", {
+      channel: "cue", lifecycle: "connect", timestamp: new Date().toISOString(),
+    })
     this.handleCueEvent = this.handleCueEvent.bind(this)
     this.handleToggleEvent = this.toggle.bind(this)
     this.broadcastState = this.broadcastState.bind(this)
@@ -44,6 +47,9 @@ export default class extends Controller {
   }
 
   disconnect() {
+    console.log("[audio-diagnostic]", {
+      channel: "cue", lifecycle: "disconnect", timestamp: new Date().toISOString(),
+    })
     document.removeEventListener("audio-player:cue", this.handleCueEvent)
     document.removeEventListener("audio-player:cue-toggle", this.handleToggleEvent)
     ;["pause", "error", "stalled", "emptied", "abort"].forEach((type) =>
