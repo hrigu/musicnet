@@ -2,7 +2,6 @@
 
 class TracksController < ApplicationController
   PAGE_SIZE = 50
-  AVAILABLE_FILTERS = %w[downloaded missing].freeze
 
   # Zeigt die letzten 50 gespielte Lieder
   # tracks sind RSpotify::Track
@@ -65,24 +64,8 @@ class TracksController < ApplicationController
   end
 
   def paginate_for_index(tracks)
-    return paginate_by_availability(tracks) if AVAILABLE_FILTERS.include?(params[:available])
-
     pagy, page_tracks = pagy(:offset, tracks, limit: PAGE_SIZE)
     Track.preload_track_paths(page_tracks)
     [pagy, page_tracks]
-  end
-
-  # Kein DB-Feld für "Datei vorhanden" (siehe CLAUDE.md/Intent 34) - filtert darum in Ruby auf
-  # der bereits durchsuchten/sortierten Relation, statt einer neuen, mit dem Dateisystem zu
-  # synchronisierenden Spalte. Ein einziger Verzeichnis-Scan für alle Treffer (preload) vor der
-  # Pagination, damit das gefilterte Array danach keinen weiteren Scan mehr braucht.
-  def paginate_by_availability(tracks)
-    filtered = filter_by_availability(tracks.to_a, params[:available])
-    pagy(:offset, filtered, limit: PAGE_SIZE)
-  end
-
-  def filter_by_availability(tracks, available)
-    Track.preload_track_paths(tracks)
-    available == "downloaded" ? tracks.select(&:track_path) : tracks.reject(&:track_path)
   end
 end

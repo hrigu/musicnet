@@ -231,16 +231,9 @@ Query params:
   param into `order()`); unknown column/direction silently falls back to the default (`name`,
   `asc`). `energy`/`tempo` sort via `json_extract(tracks.audio_features, '$.energy'/'$.tempo')`
   since they live in the `audio_features` JSON blob, not their own column.
-- `available` (`downloaded`/`missing`, whitelisted via `TracksController::AVAILABLE_FILTERS`) —
-  whether a track's file exists on disk is deliberately **not** a DB column (see `Track#track_path`
-  above), so this filter can't be pushed into SQL/Pagy's normal offset pagination. Instead,
-  `TracksController#filter_by_availability` loads the already searched/sorted relation as an
-  `Array`, does one `Track.preload_track_paths` scan for all matches, filters in Ruby, and hands
-  the resulting `Array` to `pagy(:offset, ...)` — no special "array adapter" needed, the
-  installed Pagy version (43.x) already paginates plain Arrays the same way as
-  `ActiveRecord::Relation` (`Pagy::OffsetPaginator#paginate` slices `collection[offset, limit]`
-  when `collection.instance_of?(Array)`). Without this filter, pagination stays on the normal,
-  cheaper SQL path.
+
+There is no `available`/file-availability filter (removed in Intent 45) — it added a second,
+Ruby-array-based pagination path alongside the normal SQL one for comparatively little value.
 
 ### Mixxx crate export
 

@@ -32,6 +32,14 @@ body {
   padding-bottom: 16rem;
 }
 
+// DSL-Suchfeld (Intent 43/45) braucht mehr Platz als der Bootstrap-Default - typische Queries wie
+// genre:jazz,fusion bpm:80..100 playlist:"Fusion Abende" passen sonst nicht komfortabel rein.
+// Waechst zusaetzlich per flex-grow-1 (index.html.erb) auf den ganzen verfuegbaren Zeilenplatz -
+// diese Mindestbreite bleibt als Untergrenze bei schmalen Viewports.
+.search-query-input {
+  min-width: 32rem;
+}
+
 .table-tracks {
   font-size: 0.925rem;
   table-layout: fixed;
