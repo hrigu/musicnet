@@ -1,0 +1,23 @@
+<h1>Einstellungen</h1>
+
+<%# Reiner Anzeige-Filter (Intent 54) - schraenkt ein, was auf Tracks/Playlists/Artists und in
+    der Suche sichtbar ist. Aendert nichts am Spotify-Sync (der importiert weiterhin wie bisher
+    sowohl Fusion- als auch Blues-Playlists). %>
+<%= form_with model: current_user, url: settings_path, method: :patch, local: true do |f| %>
+  <div class="mb-3">
+    <label class="form-label d-block">Aktive Kategorie</label>
+    <div class="form-check">
+      <%= f.radio_button :active_playlist_category, "all", class: "form-check-input", id: "category_all" %>
+      <%= f.label :active_playlist_category, "Alle", value: "all", for: "category_all", class: "form-check-label" %>
+    </div>
+    <div class="form-check">
+      <%= f.radio_button :active_playlist_category, "blues", class: "form-check-input", id: "category_blues" %>
+      <%= f.label :active_playlist_category, "Nur Blues", value: "blues", for: "category_blues", class: "form-check-label" %>
+    </div>
+    <div class="form-check">
+      <%= f.radio_button :active_playlist_category, "fusion", class: "form-check-input", id: "category_fusion" %>
+      <%= f.label :active_playlist_category, "Nur Fusion", value: "fusion", for: "category_fusion", class: "form-check-label" %>
+    </div>
+  </div>
+  <%= f.submit "Speichern", class: "btn btn-outline-secondary" %>
+<% end %>

@@ -32,4 +32,13 @@ class Artist < ApplicationRecord
   def playlists_of_the_tracks
     Playlist.distinct.joins(playlist_tracks: { track: :artists }).where(artists: { id: id })
   end
+
+  # Reiner Anzeige-Filter (Intent 54, getrennt vom Spotify-Sync) - blank/nil bedeutet "alle
+  # Kategorien" (kein Filter). Subquery-Pattern wie Track.by_artist/by_playlist, aus demselben
+  # Grund (Join-Fanout vermeiden, unabhaengig von anderen Bedingungen kombinierbar).
+  def self.in_active_category(substring)
+    return all if substring.blank?
+
+    where(id: joins(tracks: :playlists).where("LOWER(playlists.name) LIKE ?", "%#{substring.downcase}%").select(:id))
+  end
 end

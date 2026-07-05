@@ -193,6 +193,15 @@ class Track < ApplicationRecord
     where(id: joins(:playlists).where(text_match_condition("playlists.name", match)).select(:id))
   end
 
+  # Reiner Anzeige-Filter (Intent 54, getrennt vom Spotify-Sync) - blank/nil bedeutet "alle
+  # Kategorien" (kein Filter). Gleiches Subquery-Pattern wie by_playlist, aus demselben Grund
+  # (Join-Fanout/Kombinierbarkeit mit anderen Bedingungen der bereits laufenden Suche).
+  def self.in_active_category(substring)
+    return all if substring.blank?
+
+    where(id: joins(:playlists).where("LOWER(playlists.name) LIKE ?", "%#{substring.downcase}%").select(:id))
+  end
+
   def self.by_tempo(match)
     where(numeric_match_condition("json_extract(tracks.audio_features, '$.tempo')", match))
   end

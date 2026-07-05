@@ -29,6 +29,8 @@ Rails.application.routes.draw do
 
   get "help/suche-syntax", to: "help#search_syntax", as: :search_syntax_help
 
+  resource :settings, only: %i[edit update]
+
   resources :queue_entries, only: [:create, :destroy] do
     collection do
       post :advance

@@ -48,6 +48,18 @@ RSpec.describe "Playlists", type: :request do
       expect(nav.text).to_not include("Fetch all Playlists!")
     end
 
+    it "zeigt nur Playlists der aktiven Kategorie, wenn eine gesetzt ist (Intent 54)" do
+      users(:one).update!(active_playlist_category: "blues")
+      Playlist.create!(spotify_id: "pl-cat-idx-blues", name: "RSpec Blues Session Idx")
+      Playlist.create!(spotify_id: "pl-cat-idx-fusion", name: "RSpec Fusion Abende Idx")
+
+      get playlists_path
+
+      names = Nokogiri::HTML(response.body).css("tbody tr td:nth-child(4) a").map(&:text)
+      expect(names).to include("RSpec Blues Session Idx")
+      expect(names).to_not include("RSpec Fusion Abende Idx")
+    end
+
     it "GET /playlists zeigt die Track-Anzahl ohne eine COUNT-Query pro Playlist" do
       album = Album.create!(spotify_id: "alb-i1", name: "A Go Go")
       with_two = Playlist.create!(spotify_id: "pl-i1", name: "Fusion Zwei")

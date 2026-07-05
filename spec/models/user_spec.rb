@@ -69,4 +69,39 @@ RSpec.describe User, type: :model do
       expect(user.spotify_avatar_url).to be_nil
     end
   end
+
+  describe "#active_category_substring" do
+    it "gibt nil zurück für 'all' (kein Filter)" do
+      user = User.new(active_playlist_category: "all")
+
+      expect(user.active_category_substring).to be_nil
+    end
+
+    it "gibt 'blues' zurück für die Kategorie 'blues'" do
+      user = User.new(active_playlist_category: "blues")
+
+      expect(user.active_category_substring).to eq("blues")
+    end
+
+    it "gibt 'fusion' zurück für die Kategorie 'fusion'" do
+      user = User.new(active_playlist_category: "fusion")
+
+      expect(user.active_category_substring).to eq("fusion")
+    end
+
+    it "faellt bei einem unbekannten Wert auf nil zurueck (kein Filter), ohne Fehler" do
+      user = User.new(active_playlist_category: "quatsch")
+
+      expect(user.active_category_substring).to be_nil
+    end
+  end
+
+  describe "Validierung von active_playlist_category" do
+    it "erlaubt nur bekannte Kategorien" do
+      user = User.new(email: "cat@musicnet.org", password: "geheim123", active_playlist_category: "quatsch")
+
+      expect(user).to_not be_valid
+      expect(user.errors[:active_playlist_category]).to be_present
+    end
+  end
 end

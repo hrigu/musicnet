@@ -7,6 +7,21 @@ class User < ApplicationRecord
          :recoverable, :rememberable, :validatable,
          :omniauthable, omniauth_providers: %i[spotify]
 
+  # Reiner Anzeige-Filter (Intent 54) - schraenkt ein, was auf Tracks/Playlists/Artists und in
+  # der Suche sichtbar ist. Bewusst getrennt von SpotifyPlaylistsGateway#owned_fusion_or_blues_playlist?,
+  # das weiterhin unveraendert bestimmt, was ueberhaupt von Spotify importiert wird - ein
+  # Kategorie-Wechsel hier aendert nichts an der lokalen DB oder am naechsten Sync.
+  ACTIVE_PLAYLIST_CATEGORIES = %w[all blues fusion].freeze
+  CATEGORY_NAME_SUBSTRINGS = { "blues" => "blues", "fusion" => "fusion" }.freeze
+
+  validates :active_playlist_category, inclusion: { in: ACTIVE_PLAYLIST_CATEGORIES }
+
+  # nil bedeutet "kein Filter" fuer die Track/Playlist/Artist-Scopes - gilt fuer "all" und,
+  # als Soft-Failure, auch fuer einen unerwarteten/leeren Wert.
+  def active_category_substring
+    CATEGORY_NAME_SUBSTRINGS[active_playlist_category]
+  end
+
   # spotify_user_data wird bei jedem Login aktualisiert, nicht nur bei der Erstellung -
   # sonst bleiben z.B. Avatar-URLs auf dem Stand des allerersten Logins und laufen ab.
   def self.from_omniauth(auth, spotify_user_data)

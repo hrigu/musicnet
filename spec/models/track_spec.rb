@@ -437,6 +437,33 @@ RSpec.describe Track, type: :model do
     end
   end
 
+  describe ".in_active_category (Intent 54)" do
+    def create_track(name:, spotify_id:)
+      album = Album.create!(name: "Album", spotify_id: "alb-#{spotify_id}")
+      Track.create!(name: name, spotify_id: spotify_id, album: album)
+    end
+
+    def add_to_playlist(track, playlist_name:, spotify_id:)
+      playlist = Playlist.find_or_create_by!(name: playlist_name) { |p| p.spotify_id = spotify_id }
+      PlaylistTrack.create!(playlist: playlist, track: track, added_at: Time.current)
+    end
+
+    it "liefert die unveraenderte Relation, wenn kein Substring uebergeben wird (Kategorie 'all')" do
+      create_track(name: "A", spotify_id: "cat-all-a")
+
+      expect(described_class.in_active_category(nil).count).to eq(described_class.count)
+    end
+
+    it "findet nur Tracks aus Playlists, die den Substring enthalten" do
+      blues_track = create_track(name: "A", spotify_id: "cat-blues-a")
+      add_to_playlist(blues_track, playlist_name: "RSpec Blues Session Cat", spotify_id: "pl-cat-blues")
+      fusion_track = create_track(name: "B", spotify_id: "cat-fusion-b")
+      add_to_playlist(fusion_track, playlist_name: "RSpec Fusion Abende Cat", spotify_id: "pl-cat-fusion")
+
+      expect(described_class.in_active_category("blues").to_a).to eq([blues_track])
+    end
+  end
+
   describe ".by_tempo" do
     def create_track(name:, spotify_id:, tempo:)
       album = Album.create!(name: "Album", spotify_id: "alb-#{spotify_id}")

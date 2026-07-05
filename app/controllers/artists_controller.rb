@@ -2,7 +2,7 @@
 
 class ArtistsController < ApplicationController
   def index
-    @artists = Artist.for_index
+    @artists = Artist.for_index.in_active_category(current_user.active_category_substring)
     @playlists_by_artist_id = Artist.playlists_by_artist_id
   end
 

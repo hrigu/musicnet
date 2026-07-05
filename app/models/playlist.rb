@@ -8,6 +8,14 @@ class Playlist < ApplicationRecord
 
   scope :for_index, -> { order(:name).strict_loading }
 
+  # Reiner Anzeige-Filter (Intent 54, getrennt vom Spotify-Sync) - blank/nil bedeutet "alle
+  # Kategorien" (kein Filter).
+  def self.in_active_category(substring)
+    return all if substring.blank?
+
+    where("LOWER(name) LIKE ?", "%#{substring.downcase}%")
+  end
+
   def name_path_ready
     name.delete(' ')
   end

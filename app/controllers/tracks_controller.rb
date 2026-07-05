@@ -10,7 +10,9 @@ class TracksController < ApplicationController
   end
 
   def index
-    tracks = Track.for_index.search_query(params[:q]).sorted(params[:sort], params[:direction])
+    tracks = Track.for_index.search_query(params[:q])
+                  .in_active_category(current_user.active_category_substring)
+                  .sorted(params[:sort], params[:direction])
     @pagy, @tracks = paginate_for_index(tracks)
   end
 

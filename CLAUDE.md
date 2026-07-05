@@ -96,7 +96,10 @@ users (separate: local login identity + holds serialized RSpotify::User via User
 Entry point: `PlaylistsController#fetch_all` → `BuildMusicNetService.new(current_user).build`.
 
 1. Fetches all of the current user's own Spotify playlists (paginated), filters to those whose name contains
-   "fusion" or "blues" (`SpotifyPlaylistsGateway#all`).
+   "fusion" or "blues" (`SpotifyPlaylistsGateway#all`). This import filter is a fixed, hardcoded regex
+   (`owned_fusion_or_blues_playlist?`) and is **not** user-configurable — do not confuse it with the separate,
+   user-configurable *display* filter described under "Active category display filter" below, which affects
+   only what's shown, never what's imported.
 2. Per playlist, compares the local `snapshot_id` with Spotify's (Spotify changes it on every playlist
    modification; delivered with the playlist list, no extra API call):
    - not present locally → created with all its tracks (`build_playlist`; `find_or_create_by!` for
@@ -136,6 +139,40 @@ anti-pattern that can silently fail to show feedback (Intent 37) — redirect-af
 `find_or_create_by!` still means fields of already-existing rows are not updated when records are (re)created;
 renamed playlists **are** updated (step 2, changed snapshot), renamed tracks are not — a renamed track only
 corrects itself once the old row is orphaned and recreated.
+
+### Active category display filter (Intent 54)
+
+The DJ plays both Blues and Fusion dance events and wanted a way to see just one at a time for a clearer
+overview — but explicitly **not** by changing what gets synced (they have many Spotify playlists and didn't
+want switching category to alter local data). This is a pure display-time filter, fully independent from the
+sync-time import filter in `SpotifyPlaylistsGateway` described above — the two look similar (both key off
+"fusion"/"blues" in a playlist name) but solve different problems and deliberately don't share code.
+
+`User#active_playlist_category` (`"all"` default / `"blues"` / `"fusion"`, validated inclusion) drives
+`User#active_category_substring`, which returns `nil` for `"all"` or any unexpected/blank value (soft-failure:
+`nil` always means "no filter" to the scopes below, never an error) or else the plain substring `"blues"`/
+`"fusion"` — deliberately a substring match, not a real regex, since SQLite has no `REGEXP` support without a
+custom extension and a substring is all "blues"/"fusion"-in-the-name needs.
+
+Three model scopes, all `in_active_category(substring)`, blank/nil substring → unchanged relation:
+- `Playlist.in_active_category` — direct `LOWER(name) LIKE ?`.
+- `Track.in_active_category` / `Artist.in_active_category` — same subquery-over-`where(id: ...)` pattern as
+  `Track.by_artist`/`by_playlist` (Intent 43): `Track` joins `:playlists` directly, `Artist` joins
+  `tracks: :playlists` (an artist counts as "in category X" if *any* of their tracks sits in a matching
+  playlist). The subquery shape matters here for the same reason it did in Intent 43 — it composes safely with
+  whatever other joins/conditions the base relation already carries (search, sorting, preloads) instead of
+  risking a join-fanout or an alias collision.
+
+Wired into `TracksController#index` (chained *after* `search_query`, so the DSL search — including an
+internal `OR` producing a unioned relation — still gets AND-ed with the category filter correctly),
+`PlaylistsController#index`, and `ArtistsController#index`. Changed via a small `SettingsController`
+(`resource :settings, only: %i[edit update]`, radio buttons, navbar "Einstellungen" link) — deliberately a
+full settings page rather than a navbar quick-toggle dropdown, since switching category isn't expected to
+happen many times per session.
+
+A follow-up idea floated but explicitly deferred (not part of Intent 54): making the *import* filter itself
+configurable too (the DJ has many playlists beyond Fusion/Blues and may want to choose import patterns) — kept
+as a separate, later concern rather than conflated with this display filter.
 
 ### Download flow
 

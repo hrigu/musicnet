@@ -225,6 +225,40 @@ RSpec.describe "Tracks", type: :request do
     end
   end
 
+  describe "GET /tracks - Aktive Kategorie (Intent 54)" do
+    def create_track_in_playlist(name:, spotify_id:, playlist_name:, playlist_spotify_id:)
+      track = create_track(name: name, spotify_id: spotify_id)
+      playlist = Playlist.find_or_create_by!(name: playlist_name) { |p| p.spotify_id = playlist_spotify_id }
+      PlaylistTrack.create!(playlist: playlist, track: track, added_at: Time.current)
+      track
+    end
+
+    it "zeigt alle Tracks, wenn die Kategorie 'all' ist (Standard)" do
+      create_track_in_playlist(name: "RSpec Blues Cat A", spotify_id: "cat-idx-a",
+                               playlist_name: "RSpec Blues Session Idx", playlist_spotify_id: "pl-cat-idx-blues")
+      create_track_in_playlist(name: "RSpec Fusion Cat B", spotify_id: "cat-idx-b",
+                               playlist_name: "RSpec Fusion Abende Idx", playlist_spotify_id: "pl-cat-idx-fusion")
+
+      get tracks_path
+
+      names = Nokogiri::HTML(response.body).css("tbody tr th a").map(&:text)
+      expect(names).to contain_exactly("RSpec Blues Cat A", "RSpec Fusion Cat B")
+    end
+
+    it "zeigt nur Tracks aus Playlists der aktiven Kategorie, kombiniert mit Suche" do
+      users(:one).update!(active_playlist_category: "blues")
+      create_track_in_playlist(name: "RSpec Blues Cat Match", spotify_id: "cat-idx-match",
+                               playlist_name: "RSpec Blues Session Idx2", playlist_spotify_id: "pl-cat-idx2-blues")
+      create_track_in_playlist(name: "RSpec Fusion Cat Miss", spotify_id: "cat-idx-miss",
+                               playlist_name: "RSpec Fusion Abende Idx2", playlist_spotify_id: "pl-cat-idx2-fusion")
+
+      get tracks_path(q: "RSpec")
+
+      names = Nokogiri::HTML(response.body).css("tbody tr th a").map(&:text)
+      expect(names).to eq(["RSpec Blues Cat Match"])
+    end
+  end
+
   describe "GET /tracks/query_suggestions" do
     it "liefert Vorschläge als JSON" do
       album = Album.create!(name: "Album", spotify_id: "alb-qs")

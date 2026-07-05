@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_04_191007) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_05_150000) do
   create_table "albums", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name"
@@ -79,6 +79,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_04_191007) do
   end
 
   create_table "users", force: :cascade do |t|
+    t.string "active_playlist_category", default: "all", null: false
     t.datetime "created_at", null: false
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false

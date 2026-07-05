@@ -30,6 +30,7 @@
               <li><%= link_to 'Suche', search_syntax_help_path, class: "dropdown-item" %></li>
             </ul>
           </div>
+          <%= link_to('Einstellungen', edit_settings_path, class: "nav-link") %>
           <% if current_user.spotify_avatar_url.present? %>
             <img src="<%= current_user.spotify_avatar_url %>" alt="avatar" style="width:48px;height:48px;">
           <% end %>

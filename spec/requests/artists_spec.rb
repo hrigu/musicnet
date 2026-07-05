@@ -25,6 +25,27 @@ RSpec.describe "Artists", type: :request do
       expect(response).to have_http_status(:success)
     end
 
+    it "zeigt nur Artists der aktiven Kategorie, wenn eine gesetzt ist (Intent 54)" do
+      users(:one).update!(active_playlist_category: "blues")
+      album = Album.create!(name: "Album", spotify_id: "alb-cat")
+      blues_artist = Artist.create!(name: "RSpec Blues Artist Idx", spotify_id: "art-cat-idx-blues")
+      fusion_artist = Artist.create!(name: "RSpec Fusion Artist Idx", spotify_id: "art-cat-idx-fusion")
+      blues_track = Track.create!(name: "A", spotify_id: "trk-cat-idx-blues", album: album,
+                                  artists: [blues_artist], duration_ms: 200_000)
+      fusion_track = Track.create!(name: "B", spotify_id: "trk-cat-idx-fusion", album: album,
+                                   artists: [fusion_artist], duration_ms: 200_000)
+      blues_playlist = Playlist.create!(name: "RSpec Blues Session Idx", spotify_id: "pl-cat-idx-art-blues")
+      fusion_playlist = Playlist.create!(name: "RSpec Fusion Abende Idx", spotify_id: "pl-cat-idx-art-fusion")
+      PlaylistTrack.create!(playlist: blues_playlist, track: blues_track, added_at: Time.current)
+      PlaylistTrack.create!(playlist: fusion_playlist, track: fusion_track, added_at: Time.current)
+
+      get artists_path
+
+      names = Nokogiri::HTML(response.body).css("tbody tr th a").map(&:text)
+      expect(names).to include("RSpec Blues Artist Idx")
+      expect(names).to_not include("RSpec Fusion Artist Idx")
+    end
+
     it "zeigt die Playlist-Badges ohne eine Query pro Künstler" do
       album = Album.create!(name: "Album", spotify_id: "alb-q1")
       playlist = Playlist.create!(spotify_id: "pl-q1", name: "Fusion Badge")
