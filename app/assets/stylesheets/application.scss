@@ -40,6 +40,13 @@ body {
   min-width: 32rem;
 }
 
+// Ohne Begrenzung waechst das Vorschlags-Dropdown unbegrenzt mit der Anzahl Treffer
+// (Bootstraps .dropdown-menu setzt selbst kein max-height, Intent 55).
+.search-suggestions-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
 .table-tracks {
   font-size: 0.925rem;
   table-layout: fixed;
