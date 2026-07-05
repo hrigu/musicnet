@@ -24,6 +24,9 @@ export default class extends Controller {
     this.handleAudioEnded = () => this.playNextInQueue()
     this.handleTimeUpdate = () => this.updateProgress()
     this.handleLoadedMetadata = () => this.updateDuration()
+    // Diagnose fuer einen sporadischen, nicht reproduzierbaren Audio-Aussetzer (Intent 56) -
+    // wieder entfernen/reduzieren, sobald die Ursache gefunden ist.
+    this.handleDiagnosticEvent = (event) => this.logDiagnostic(event)
 
     document.addEventListener("audio-player:play", this.handlePlayEvent)
 
@@ -32,6 +35,9 @@ export default class extends Controller {
     this.audioTarget.addEventListener("ended", this.handleAudioEnded)
     this.audioTarget.addEventListener("timeupdate", this.handleTimeUpdate)
     this.audioTarget.addEventListener("loadedmetadata", this.handleLoadedMetadata)
+    ;["pause", "error", "stalled", "emptied", "abort"].forEach((type) =>
+      this.audioTarget.addEventListener(type, this.handleDiagnosticEvent)
+    )
 
     restoreOutputDevice(this.audioTarget, SINK_ID_STORAGE_KEY)
   }
@@ -42,8 +48,22 @@ export default class extends Controller {
     this.audioTarget.removeEventListener("play", this.handleAudioPlay)
     this.audioTarget.removeEventListener("pause", this.handleAudioPause)
     this.audioTarget.removeEventListener("ended", this.handleAudioEnded)
+    ;["pause", "error", "stalled", "emptied", "abort"].forEach((type) =>
+      this.audioTarget.removeEventListener(type, this.handleDiagnosticEvent)
+    )
     this.audioTarget.removeEventListener("timeupdate", this.handleTimeUpdate)
     this.audioTarget.removeEventListener("loadedmetadata", this.handleLoadedMetadata)
+  }
+
+  // Intent 56: Diagnose fuer einen sporadischen, bisher nicht reproduzierbaren Audio-Aussetzer.
+  logDiagnostic(event) {
+    console.log("[audio-diagnostic]", {
+      channel: "main",
+      type: event.type,
+      src: this.audioTarget.src,
+      currentTime: this.audioTarget.currentTime,
+      timestamp: new Date().toISOString(),
+    })
   }
 
   handlePlayEvent(event) {

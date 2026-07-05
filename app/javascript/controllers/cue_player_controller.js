@@ -18,6 +18,9 @@ export default class extends Controller {
     this.handleCueEvent = this.handleCueEvent.bind(this)
     this.handleToggleEvent = this.toggle.bind(this)
     this.broadcastState = this.broadcastState.bind(this)
+    // Diagnose fuer einen sporadischen, nicht reproduzierbaren Audio-Aussetzer (Intent 56) -
+    // wieder entfernen/reduzieren, sobald die Ursache gefunden ist.
+    this.handleDiagnosticEvent = (event) => this.logDiagnostic(event)
     document.addEventListener("audio-player:cue", this.handleCueEvent)
     document.addEventListener("audio-player:cue-toggle", this.handleToggleEvent)
 
@@ -33,6 +36,9 @@ export default class extends Controller {
       this.toggleButtonTarget.classList.add("btn-outline-secondary")
       this.broadcastState()
     })
+    ;["pause", "error", "stalled", "emptied", "abort"].forEach((type) =>
+      this.audioTarget.addEventListener(type, this.handleDiagnosticEvent)
+    )
 
     restoreOutputDevice(this.audioTarget, SINK_ID_STORAGE_KEY)
   }
@@ -40,6 +46,20 @@ export default class extends Controller {
   disconnect() {
     document.removeEventListener("audio-player:cue", this.handleCueEvent)
     document.removeEventListener("audio-player:cue-toggle", this.handleToggleEvent)
+    ;["pause", "error", "stalled", "emptied", "abort"].forEach((type) =>
+      this.audioTarget.removeEventListener(type, this.handleDiagnosticEvent)
+    )
+  }
+
+  // Intent 56: Diagnose fuer einen sporadischen, bisher nicht reproduzierbaren Audio-Aussetzer.
+  logDiagnostic(event) {
+    console.log("[audio-diagnostic]", {
+      channel: "cue",
+      type: event.type,
+      src: this.audioTarget.src,
+      currentTime: this.audioTarget.currentTime,
+      timestamp: new Date().toISOString(),
+    })
   }
 
   handleCueEvent(event) {
