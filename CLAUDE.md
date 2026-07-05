@@ -335,14 +335,23 @@ other controller; both only react to events dispatched by `audio_trigger_control
 (`audio-player:play` vs. the new `audio-player:cue`) on the per-track "▶"/"🎧" buttons in
 `components/_audio_file.html.erb`. The "🎧" button stays visible even for an already-queued track
 (unlike "▶"/"+", replaced by an "in Queue" badge) since previewing is independent of queue state.
-Output device routing uses `navigator.mediaDevices.selectAudioOutput()` (opens the browser's own
-native device-picker, requires a secure context — satisfied here by `127.0.0.1`/`localhost` — and
-must be called from a real click handler) to get a `deviceId`, then
-`HTMLMediaElement.setSinkId()` on the cue channel's `<audio>` element only — the main player is
-left on the system default output. Chosen device id is cached in `localStorage` and silently
-reapplied on load (a stale/no-longer-present id just fails quietly, same soft-failure style as
-elsewhere). Chrome-only as of this writing (not Safari) — guarded by a
-`navigator.mediaDevices?.selectAudioOutput` feature check that shows a message instead of erroring.
+Output device routing uses `HTMLMediaElement.setSinkId()` on the cue channel's `<audio>` element
+only — the main player is left on the system default output. Getting a `deviceId` to pass to it
+took a correction (Intent 51 follow-up): `navigator.mediaDevices.selectAudioOutput()` (a native
+device-picker) looked like the right tool, but per MDN's browser-compat-data it's Firefox-only
+(116+) — **not implemented in Chrome**, the opposite of this project's first assumption.
+`setSinkId()` itself is the older, broadly-supported piece (Chrome since v49) — only the device
+*picker* needed a different approach: `navigator.mediaDevices.enumerateDevices()` filtered to
+`kind === "audiooutput"`, rendered into a plain `<select>` in the cue row. Chrome only returns
+non-empty labels for enumerated devices (audiooutput included, not just mic/camera input) once a
+`getUserMedia` permission has been granted, so `chooseOutputDevice()` briefly requests
+`{ audio: true }`, immediately stops the resulting stream (the stream itself is never used, only
+its side-effect of unlocking labels), then enumerates and populates the `<select>`. This is a real
+Chrome UX quirk, not a bug: clicking "Ausgabegerät wählen" prompts for microphone permission before
+the speaker list appears. Chosen device id is cached in `localStorage` and silently reapplied on
+load (a stale/no-longer-present id just fails quietly, same soft-failure style as elsewhere).
+Guarded by an `HTMLMediaElement.prototype.setSinkId` feature check that shows a message instead of
+erroring where unsupported (e.g. Safari before 18.4).
 **Testability limit:** the native device-picker dialog itself has no DOM and can't be driven by
 Cuprite/Capybara — only the two-channel independence (previewing doesn't touch the main player) is
 covered by a system spec (`spec/system/cue_player_spec.rb`); actually picking a device and hearing

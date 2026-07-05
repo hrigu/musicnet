@@ -8,7 +8,7 @@ import { Controller } from "@hotwired/stimulus"
 const SINK_ID_STORAGE_KEY = "musicnet:cuePlayerSinkId"
 
 export default class extends Controller {
-  static targets = ["audio", "icon", "name"]
+  static targets = ["audio", "icon", "name", "deviceSelect", "chooseButton"]
 
   connect() {
     this.handleCueEvent = this.handleCueEvent.bind(this)
@@ -39,22 +39,42 @@ export default class extends Controller {
     }
   }
 
-  // Oeffnet den nativen Geraete-Dialog des Browsers (transient user activation noetig, darum nur
-  // aus diesem Klick-Handler aufrufbar). Nicht automatisiert testbar (kein DOM, Browser-Chrome-UI)
-  // - siehe Intent 51.
+  // navigator.mediaDevices.selectAudioOutput() (nativer Geraete-Dialog) ist in Chrome nicht
+  // implementiert (nur Firefox 116+, siehe MDN Browser-Compat-Data) - Chrome kennt nur den
+  // aelteren enumerateDevices()-Weg mit eigenem Dropdown. Chrome zeigt dabei Geraete-Labels
+  // (auch fuer audiooutput) grundsaetzlich erst nach einer erteilten getUserMedia-Berechtigung
+  // (Plattform-Einschraenkung, betrifft nicht nur Mikrofon-Input) - der Stream wird sofort
+  // wieder gestoppt, nur die Berechtigung wird gebraucht. Nicht automatisiert testbar (echter
+  // Berechtigungs-Dialog hat kein DOM) - siehe Intent 51.
   async chooseOutputDevice() {
-    if (!navigator.mediaDevices?.selectAudioOutput) {
+    if (!this.audioTarget.setSinkId) {
       alert("Dieser Browser unterstützt keine Ausgabegerät-Auswahl für den Vorhör-Kanal.")
       return
     }
 
     try {
-      const device = await navigator.mediaDevices.selectAudioOutput()
-      await this.audioTarget.setSinkId(device.deviceId)
-      localStorage.setItem(SINK_ID_STORAGE_KEY, device.deviceId)
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      stream.getTracks().forEach((track) => track.stop())
     } catch {
-      // Nutzer hat den Geraete-Dialog abgebrochen - kein Fehlerzustand.
+      // Berechtigung verweigert oder Dialog abgebrochen - kein Fehlerzustand.
+      return
     }
+
+    const devices = await navigator.mediaDevices.enumerateDevices()
+    const outputs = devices.filter((device) => device.kind === "audiooutput")
+    if (outputs.length === 0) return
+
+    this.deviceSelectTarget.innerHTML = outputs
+      .map((device, index) => `<option value="${device.deviceId}">${device.label || `Gerät ${index + 1}`}</option>`)
+      .join("")
+    this.deviceSelectTarget.classList.remove("d-none")
+    this.chooseButtonTarget.classList.add("d-none")
+  }
+
+  async selectOutputDevice() {
+    const deviceId = this.deviceSelectTarget.value
+    await this.audioTarget.setSinkId(deviceId)
+    localStorage.setItem(SINK_ID_STORAGE_KEY, deviceId)
   }
 
   // Geraete-IDs sind nicht ueber alle Sessions/Neustarts hinweg garantiert stabil - ein
