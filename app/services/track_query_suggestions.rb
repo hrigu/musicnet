@@ -38,7 +38,20 @@ class TrackQuerySuggestions
     source = VALUE_SOURCES[field]
     return [] unless source
 
-    source.call(prefix.downcase).map { |value| "#{field}:#{quote_if_needed(value)}" }
+    already_typed, current = split_last_item(prefix)
+    source.call(current.downcase).map { |value| "#{field}:#{already_typed}#{quote_if_needed(value)}" }
+  end
+
+  # Nur das letzte, gerade getippte Komma-Item wird fuers Matching verwendet - vorherige Items
+  # (already_typed) bleiben unveraendert als Praefix erhalten (Bugfix: "artist:hi,hu" durfte
+  # nicht "hi,hu" als ganzes matchen, sondern nur "hu"). Ein fuehrendes " im aktuellen Item wird
+  # entfernt, da der Nutzer mitten im Tippen eines gequoteten Werts ist (Bugfix: 'artist:"' durfte
+  # nicht nach einem woertlichen Anfuehrungszeichen im Namen suchen).
+  def split_last_item(prefix)
+    comma_index = prefix.rindex(",")
+    already_typed = comma_index ? prefix[0..comma_index] : ""
+    current = comma_index ? prefix[(comma_index + 1)..] : prefix
+    [already_typed, current.delete_prefix('"')]
   end
 
   def quote_if_needed(value)

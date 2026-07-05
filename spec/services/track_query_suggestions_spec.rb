@@ -35,5 +35,32 @@ RSpec.describe TrackQuerySuggestions do
     it "liefert ein leeres Array für ein unbekanntes Feld" do
       expect(described_class.for("composer:ba")).to eq([])
     end
+
+    it "bleibt bei einem gerade getippten oeffnenden Anfuehrungszeichen bestehen (Bugfix)" do
+      Artist.create!(name: "RSpec Zzyzx Cotton", spotify_id: "art-sugg-quote")
+
+      suggestions = described_class.for('artist:"')
+
+      expect(suggestions).to include('artist:"RSpec Zzyzx Cotton"')
+    end
+
+    it "grenzt Vorschlaege nach der Anfuehrung weiter ein (Bugfix)" do
+      match = Artist.create!(name: "RSpec Zzyzx Cotton", spotify_id: "art-sugg-quote-match")
+      Artist.create!(name: "RSpec Andere Band", spotify_id: "art-sugg-quote-miss")
+
+      suggestions = described_class.for('artist:"zzyzx')
+
+      expect(suggestions).to eq(["artist:\"#{match.name}\""])
+    end
+
+    it "schlaegt fuer den zweiten Wert einer Komma-Liste vor und behaelt den ersten (Bugfix)" do
+      Artist.create!(name: "RSpec Zzyzx Hubert", spotify_id: "art-sugg-list-b")
+
+      # "aaa" simuliert einen bereits getippten ersten Wert (ohne Leerzeichen, so wie ihn das
+      # JS als einzelnes Token an den Endpoint schickt) - er muss im Vorschlag erhalten bleiben.
+      suggestions = described_class.for("artist:aaa,zzyzx")
+
+      expect(suggestions).to eq(['artist:aaa,"RSpec Zzyzx Hubert"'])
+    end
   end
 end
