@@ -14,13 +14,19 @@
   <%= form_with url: tracks_path, method: :get, id: "tracks-search", class: "mb-3" do %>
     <%= hidden_field_tag :sort, params[:sort] %>
     <%= hidden_field_tag :direction, params[:direction] %>
-    <%= text_field_tag :q, params[:q], placeholder: "Suche nach Name, Künstler, Album oder Genre", class: "form-control d-inline-block w-auto" %>
+    <%= text_field_tag :q, params[:q], placeholder: 'z.B. genre:jazz bpm:80..100 playlist:"Name"', class: "form-control d-inline-block w-auto" %>
     <%= select_tag :available,
           options_for_select(
             [["Alle", ""], ["Nur heruntergeladen", "downloaded"], ["Nur fehlend", "missing"]],
             params[:available]
           ), class: "form-select d-inline-block w-auto" %>
     <%= submit_tag "Suchen", class: "btn btn-outline-secondary" %>
+    <small class="search-syntax-hint form-text text-muted d-block mt-1">
+      Felder: <code>artist:</code> <code>album:</code> <code>genre:</code> <code>playlist:</code>
+      <code>bpm:</code> <code>energy:</code> <code>popularity:</code> <code>year:</code> &middot;
+      Beispiele: <code>genre:jazz,fusion</code> <code>bpm:80..100</code> <code>-genre:blues</code>
+      <code>playlist:"Fusion Abende"</code>
+    </small>
   <% end %>
 
   <%= render 'tracks', tracks: @tracks %>

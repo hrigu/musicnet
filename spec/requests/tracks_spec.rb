@@ -209,6 +209,13 @@ RSpec.describe "Tracks", type: :request do
       names = Nokogiri::HTML(response.body).css("tbody tr th a").map(&:text)
       expect(names).to eq(["RSpec Jazz Track"])
     end
+
+    it "zeigt einen Hilfehinweis mit Syntax-Beispielen im Suchformular" do
+      get tracks_path
+
+      hint = Nokogiri::HTML(response.body).at_css("form#tracks-search .search-syntax-hint")
+      expect(hint.text).to include("genre:jazz")
+    end
   end
 
   describe "GET /tracks - Verfügbarkeits-Filter" do
