@@ -11,7 +11,7 @@ RSpec.describe "Help", type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("playlist:")
-      expect(response.body).to include("kein Leerzeichen")
+      expect(response.body).to include("genre:pop OR genre:techno")
     end
   end
 

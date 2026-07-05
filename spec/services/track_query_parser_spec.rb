@@ -79,6 +79,62 @@ RSpec.describe TrackQueryParser do
     end
   end
 
+  describe "#tokenize mit known_fields (Intent 48)" do
+    it "verschmilzt 'feld: wert' (Leerzeichen nach dem Doppelpunkt) bei bekanntem Feld" do
+      tokens = described_class.new("artist: davis", known_fields: ["artist"]).tokenize
+
+      expect(tokens).to eq(
+        [TrackQueryParser::Token.new(type: :field, field: "artist", value: "davis", negate: false)]
+      )
+    end
+
+    it "verschmilzt 'feld: \"gequotete Phrase\"' bei bekanntem Feld" do
+      tokens = described_class.new('artist: "James Cotton"', known_fields: ["artist"]).tokenize
+
+      expect(tokens).to eq(
+        [TrackQueryParser::Token.new(type: :field, field: "artist", value: '"James Cotton"', negate: false)]
+      )
+    end
+
+    it "verschmilzt auch mit Minus-Praefix (Negation)" do
+      tokens = described_class.new("-artist: davis", known_fields: ["artist"]).tokenize
+
+      expect(tokens).to eq(
+        [TrackQueryParser::Token.new(type: :field, field: "artist", value: "davis", negate: true)]
+      )
+    end
+
+    it "verschmilzt nicht bei unbekanntem Feld (bleibt Freitext, kein falsches Zusammenfuehren)" do
+      tokens = described_class.new("blues: story", known_fields: ["artist"]).tokenize
+
+      expect(tokens).to eq(
+        [
+          TrackQueryParser::Token.new(type: :free_text, field: nil, value: "blues:", negate: false),
+          TrackQueryParser::Token.new(type: :free_text, field: nil, value: "story", negate: false)
+        ]
+      )
+    end
+
+    it "verschmilzt nicht ohne known_fields-Parameter (Rueckwaertskompatibilitaet)" do
+      tokens = described_class.new("artist: davis").tokenize
+
+      expect(tokens).to eq(
+        [
+          TrackQueryParser::Token.new(type: :free_text, field: nil, value: "artist:", negate: false),
+          TrackQueryParser::Token.new(type: :free_text, field: nil, value: "davis", negate: false)
+        ]
+      )
+    end
+
+    it "laesst ein abschliessendes 'feld:' ohne folgendes Wort unveraendert" do
+      tokens = described_class.new("artist:", known_fields: ["artist"]).tokenize
+
+      expect(tokens).to eq(
+        [TrackQueryParser::Token.new(type: :free_text, field: nil, value: "artist:", negate: false)]
+      )
+    end
+  end
+
   describe ".classify_value" do
     it "klassifiziert einen einfachen Wert als contains" do
       expect(described_class.classify_value("jazz")).to eq(type: :contains, value: "jazz")

@@ -50,15 +50,46 @@ class TrackQueryParser
   end
   private_class_method :classify_comparison
 
-  def initialize(query)
+  # Ein Roh-Wort, das genau "feld:" oder "-feld:" ist (bekanntes Feld, noch kein Wert) - wird
+  # mit dem naechsten Roh-Wort zusammengefuehrt, wenn ein Leerzeichen nach dem Doppelpunkt
+  # getippt wurde (Intent 48). Nur bei bekannten Feldern (known_fields), sonst wuerde z.B. ein
+  # zufaelliger Doppelpunkt in einem Freitext ("Blues: The Story") faelschlich verschmolzen.
+  DANGLING_FIELD = /\A-?[a-zA-Z_]+:\z/
+
+  def initialize(query, known_fields: [])
     @query = query
+    @known_fields = known_fields
   end
 
   def tokenize
-    @query.to_s.scan(WORD_SCANNER).map { |word| build_token(word) }
+    merge_dangling_field_prefixes(@query.to_s.scan(WORD_SCANNER)).map { |word| build_token(word) }
   end
 
   private
+
+  def merge_dangling_field_prefixes(words)
+    merged = []
+    index = 0
+    while index < words.length
+      word = words[index]
+      next_word = words[index + 1]
+      if dangling_known_field?(word) && next_word
+        merged << (word + next_word)
+        index += 2
+      else
+        merged << word
+        index += 1
+      end
+    end
+    merged
+  end
+
+  def dangling_known_field?(word)
+    return false unless DANGLING_FIELD.match?(word)
+
+    field = word.delete_prefix("-").delete_suffix(":")
+    @known_fields.include?(field)
+  end
 
   # "OR" (Grossschreibung) als eigenstaendiges Wort ist der ODER-Operator (Intent 47) - nur wenn
   # es unquotiert und alleinstehend vorkommt. Ein kleingeschriebenes "or" oder ein gequotetes

@@ -225,8 +225,28 @@ Query params:
   suggests matching field names (no `:` yet) or matching DB values for text fields (genre/artist/
   album/playlist substring match, quoted if the value contains a space) — wired up via the
   `search-suggestions` Stimulus controller (debounced fetch, dropdown, click inserts the
-  suggestion). Verified with a Cuprite system spec (`spec/system/track_search_autocomplete_spec.rb`),
-  same rationale as Intent 40: this interaction is only observable in a real browser.
+  suggestion). Suggestions only match against the last comma-separated segment being typed
+  (earlier segments are kept as a literal prefix) and strip a leading, not-yet-closed `"` before
+  matching (Intent 49) — otherwise both a second comma-list value and a just-opened quote would
+  get zero suggestions, since the whole remainder would be used as one literal LIKE fragment.
+  Verified with a Cuprite system spec (`spec/system/track_search_autocomplete_spec.rb`), same
+  rationale as Intent 40: this interaction is only observable in a real browser.
+  Two operators beyond plain field:value/comma/negation: `OR` (uppercase only — a lowercase `or`,
+  or `OR` inside quotes, stays literal) joins two criteria groups with lower precedence than the
+  implicit whitespace-AND, mirroring Mixxx's search syntax (Intent 47) — `TrackQueryParser` tags
+  it as its own token type, `Track.search_query` splits the token stream into AND-groups at each
+  `:or` token, evaluates each group with the existing logic, then wraps every group's result as
+  `where(id: group.select(:id))` before combining with `Relation#or` (wrapping first is required:
+  `Relation#or` needs structurally identical relations, but one group having free text — which
+  pulls in `Track.search`'s own `left_joins`/`distinct` — and another not would otherwise differ).
+  Separately, `field: value` (space after the colon) is tolerated for a single word or a quoted
+  phrase, but only for a field in `Track::FIELD_SCOPES` — `TrackQueryParser#tokenize` merges a
+  dangling `field:`-shaped raw token with the following one only when the field name is in the
+  `known_fields:` list passed by `Track.search_query`, so an incidental colon in ordinary free
+  text (e.g. a track named "Blues: The Story") is never mistaken for a field (Intent 48). An
+  unquoted, multi-word value after the space (`artist: James Cotton`) is still ambiguous and
+  remains unsupported — documented as a known limitation in `doc/track_search_syntax.md` rather
+  than solved, since there's no unambiguous rule for where such a value would end.
 - `sort`/`direction` — `Track.sorted`, driven by the `Track::SORT_COLUMNS` whitelist (never raw
   param into `order()`); unknown column/direction silently falls back to the default (`name`,
   `asc`). `energy`/`tempo` sort via `json_extract(tracks.audio_features, '$.energy'/'$.tempo')`
@@ -240,10 +260,10 @@ Ruby-array-based pagination path alongside the normal SQL one for comparatively 
 `doc/*.md` files can double as in-app help articles: `HelpController#search_syntax`
 (`GET /help/suche-syntax`, navbar "Hilfe" dropdown → "Suche") reads `doc/track_search_syntax.md`
 at request time and renders it via `Redcarpet::Markdown.new(Redcarpet::Render::HTML)` — the
-Markdown file is the single source (documents the DSL search syntax from Intent 43/45, including
-the "no space between `field:` and the value" gotcha), never duplicated into a separate view
-(Intent 46). The navbar's "Hilfe" item is a dropdown rather than a flat link specifically so
-further help articles can be added as more entries later.
+Markdown file is the single source (documents the DSL search syntax, including the `OR` operator
+and where a space after `field:` is/isn't tolerated, Intent 43/45/47/48), never duplicated into a
+separate view (Intent 46). The navbar's "Hilfe" item is a dropdown rather than a flat link
+specifically so further help articles can be added as more entries later.
 
 ### Mixxx crate export
 

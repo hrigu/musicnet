@@ -301,6 +301,13 @@ RSpec.describe Track, type: :model do
       expect(described_class.search_query("genre:jazz OR").to_a).to eq([match])
       expect(described_class.search_query("genre:jazz OR OR").to_a).to eq([match])
     end
+
+    it "toleriert ein Leerzeichen nach dem Doppelpunkt bei einem bekannten Feld (Intent 48)" do
+      match = create_track(name: "A", spotify_id: "sq-space-a", genre: "RSpec Jazz")
+      create_track(name: "B", spotify_id: "sq-space-b", genre: "RSpec Blues")
+
+      expect(described_class.search_query("genre: jazz").to_a).to eq([match])
+    end
   end
 
   describe ".by_genre" do

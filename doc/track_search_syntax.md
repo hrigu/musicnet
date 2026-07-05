@@ -118,13 +118,27 @@ Anführungszeichen stehen:
 artist:"James Cotton"
 ```
 
-**Wichtig:** Zwischen `feld:` und dem Wert darf **kein Leerzeichen** stehen, auch
-nicht vor Anführungszeichen. `artist: James Cotton` (mit Leerzeichen nach dem
-Doppelpunkt) wird **nicht** als Feld erkannt, sondern als Freitext behandelt und
-findet in der Regel nichts. Richtig ist:
+**Ein Leerzeichen nach dem Doppelpunkt ist erlaubt**, solange danach **ein
+einzelnes Wort** oder **eine gequotete Phrase** folgt:
 
 ```
-artist:"James Cotton"
+artist: davis
+artist: "James Cotton"
+```
+
+funktionieren beide genau wie `artist:davis` bzw. `artist:"James Cotton"`. Das
+gilt nur für bekannte Felder — ein Doppelpunkt in einem normalen Freitext (z.B.
+ein Tracktitel wie "Blues: The Story") wird nicht fälschlich zu einem Feld
+zusammengeführt, da "blues" kein bekanntes Feld ist.
+
+**Bekannte Grenze:** ein **ungequotetes, mehrwortiges** Leerzeichen-Wert bleibt
+weiterhin mehrdeutig — `artist: James Cotton` (ohne Anführungszeichen) ist
+**nicht** garantiert dasselbe wie `artist:"James Cotton"`, da unklar ist, wo der
+Wert endet. Für einen mehrwortigen Wert nach einem Leerzeichen also immer
+Anführungszeichen verwenden:
+
+```
+artist: "James Cotton"
 ```
 
 ## Unbekannte Felder und ungültige Werte

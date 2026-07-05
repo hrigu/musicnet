@@ -101,7 +101,7 @@ class Track < ApplicationRecord
   def self.search_query(query)
     return all if query.blank?
 
-    groups = group_tokens_by_or(TrackQueryParser.new(query).tokenize)
+    groups = group_tokens_by_or(TrackQueryParser.new(query, known_fields: FIELD_SCOPES.keys).tokenize)
     return all if groups.empty?
 
     groups.map { |group| where(id: evaluate_and_group(group).select(:id)) }.reduce { |a, b| a.or(b) }
