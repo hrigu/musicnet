@@ -32,11 +32,21 @@ RSpec.describe TrackQueryParser do
     it "behandelt einen in Anfuehrungszeichen gesetzten Wert als einen zusammenhaengenden Token" do
       tokens = described_class.new('playlist:"Fusion Abende" bpm:80').tokenize
 
+      # Der Wert bleibt hier roh (inkl. Anfuehrungszeichen) - das Aufloesen passiert erst in
+      # .classify_value, einheitlich fuer den Einzelwert- und den Listen-Fall (Bugfix, siehe unten).
       expect(tokens).to eq(
         [
-          TrackQueryParser::Token.new(type: :field, field: "playlist", value: "Fusion Abende", negate: false),
+          TrackQueryParser::Token.new(type: :field, field: "playlist", value: '"Fusion Abende"', negate: false),
           TrackQueryParser::Token.new(type: :field, field: "bpm", value: "80", negate: false)
         ]
+      )
+    end
+
+    it "behandelt eine Komma-Liste mit gequotetem und ungequotetem Item als einen Token (Bugfix)" do
+      tokens = described_class.new('artist:"A.J. Croce",Kingfish').tokenize
+
+      expect(tokens).to eq(
+        [TrackQueryParser::Token.new(type: :field, field: "artist", value: '"A.J. Croce",Kingfish', negate: false)]
       )
     end
   end
@@ -66,6 +76,18 @@ RSpec.describe TrackQueryParser do
       expect(described_class.classify_value(">=50")).to eq(type: :comparison, operator: ">=", value: "50")
       expect(described_class.classify_value("<50")).to eq(type: :comparison, operator: "<", value: "50")
       expect(described_class.classify_value("<=50")).to eq(type: :comparison, operator: "<=", value: "50")
+    end
+
+    it "klassifiziert eine Liste aus gequotetem und ungequotetem Item, Anfuehrung entfernt (Bugfix)" do
+      expect(described_class.classify_value('"A.J. Croce",Kingfish')).to eq(
+        type: :list, values: ["A.J. Croce", "Kingfish"]
+      )
+    end
+
+    it "behandelt ein einzelnes gequotetes Item mit Komma darin als contains, nicht als Liste" do
+      expect(described_class.classify_value('"Earth, Wind & Fire"')).to eq(
+        type: :contains, value: "Earth, Wind & Fire"
+      )
     end
   end
 end

@@ -234,6 +234,16 @@ RSpec.describe Track, type: :model do
       expect(described_class.search_query(nil).count).to eq(described_class.count)
     end
 
+    it "findet beide Künstler bei einer Komma-Liste mit gequotetem Item (Bugfix)" do
+      croce = create_track(name: "A", spotify_id: "sq-quoted-list-a", artist_names: ["RSpec A.J. Croce"])
+      kingfish = create_track(name: "B", spotify_id: "sq-quoted-list-b", artist_names: ["Kingfish"])
+      create_track(name: "C", spotify_id: "sq-quoted-list-c", artist_names: ["RSpec Andere Band"])
+
+      result = described_class.search_query('artist:"RSpec A.J. Croce",Kingfish')
+
+      expect(result.to_a).to contain_exactly(croce, kingfish)
+    end
+
     it "schliesst Treffer bei Negation aus" do
       match = create_track(name: "A", spotify_id: "sq-negate-a", genre: "RSpec Jazz")
       create_track(name: "B", spotify_id: "sq-negate-b", genre: "RSpec Blues")

@@ -1,18 +1,41 @@
 class TrackQueryParser
   Token = Struct.new(:type, :field, :value, :negate, keyword_init: true)
 
-  WORD_SCANNER = /-?[a-zA-Z_]+:"[^"]*"|"[^"]*"|\S+/
+  # Token-Ebene (ganzer Query-String, Tokens durch Leerzeichen getrennt): ein Item ist ein
+  # gequoteter Abschnitt oder ein ungequoteter Abschnitt ohne Komma/Leerzeichen - Leerzeichen
+  # trennen hier noch ganze Tokens, duerfen also nicht Teil eines ungequoteten Items sein.
+  TOKEN_ITEM = /"[^"]*"|[^,\s]+/
+  # feld:item(,item)* als EIN Token - ohne das wiederholte (?:,TOKEN_ITEM)* würde ein
+  # Tokenizer-Scan nach einem gequoteten Item direkt bei dessen schliessendem " abbrechen und ein
+  # direkt anschliessendes ",weiteresItem" als eigenen, unsinnigen Freitext-Token uebrig lassen
+  # (Bugfix, z.B. artist:"A.J. Croce",Kingfish).
+  WORD_SCANNER = /-?[a-zA-Z_]+:#{TOKEN_ITEM}(?:,#{TOKEN_ITEM})*|"[^"]*"|\S+/
   FIELD_TOKEN = /\A(?<field>[a-zA-Z_]+):(?<value>.+)\z/
 
   COMPARISON = /\A(?<operator>>=|<=|>|<)(?<value>.+)\z/
   RANGE = /\A(?<min>[^.]*)\.\.(?<max>[^.]*)\z/
 
+  # Werte-Ebene (innerhalb eines bereits isolierten Feld-Token-Werts): hier sind Leerzeichen
+  # normaler Inhalt (z.B. ein ungequotetes "Fusion Abende SQ" als ein einzelnes Item), keine
+  # Trennzeichen mehr - nur ein Komma trennt zwei Items.
+  VALUE_ITEM = /"[^"]*"|[^,]+/
+
   def self.classify_value(value)
     return classify_range(value) if value.include?("..")
     return classify_comparison(value) if COMPARISON.match?(value)
-    return { type: :list, values: value.split(",") } if value.include?(",")
 
-    { type: :contains, value: value }
+    items = value.scan(VALUE_ITEM).map { |item| unquote(item) }
+    return { type: :list, values: items } if items.size > 1
+
+    { type: :contains, value: items.first }
+  end
+
+  # Nicht als private_class_method markiert - wird auch von der Instanzmethode #build_token
+  # (Tokenisierung, nur fuer Freitext-Tokens) ueber self.class.unquote wiederverwendet. Bei
+  # Feld-Tokens bleibt der Wert dagegen roh (siehe #build_token) - das Aufloesen von Anfuehrung
+  # und Komma-Listen passiert einheitlich erst hier in classify_value.
+  def self.unquote(value)
+    value.start_with?('"') && value.end_with?('"') ? value[1..-2] : value
   end
 
   def self.classify_range(value)
@@ -41,12 +64,8 @@ class TrackQueryParser
     negate = word.start_with?("-")
     candidate = negate ? word[1..] : word
     match = FIELD_TOKEN.match(candidate)
-    return Token.new(type: :free_text, field: nil, value: unquote(word), negate: false) unless match
+    return Token.new(type: :free_text, field: nil, value: self.class.unquote(word), negate: false) unless match
 
-    Token.new(type: :field, field: match[:field], value: unquote(match[:value]), negate: negate)
-  end
-
-  def unquote(value)
-    value.start_with?('"') && value.end_with?('"') ? value[1..-2] : value
+    Token.new(type: :field, field: match[:field], value: match[:value], negate: negate)
   end
 end
