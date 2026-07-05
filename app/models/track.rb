@@ -64,6 +64,78 @@ class Track < ApplicationRecord
       .distinct
   end
 
+  # Feld-Whitelist der DSL-Suche (Intent 43) — ordnet feld:wert-Tokens dem passenden
+  # Scope zu. bpm/tempo und year/release sind bewusste Alias-Paare.
+  FIELD_SCOPES = {
+    "artist" => :by_artist,
+    "album" => :by_album,
+    "genre" => :by_genre,
+    "playlist" => :by_playlist,
+    "bpm" => :by_tempo,
+    "tempo" => :by_tempo,
+    "energy" => :by_energy,
+    "popularity" => :by_popularity,
+    "year" => :by_release_year,
+    "release" => :by_release_year
+  }.freeze
+  NUMERIC_FIELDS = %w[bpm tempo energy popularity year release].freeze
+  TEXT_FIELDS = %w[artist album genre playlist].freeze
+  NUMERIC_VALUE = /\A-?\d+(\.\d+)?\z/
+
+  # Übersetzt einen DSL-Suchstring (TrackQueryParser) in eine Track-Relation. Jeder
+  # feld:wert-Token wird über eine Subquery angewendet (relation.where(id: ...)) statt über
+  # einen direkten Join auf der Hauptrelation — nur so ergibt ein wiederholtes Feld
+  # (z.B. zwei playlist:-Tokens) eine echte Schnittmenge statt eines nie erfüllbaren
+  # Joins gegen dieselbe Zeile (siehe by_artist/by_playlist). Unbekannte Felder und
+  # ungültige Werte für ein bekanntes Feld werden ignoriert bzw. als Freitext behandelt,
+  # nie ein Fehler (Intent 43).
+  def self.search_query(query)
+    return all if query.blank?
+
+    relation = all
+    free_text_terms = []
+
+    TrackQueryParser.new(query).tokenize.each do |token|
+      if token.type == :free_text
+        free_text_terms << token.value
+        next
+      end
+
+      scope_name = FIELD_SCOPES[token.field]
+      unless scope_name
+        free_text_terms << "#{token.field}:#{token.value}"
+        next
+      end
+
+      match = TrackQueryParser.classify_value(token.value)
+      next unless valid_match_for_field?(token.field, match)
+
+      matching_ids = public_send(scope_name, match).select(:id)
+      relation = token.negate ? relation.where.not(id: matching_ids) : relation.where(id: matching_ids)
+    end
+
+    free_text_terms.any? ? relation.search(free_text_terms.join(" ")) : relation
+  end
+
+  def self.valid_match_for_field?(field, match)
+    return numeric_match_valid?(match) if NUMERIC_FIELDS.include?(field)
+    return %i[contains list].include?(match[:type]) if TEXT_FIELDS.include?(field)
+
+    false
+  end
+  private_class_method :valid_match_for_field?
+
+  def self.numeric_match_valid?(match)
+    case match[:type]
+    when :list then match[:values].all? { |v| NUMERIC_VALUE.match?(v) }
+    when :range then [match[:min], match[:max]].compact.all? { |v| NUMERIC_VALUE.match?(v) }
+    when :comparison then NUMERIC_VALUE.match?(match[:value])
+    when :contains then NUMERIC_VALUE.match?(match[:value])
+    else false
+    end
+  end
+  private_class_method :numeric_match_valid?
+
   def self.by_genre(match)
     where(text_match_condition("tracks.genre", match))
   end

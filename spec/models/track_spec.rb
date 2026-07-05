@@ -178,6 +178,89 @@ RSpec.describe Track, type: :model do
     end
   end
 
+  describe ".search_query" do
+    def create_track(name:, spotify_id:, genre: nil, tempo: nil, artist_names: [])
+      album = Album.create!(name: "Album #{spotify_id}", spotify_id: "alb-#{spotify_id}")
+      artists = artist_names.map { |n| Artist.create!(name: n, spotify_id: "art-#{n.parameterize}-#{spotify_id}") }
+      Track.create!(name: name, spotify_id: spotify_id, album: album, genre: genre, artists: artists,
+                    audio_features: tempo ? { "tempo" => tempo } : nil)
+    end
+
+    def add_to_playlist(track, playlist_name:, spotify_id:)
+      playlist = Playlist.find_or_create_by!(name: playlist_name) { |p| p.spotify_id = spotify_id }
+      PlaylistTrack.create!(playlist: playlist, track: track, added_at: Time.current)
+    end
+
+    it "verhält sich bei reinem Freitext wie die bestehende Volltextsuche" do
+      match = create_track(name: "RSpec Blues Shuffle", spotify_id: "sq-freitext-a")
+      create_track(name: "Andere Nummer", spotify_id: "sq-freitext-b")
+
+      expect(described_class.search_query("blues shuffle").to_a).to eq([match])
+    end
+
+    it "filtert nach einem einzelnen Feld" do
+      match = create_track(name: "A", spotify_id: "sq-single-a", genre: "RSpec Jazz")
+      create_track(name: "B", spotify_id: "sq-single-b", genre: "RSpec Blues")
+
+      expect(described_class.search_query("genre:jazz").to_a).to eq([match])
+    end
+
+    it "verknüpft mehrere Kriterien mit UND" do
+      match = create_track(name: "A", spotify_id: "sq-and-a", genre: "RSpec Jazz", tempo: 90.0)
+      create_track(name: "B", spotify_id: "sq-and-b", genre: "RSpec Jazz", tempo: 140.0)
+      create_track(name: "C", spotify_id: "sq-and-c", genre: "RSpec Blues", tempo: 90.0)
+
+      result = described_class.search_query("genre:jazz bpm:80..100")
+
+      expect(result.to_a).to eq([match])
+    end
+
+    it "verknüpft wiederholte Vorkommen desselben Feldes als Schnittmenge (Playlist-UND)" do
+      both = create_track(name: "A", spotify_id: "sq-playlist-and-a")
+      add_to_playlist(both, playlist_name: "RSpec Fusion Abende SQ", spotify_id: "sq-pl-fusion")
+      add_to_playlist(both, playlist_name: "RSpec Blues Session SQ", spotify_id: "sq-pl-blues")
+      only_one = create_track(name: "B", spotify_id: "sq-playlist-and-b")
+      add_to_playlist(only_one, playlist_name: "RSpec Fusion Abende SQ", spotify_id: "sq-pl-fusion")
+
+      result = described_class.search_query('playlist:"Fusion Abende SQ" playlist:"Blues Session SQ"')
+
+      expect(result.to_a).to eq([both])
+    end
+
+    it "liefert die unveränderte Relation bei leerem Suchbegriff" do
+      create_track(name: "RSpec Ohne Suche", spotify_id: "sq-blank")
+
+      expect(described_class.search_query("").count).to eq(described_class.count)
+      expect(described_class.search_query(nil).count).to eq(described_class.count)
+    end
+
+    it "schliesst Treffer bei Negation aus" do
+      match = create_track(name: "A", spotify_id: "sq-negate-a", genre: "RSpec Jazz")
+      create_track(name: "B", spotify_id: "sq-negate-b", genre: "RSpec Blues")
+
+      result = described_class.search_query("-genre:blues")
+
+      expect(result.to_a).to include(match)
+      expect(result.to_a).to_not include(described_class.find_by(spotify_id: "sq-negate-b"))
+    end
+
+    it "behandelt ein unbekanntes Feld als Freitext, ohne Fehler" do
+      create_track(name: "Andere Nummer", spotify_id: "sq-unknown-field")
+
+      expect { described_class.search_query("composer:Bach") }.to_not raise_error
+      expect(described_class.search_query("composer:Bach").to_a).to eq([])
+    end
+
+    it "ignoriert einen ungültigen numerischen Wert, ohne Fehler" do
+      match = create_track(name: "A", spotify_id: "sq-invalid-numeric-a", genre: "RSpec Jazz")
+      create_track(name: "B", spotify_id: "sq-invalid-numeric-b", genre: "RSpec Blues")
+
+      result = described_class.search_query("genre:jazz bpm:abc")
+
+      expect(result.to_a).to eq([match])
+    end
+  end
+
   describe ".by_genre" do
     def create_track(name:, spotify_id:, genre:)
       album = Album.create!(name: "Album", spotify_id: "alb-#{spotify_id}")
