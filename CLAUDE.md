@@ -305,13 +305,22 @@ Ruby-array-based pagination path alongside the normal SQL one for comparatively 
 
 ### Help articles
 
-`doc/*.md` files can double as in-app help articles: `HelpController#search_syntax`
-(`GET /help/suche-syntax`, navbar "Hilfe" dropdown → "Suche") reads `doc/track_search_syntax.md`
-at request time and renders it via `Redcarpet::Markdown.new(Redcarpet::Render::HTML)` — the
-Markdown file is the single source (documents the DSL search syntax, including the `OR` operator
-and where a space after `field:` is/isn't tolerated, Intent 43/45/47/48), never duplicated into a
-separate view (Intent 46). The navbar's "Hilfe" item is a dropdown rather than a flat link
-specifically so further help articles can be added as more entries later.
+`doc/*.md` files can double as in-app help articles: `HelpController#show` (`GET /help/:page`,
+route name `help`) looks `params[:page]` up in the `ARTICLES` whitelist constant (slug → title +
+filename under `doc/`) and renders the matching file at request time via
+`Redcarpet::Markdown.new(Redcarpet::Render::HTML)` — an unknown slug renders a plain 404 rather
+than raising. Each Markdown file is the single source, never duplicated into a separate view
+(Intent 46). Originally a single, hardcoded `#search_syntax` action/route (Intent 46); generalized
+into this whitelist-driven `#show` (Intent 52) when three more articles were added: `suche-syntax`
+→ `doc/track_search_syntax.md` (documents the DSL search syntax, including the `OR` operator and
+where a space after `field:` is/isn't tolerated, Intent 43/45/47/48), `installation` →
+`doc/installation.md` (setup on a new machine — credentials, external tools), `bedienung` →
+`doc/usage.md` (day-to-day workflow: playlists, search, queue, cue channel, download, Mixxx
+export), `diary` → the existing `doc/diary.md`. The README's own setup section was replaced by a
+link to `doc/installation.md` rather than kept as a second, separately-maintained copy, the same
+principle already applied to `doc/track_search_syntax.md`. The navbar's "Hilfe" item is a dropdown
+rather than a flat link specifically so further help articles can be added as more entries later
+(now populated with all four, `Intent 52`).
 
 ### Mixxx crate export
 
