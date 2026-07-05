@@ -25,6 +25,16 @@ RSpec.describe "Help", type: :request do
     end
   end
 
+  describe "GET /help/bedienung" do
+    it "rendert die Bedienungsanleitung als HTML" do
+      get help_path(page: "bedienung")
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Cue-/Vorhörkanal")
+      expect(response.body).to include("create_crates_lists")
+    end
+  end
+
   describe "GET /help/:page mit unbekanntem Slug" do
     it "liefert 404 statt eines Server-Fehlers" do
       get help_path(page: "unbekannt")
@@ -49,6 +59,14 @@ RSpec.describe "Help", type: :request do
       dropdown = Nokogiri::HTML(response.body).at_css(".nav-item.dropdown")
       link = dropdown.at_css("a[href='#{help_path(page: 'installation')}']")
       expect(link.text.strip).to eq("Installation")
+    end
+
+    it "zeigt zusätzlich einen Eintrag Bedienung, der auf den Hilfeartikel verlinkt" do
+      get tracks_path
+
+      dropdown = Nokogiri::HTML(response.body).at_css(".nav-item.dropdown")
+      link = dropdown.at_css("a[href='#{help_path(page: 'bedienung')}']")
+      expect(link.text.strip).to eq("Bedienung")
     end
   end
 end

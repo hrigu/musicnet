@@ -4,7 +4,8 @@ class HelpController < ApplicationController
   # ein roher Dateiname aus der URL gelesen wird.
   ARTICLES = {
     "suche-syntax" => { title: "Suche", file: "track_search_syntax.md" },
-    "installation" => { title: "Installation", file: "installation.md" }
+    "installation" => { title: "Installation", file: "installation.md" },
+    "bedienung" => { title: "Bedienung", file: "usage.md" }
   }.freeze
 
   MARKDOWN_RENDERER = Redcarpet::Markdown.new(Redcarpet::Render::HTML, fenced_code_blocks: true, tables: true)
