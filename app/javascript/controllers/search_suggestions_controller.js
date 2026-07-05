@@ -59,7 +59,7 @@ export default class extends Controller {
     const after = value.slice(cursor)
     const tokenStart = before.lastIndexOf(" ") + 1
 
-    this.inputTarget.value = `${before.slice(0, tokenStart)}${event.currentTarget.textContent} ${after}`
+    this.inputTarget.value = `${before.slice(0, tokenStart)}${event.currentTarget.textContent}${after}`
     this.hide()
     this.inputTarget.focus()
   }
