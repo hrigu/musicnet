@@ -1,3 +1,7 @@
-<h1>Meine Playlists</h1>
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <h1 class="mb-0">Meine Playlists</h1>
+  <%= link_to("Fetch all Playlists!", fetch_all_playlists_path, data: { turbo_method: :post },
+              class: "btn btn-outline-secondary") %>
+</div>
 
 <%= render 'playlists', playlists: @playlists %>

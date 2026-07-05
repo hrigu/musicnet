@@ -32,6 +32,22 @@ RSpec.describe "Playlists", type: :request do
       expect(response).to have_http_status(:success)
     end
 
+    it "GET /playlists zeigt einen 'Fetch all Playlists!'-Button oben auf der Seite (Intent 53)" do
+      get playlists_path
+
+      link = Nokogiri::HTML(response.body).at_css("a[href='#{fetch_all_playlists_path}']")
+      expect(link).to_not be_nil
+      expect(link.text.strip).to eq("Fetch all Playlists!")
+      expect(link["data-turbo-method"]).to eq("post")
+    end
+
+    it "zeigt 'Fetch all Playlists!' nicht mehr in der Navbar (Intent 53)" do
+      get playlists_path
+
+      nav = Nokogiri::HTML(response.body).at_css("nav")
+      expect(nav.text).to_not include("Fetch all Playlists!")
+    end
+
     it "GET /playlists zeigt die Track-Anzahl ohne eine COUNT-Query pro Playlist" do
       album = Album.create!(spotify_id: "alb-i1", name: "A Go Go")
       with_two = Playlist.create!(spotify_id: "pl-i1", name: "Fusion Zwei")
