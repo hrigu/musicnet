@@ -3,7 +3,8 @@ class HelpController < ApplicationController
   # Quelle, keine zweite, separat zu pflegende Kopie (Intent 46). Die Whitelist verhindert, dass
   # ein roher Dateiname aus der URL gelesen wird.
   ARTICLES = {
-    "suche-syntax" => { title: "Suche", file: "track_search_syntax.md" }
+    "suche-syntax" => { title: "Suche", file: "track_search_syntax.md" },
+    "installation" => { title: "Installation", file: "installation.md" }
   }.freeze
 
   MARKDOWN_RENDERER = Redcarpet::Markdown.new(Redcarpet::Render::HTML, fenced_code_blocks: true, tables: true)

@@ -15,6 +15,16 @@ RSpec.describe "Help", type: :request do
     end
   end
 
+  describe "GET /help/installation" do
+    it "rendert die Installationsanleitung als HTML" do
+      get help_path(page: "installation")
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Spotify-Credentials")
+      expect(response.body).to include("127.0.0.1:3001")
+    end
+  end
+
   describe "GET /help/:page mit unbekanntem Slug" do
     it "liefert 404 statt eines Server-Fehlers" do
       get help_path(page: "unbekannt")
@@ -31,6 +41,14 @@ RSpec.describe "Help", type: :request do
       expect(dropdown.text).to include("Hilfe")
       link = dropdown.at_css("a[href='#{help_path(page: 'suche-syntax')}']")
       expect(link.text.strip).to eq("Suche")
+    end
+
+    it "zeigt zusätzlich einen Eintrag Installation, der auf den Hilfeartikel verlinkt" do
+      get tracks_path
+
+      dropdown = Nokogiri::HTML(response.body).at_css(".nav-item.dropdown")
+      link = dropdown.at_css("a[href='#{help_path(page: 'installation')}']")
+      expect(link.text.strip).to eq("Installation")
     end
   end
 end

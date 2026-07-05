@@ -98,18 +98,7 @@ Dieser Key mit den Infos ist im config/master.key hinterlegt. Dieses nicht einch
 So hat man Zugriff: Rails.application.credentials.dig(:spotify, :client_id)
 
 #### Setup auf einer neuen Maschine
-Die verschlüsselten Credentials (`config/credentials.yml.enc`, `config/credentials/development.yml.enc`)
-sind eingecheckt, die zugehörigen Schlüssel aber nicht. Ohne sie liefert `credentials.dig(...)` nur `nil`
-und der Server bricht beim Boot mit `RestClient::BadRequest (400 Bad Request)` aus `RSpotify.authenticate` ab.
-
-Auf einer frischen Maschine müssen darum diese zwei Dateien von Hand hinterlegt werden (Quelle: 1Password
-bzw. eine bestehende Installation):
-
- * `config/master.key`
- * `config/credentials/development.key`
-
-Beide bleiben dank `.gitignore` unversioniert. Alternative für `master.key`: Umgebungsvariable
-`RAILS_MASTER_KEY` setzen (deckt aber `development.yml.enc` nicht ab).
+Siehe [Installation](doc/installation.md).
 
 ### Zugriff auf private Infos in Spotify
  * omniauth :spotify Strategie in Devise einbinden
