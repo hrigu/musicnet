@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { loadOutputDevices, restoreOutputDevice, applyOutputDevice } from "audio_output_device"
 
 // Einzige Instanz, dauerhaft im Layout (data-turbo-permanent) - ueberlebt Turbo-Drive-Visits.
 // Empfaengt "audio-player:play"-Events von den einzelnen Track-Play-Buttons
@@ -6,8 +7,15 @@ import { Controller } from "@hotwired/stimulus"
 // JS - dieser Controller kuemmert sich nur noch um die eigentliche Wiedergabe (Play/Pause/Seek/
 // Fortschritt) und fragt beim Trackende bzw. beim Player-eigenen Play-Button per Fetch den
 // naechsten Track aus der Queue ab (queue_entries#advance).
+// Eigene Ausgabegeraet-Auswahl (Nachtrag Intent 51): ohne sie folgt dieser Player einfach dem
+// System-Standardgeraet - verbindet man Bluetooth-Kopfhoerer, wird das oft automatisch das neue
+// Standardgeraet, und der Haupt-Kanal (Dancefloor/Lautsprecher) wuerde ungewollt mitwandern.
+const SINK_ID_STORAGE_KEY = "musicnet:mainPlayerSinkId"
+
 export default class extends Controller {
-  static targets = ["audio", "icon", "name", "progress", "currentTime", "duration"]
+  static targets = [
+    "audio", "icon", "name", "progress", "currentTime", "duration", "deviceSelect", "chooseButton",
+  ]
 
   connect() {
     this.handlePlayEvent = this.handlePlayEvent.bind(this)
@@ -24,6 +32,8 @@ export default class extends Controller {
     this.audioTarget.addEventListener("ended", this.handleAudioEnded)
     this.audioTarget.addEventListener("timeupdate", this.handleTimeUpdate)
     this.audioTarget.addEventListener("loadedmetadata", this.handleLoadedMetadata)
+
+    restoreOutputDevice(this.audioTarget, SINK_ID_STORAGE_KEY)
   }
 
   disconnect() {
@@ -97,5 +107,27 @@ export default class extends Controller {
     const minutes = Math.floor(seconds / 60)
     const remainingSeconds = Math.floor(seconds % 60).toString().padStart(2, "0")
     return `${minutes}:${remainingSeconds}`
+  }
+
+  // Nicht automatisiert testbar (die getUserMedia-Berechtigungsabfrage hat kein DOM) - siehe
+  // Intent 51.
+  async chooseOutputDevice() {
+    if (!this.audioTarget.setSinkId) {
+      alert("Dieser Browser unterstützt keine Ausgabegerät-Auswahl für den Haupt-Player.")
+      return
+    }
+
+    const outputs = await loadOutputDevices()
+    if (outputs.length === 0) return
+
+    this.deviceSelectTarget.innerHTML = outputs
+      .map((device, index) => `<option value="${device.deviceId}">${device.label || `Gerät ${index + 1}`}</option>`)
+      .join("")
+    this.deviceSelectTarget.classList.remove("d-none")
+    this.chooseButtonTarget.classList.add("d-none")
+  }
+
+  selectOutputDevice() {
+    applyOutputDevice(this.audioTarget, this.deviceSelectTarget.value, SINK_ID_STORAGE_KEY)
   }
 }

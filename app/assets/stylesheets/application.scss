@@ -90,6 +90,16 @@ body {
   th:nth-child(7)  { width: 4%; }  // Tempo
   th:nth-child(8)  { width: 11%; } // Künstler
   th:nth-child(9)  { width: 11%; } // Album Name
-  th:nth-child(10) { width: 13%; } // Playlists
-  th:nth-child(11) { width: 6%; }  // Datei
+  th:nth-child(10) { width: 10%; } // Playlists
+  // 9% statt 6% (Intent 51 Nachtrag): mit dem Vorhoer-Button (🎧) passen jetzt drei
+  // Buttons statt zwei rein - bei 6% lief der dritte Button aus der Zelle heraus, ohne
+  // dass ein Test das gemerkt haette (DOM-Vorhandensein != sichtbar innerhalb der Zelle).
+  th:nth-child(11) { width: 9%; }  // Datei
+}
+
+// Buttons in der Datei-Spalte duerfen bei zu wenig Platz umbrechen statt abgeschnitten zu
+// werden (zusaetzliche Absicherung neben der Breitenanpassung oben, Intent 51 Nachtrag).
+.audio-file-buttons {
+  flex-wrap: wrap;
+  row-gap: 0.25rem;
 }

@@ -25,6 +25,12 @@
     <input type="range" value="0" class="form-range flex-grow-1"
            data-audio-player-target="progress" data-action="input->audio-player#seek">
     <span data-audio-player-target="duration" class="small text-muted">0:00</span>
+    <button type="button" class="btn btn-sm btn-link" data-action="audio-player#chooseOutputDevice"
+            data-audio-player-target="chooseButton">
+      Ausgabegerät (Hauptkanal)
+    </button>
+    <select class="form-select form-select-sm w-auto d-none" data-audio-player-target="deviceSelect"
+            data-action="audio-player#selectOutputDevice"></select>
     <audio data-audio-player-target="audio" preload="none"></audio>
   </div>
   <%# Cue-/Vorhoerkanal (Intent 51): eigener, unabhaengiger <audio>-Kanal - unterbricht die
@@ -38,7 +44,7 @@
     <span data-cue-player-target="name" class="text-truncate" style="max-width: 200px;">–</span>
     <button type="button" class="btn btn-sm btn-link" data-action="cue-player#chooseOutputDevice"
             data-cue-player-target="chooseButton">
-      Ausgabegerät wählen
+      Ausgabegerät (Vorhören)
     </button>
     <select class="form-select form-select-sm w-auto d-none" data-cue-player-target="deviceSelect"
             data-action="cue-player#selectOutputDevice"></select>

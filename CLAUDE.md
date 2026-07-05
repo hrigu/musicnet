@@ -335,27 +335,47 @@ other controller; both only react to events dispatched by `audio_trigger_control
 (`audio-player:play` vs. the new `audio-player:cue`) on the per-track "▶"/"🎧" buttons in
 `components/_audio_file.html.erb`. The "🎧" button stays visible even for an already-queued track
 (unlike "▶"/"+", replaced by an "in Queue" badge) since previewing is independent of queue state.
-Output device routing uses `HTMLMediaElement.setSinkId()` on the cue channel's `<audio>` element
-only — the main player is left on the system default output. Getting a `deviceId` to pass to it
-took a correction (Intent 51 follow-up): `navigator.mediaDevices.selectAudioOutput()` (a native
+Output device routing uses `HTMLMediaElement.setSinkId()`. Getting a `deviceId` to pass to it took
+a correction (Intent 51 follow-up): `navigator.mediaDevices.selectAudioOutput()` (a native
 device-picker) looked like the right tool, but per MDN's browser-compat-data it's Firefox-only
 (116+) — **not implemented in Chrome**, the opposite of this project's first assumption.
 `setSinkId()` itself is the older, broadly-supported piece (Chrome since v49) — only the device
 *picker* needed a different approach: `navigator.mediaDevices.enumerateDevices()` filtered to
-`kind === "audiooutput"`, rendered into a plain `<select>` in the cue row. Chrome only returns
-non-empty labels for enumerated devices (audiooutput included, not just mic/camera input) once a
-`getUserMedia` permission has been granted, so `chooseOutputDevice()` briefly requests
-`{ audio: true }`, immediately stops the resulting stream (the stream itself is never used, only
-its side-effect of unlocking labels), then enumerates and populates the `<select>`. This is a real
-Chrome UX quirk, not a bug: clicking "Ausgabegerät wählen" prompts for microphone permission before
-the speaker list appears. Chosen device id is cached in `localStorage` and silently reapplied on
-load (a stale/no-longer-present id just fails quietly, same soft-failure style as elsewhere).
+`kind === "audiooutput"`, rendered into a plain `<select>`. Chrome only returns non-empty labels
+for enumerated devices (audiooutput included, not just mic/camera input) once a `getUserMedia`
+permission has been granted, so choosing a device briefly requests `{ audio: true }`, immediately
+stops the resulting stream (the stream itself is never used, only its side-effect of unlocking
+labels), then enumerates and populates the `<select>`. This is a real Chrome UX quirk, not a bug:
+picking an output device prompts for microphone permission before the speaker list appears. This
+whole flow (`loadOutputDevices`/`restoreOutputDevice`/`applyOutputDevice`) is shared code in
+`app/javascript/audio_output_device.js` (pinned standalone in `importmap.rb`, since
+`pin_all_from "app/javascript/controllers"` only covers the controllers directory and — more
+importantly — that directory is eager-loaded by Stimulus as *all-controllers*, so a shared
+non-controller helper can't live there without being wrongly registered as one) — both
+`cue_player_controller.js` and `audio_player_controller.js` import it and each keep their own
+`localStorage` key (`musicnet:cuePlayerSinkId` / `musicnet:mainPlayerSinkId`), so the two device
+choices are independent. **The main player needed its own device picker too** (Intent 51
+follow-up, reported after real-world use): with no explicit sink, it simply follows the OS's
+current default output — connecting Bluetooth headphones commonly makes the OS switch its default
+to them, which then silently drags the main/"dancefloor" channel onto the headphones right along
+with the cue channel, defeating the whole point. Giving the main player the same explicit
+picker/pinning lets it stay on the built-in speakers regardless of what the OS considers default.
 Guarded by an `HTMLMediaElement.prototype.setSinkId` feature check that shows a message instead of
 erroring where unsupported (e.g. Safari before 18.4).
-**Testability limit:** the native device-picker dialog itself has no DOM and can't be driven by
-Cuprite/Capybara — only the two-channel independence (previewing doesn't touch the main player) is
-covered by a system spec (`spec/system/cue_player_spec.rb`); actually picking a device and hearing
-it come out the right output remains a manual check.
+**Testability limit:** the native permission-prompt and device-enumeration flow has no DOM and
+can't be driven by Cuprite/Capybara (no real audio hardware in the headless test environment
+either) — covered by a system spec only at the level of "both channels render their own,
+independent device-picker controls" (`spec/system/cue_player_spec.rb`); actually granting the
+permission, picking a device, and hearing it come out the right output remains a manual check.
+**Layout note:** the "🎧" button pushed the per-row button count in the `.table-tracks-detailed`
+"Datei" column from two to three; a real regression slipped through here once (the "+" button was
+still in the DOM — Capybara could still find and click it — but visually clipped outside the
+6%-wide fixed column, so no test caught it). Fixed by widening that column (`app/assets/
+stylesheets/application.scss`) and adding `flex-wrap` to the row as a defensive measure against
+this happening again with any future per-row button; `spec/system/
+track_row_buttons_layout_spec.rb` now asserts every button's rendered bounding box stays within
+the table's edge, specifically to catch this DOM-present-but-visually-clipped failure mode that
+plain Capybara interaction specs don't.
 
 **Song queue (Intent 41, moved to the DB in Intent 42):** builds on the persistent player above.
 Originally a pure client-side JS array on the permanent element (Intent 41) — moved to a real

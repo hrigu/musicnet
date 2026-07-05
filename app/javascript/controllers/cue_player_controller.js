@@ -1,10 +1,14 @@
 import { Controller } from "@hotwired/stimulus"
+import { loadOutputDevices, restoreOutputDevice, applyOutputDevice } from "audio_output_device"
 
 // Zweiter, unabhaengiger Audio-Kanal zum Vorhoeren (Intent 51) - kennt audio_player_controller.js
 // nicht (gleiches Entkopplungs-Pattern wie Trigger-Button/Haupt-Player), damit ein Vorhoeren die
 // laufende Queue-Wiedergabe im Haupt-Player nie unterbricht. Kann per setSinkId() auf ein anderes
-// Ausgabegeraet (z.B. Kopfhoerer) geroutet werden, waehrend der Haupt-Player auf dem
-// Standard-Ausgabegeraet bleibt.
+// Ausgabegeraet (z.B. Kopfhoerer) geroutet werden - der Haupt-Player hat seine eigene, unabhaengige
+// Geraete-Auswahl (audio_player_controller.js), beide teilen sich die Logik in
+// audio_output_device.js. Ohne eigene Auswahl wuerde der Haupt-Player einfach dem
+// System-Standardgeraet folgen - verbindet man Bluetooth-Kopfhoerer, wird das oft automatisch das
+// neue Standardgeraet, und ohne Pinning wuerden beide Kanaele dort landen (Nachtrag Intent 51).
 const SINK_ID_STORAGE_KEY = "musicnet:cuePlayerSinkId"
 
 export default class extends Controller {
@@ -17,7 +21,7 @@ export default class extends Controller {
     this.audioTarget.addEventListener("play", () => (this.iconTarget.textContent = "⏸"))
     this.audioTarget.addEventListener("pause", () => (this.iconTarget.textContent = "▶"))
 
-    this.restoreOutputDevice()
+    restoreOutputDevice(this.audioTarget, SINK_ID_STORAGE_KEY)
   }
 
   disconnect() {
@@ -39,29 +43,15 @@ export default class extends Controller {
     }
   }
 
-  // navigator.mediaDevices.selectAudioOutput() (nativer Geraete-Dialog) ist in Chrome nicht
-  // implementiert (nur Firefox 116+, siehe MDN Browser-Compat-Data) - Chrome kennt nur den
-  // aelteren enumerateDevices()-Weg mit eigenem Dropdown. Chrome zeigt dabei Geraete-Labels
-  // (auch fuer audiooutput) grundsaetzlich erst nach einer erteilten getUserMedia-Berechtigung
-  // (Plattform-Einschraenkung, betrifft nicht nur Mikrofon-Input) - der Stream wird sofort
-  // wieder gestoppt, nur die Berechtigung wird gebraucht. Nicht automatisiert testbar (echter
-  // Berechtigungs-Dialog hat kein DOM) - siehe Intent 51.
+  // Nicht automatisiert testbar (die getUserMedia-Berechtigungsabfrage hat kein DOM) - siehe
+  // Intent 51.
   async chooseOutputDevice() {
     if (!this.audioTarget.setSinkId) {
       alert("Dieser Browser unterstützt keine Ausgabegerät-Auswahl für den Vorhör-Kanal.")
       return
     }
 
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      stream.getTracks().forEach((track) => track.stop())
-    } catch {
-      // Berechtigung verweigert oder Dialog abgebrochen - kein Fehlerzustand.
-      return
-    }
-
-    const devices = await navigator.mediaDevices.enumerateDevices()
-    const outputs = devices.filter((device) => device.kind === "audiooutput")
+    const outputs = await loadOutputDevices()
     if (outputs.length === 0) return
 
     this.deviceSelectTarget.innerHTML = outputs
@@ -71,18 +61,7 @@ export default class extends Controller {
     this.chooseButtonTarget.classList.add("d-none")
   }
 
-  async selectOutputDevice() {
-    const deviceId = this.deviceSelectTarget.value
-    await this.audioTarget.setSinkId(deviceId)
-    localStorage.setItem(SINK_ID_STORAGE_KEY, deviceId)
-  }
-
-  // Geraete-IDs sind nicht ueber alle Sessions/Neustarts hinweg garantiert stabil - ein
-  // Fehlschlag hier bedeutet nur, dass das Geraet nicht mehr verfuegbar ist, kein Fehlerzustand.
-  restoreOutputDevice() {
-    const sinkId = localStorage.getItem(SINK_ID_STORAGE_KEY)
-    if (!sinkId || !this.audioTarget.setSinkId) return
-
-    this.audioTarget.setSinkId(sinkId).catch(() => {})
+  selectOutputDevice() {
+    applyOutputDevice(this.audioTarget, this.deviceSelectTarget.value, SINK_ID_STORAGE_KEY)
   }
 }

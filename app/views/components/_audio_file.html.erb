@@ -5,7 +5,7 @@
     normaler POST-Request statt eines Stimulus-Events, da die Queue jetzt Server-Zustand ist.
     Die id erlaubt QueueEntriesController, die "in Queue"-Markierung per Turbo-Stream-Broadcast
     sofort zu aktualisieren, statt erst beim naechsten Laden der Seite (Intent 42 Nachtrag). %>
-<div id="<%= dom_id(track, :audio_file) %>" class="d-flex align-items-center gap-2">
+<div id="<%= dom_id(track, :audio_file) %>" class="d-flex align-items-center gap-2 audio-file-buttons">
   <% if track.track_path %>
     <%# Bleibt auch fuer bereits gequeueste Tracks sichtbar (anders als Play/+) - Vorhoeren ist
         vom Queue-Status unabhaengig sinnvoll, z.B. nochmals reinhoeren kurz bevor der Track

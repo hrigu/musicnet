@@ -50,4 +50,11 @@ RSpec.describe "Cue-/Vorhörkanal (Intent 51)", type: :system do
 
     expect(page).to have_selector("[data-cue-player-target='name']", text: second.name)
   end
+
+  it "hat eigene, getrennte Ausgabegerät-Bedienelemente für Haupt- und Cue-Kanal (Nachtrag)" do
+    visit tracks_path
+
+    expect(page).to have_button("Ausgabegerät (Hauptkanal)")
+    expect(page).to have_button("Ausgabegerät (Vorhören)")
+  end
 end
