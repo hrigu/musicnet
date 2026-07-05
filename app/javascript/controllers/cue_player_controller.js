@@ -12,20 +12,34 @@ import { loadOutputDevices, restoreOutputDevice, applyOutputDevice } from "audio
 const SINK_ID_STORAGE_KEY = "musicnet:cuePlayerSinkId"
 
 export default class extends Controller {
-  static targets = ["audio", "icon", "name", "deviceSelect", "chooseButton"]
+  static targets = ["audio", "icon", "name", "deviceSelect", "chooseButton", "toggleButton"]
 
   connect() {
     this.handleCueEvent = this.handleCueEvent.bind(this)
+    this.handleToggleEvent = this.toggle.bind(this)
+    this.broadcastState = this.broadcastState.bind(this)
     document.addEventListener("audio-player:cue", this.handleCueEvent)
+    document.addEventListener("audio-player:cue-toggle", this.handleToggleEvent)
 
-    this.audioTarget.addEventListener("play", () => (this.iconTarget.textContent = "⏸"))
-    this.audioTarget.addEventListener("pause", () => (this.iconTarget.textContent = "▶"))
+    this.audioTarget.addEventListener("play", () => {
+      this.iconTarget.textContent = "⏸"
+      this.toggleButtonTarget.classList.add("btn-danger")
+      this.toggleButtonTarget.classList.remove("btn-outline-secondary")
+      this.broadcastState()
+    })
+    this.audioTarget.addEventListener("pause", () => {
+      this.iconTarget.textContent = "▶"
+      this.toggleButtonTarget.classList.remove("btn-danger")
+      this.toggleButtonTarget.classList.add("btn-outline-secondary")
+      this.broadcastState()
+    })
 
     restoreOutputDevice(this.audioTarget, SINK_ID_STORAGE_KEY)
   }
 
   disconnect() {
     document.removeEventListener("audio-player:cue", this.handleCueEvent)
+    document.removeEventListener("audio-player:cue-toggle", this.handleToggleEvent)
   }
 
   handleCueEvent(event) {
@@ -41,6 +55,17 @@ export default class extends Controller {
     } else {
       this.audioTarget.pause()
     }
+  }
+
+  // Informiert die Vorhoer-Buttons in den Track-Zeilen (audio_trigger_controller.js) darueber,
+  // welcher Track gerade im Cue-Kanal spielt, damit sich genau dieser Button rot faerben kann
+  // (Intent 51 Nachtrag).
+  broadcastState() {
+    document.dispatchEvent(
+      new CustomEvent("cue-player:state", {
+        detail: { url: this.audioTarget.src, playing: !this.audioTarget.paused },
+      })
+    )
   }
 
   // Nicht automatisiert testbar (die getUserMedia-Berechtigungsabfrage hat kein DOM) - siehe

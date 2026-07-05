@@ -376,6 +376,37 @@ this happening again with any future per-row button; `spec/system/
 track_row_buttons_layout_spec.rb` now asserts every button's rendered bounding box stays within
 the table's edge, specifically to catch this DOM-present-but-visually-clipped failure mode that
 plain Capybara interaction specs don't.
+**Live row state (Intent 51 Nachtrag):** the "🎧" button reflects whether *its own* track is the
+one currently playing in the cue channel — red background + "⏸" while active, back to plain
+outline + "🎧" otherwise — and clicking it while active toggles the cue channel off (pause)
+instead of restarting the same track from the beginning. This is the one place a row button
+mirrors live player state; `audio_trigger_controller.js`'s `mode` value (`"play"` default vs.
+`"cue"`) gates it so the plain "▶" play button is untouched, per this file's own
+"Row buttons always show '▶'" rule above — that rule was specifically about avoiding cross-row
+state sync for the *main* player, not a blanket ban, and doesn't apply to the cue channel.
+Implemented via the same document-level custom-event pattern as everywhere else in this player
+stack: `cue_player_controller.js` broadcasts `cue-player:state` (`{ url, playing }`) on every
+play/pause/track-change; every cue-mode trigger button compares that `url` against its own
+(resolved to an absolute URL first, since `<audio>.src` always reads back absolute while the
+button's own value is the relative `stream_track_path`) to decide whether it's the active one. The
+bottom bar's own cue play/pause button (`data-cue-player-target="toggleButton"`) gets the same
+red/outline toggle directly from `cue_player_controller.js`'s own play/pause listeners, so both the
+row button and the persistent bar agree on which track is active.
+**Cross-navigation sync (Nachtrag):** a freshly-loaded page's row buttons don't just wait
+passively for the next `cue-player:state` broadcast — nothing re-broadcasts on navigation, since
+the cue channel's own play/pause state hasn't changed, only the row markup around it has (freshly
+rendered, not `data-turbo-permanent` like the cue player itself). So each cue-mode trigger button
+also actively syncs its own initial appearance from the live `<audio>` element
+(`document.querySelector('[data-cue-player-target="audio"]')`) — but only on the `turbo:load`
+event, not directly in `connect()`: empirically (verified by hooking `Runtime.consoleAPICalled` via
+Ferrum directly, since Cuprite's driver doesn't surface console logs by default), row buttons
+`connect()` *before* Turbo has re-attached the permanent player element into the new document, so
+a same-tick DOM read there intermittently finds nothing. `turbo:load` fires only once the whole
+visit — permanent elements included — has actually settled, for both a first hard load and every
+later Drive visit alike, so reading the live audio state there is race-free. An earlier attempt at
+this used a request/response event pair (row asks, cue player answers) instead of a direct DOM
+read; same race, since the request could equally be dispatched before the answering listener was
+back in the live document — direct-DOM-read-on-`turbo:load` was the version that actually held up.
 
 **Song queue (Intent 41, moved to the DB in Intent 42):** builds on the persistent player above.
 Originally a pure client-side JS array on the permanent element (Intent 41) — moved to a real

@@ -57,4 +57,81 @@ RSpec.describe "Cue-/Vorhörkanal (Intent 51)", type: :system do
     expect(page).to have_button("Ausgabegerät (Hauptkanal)")
     expect(page).to have_button("Ausgabegerät (Vorhören)")
   end
+
+  it "faerbt den Vorhoer-Button des gerade spielenden Tracks rot mit Pause-Symbol (Nachtrag)" do
+    track = create_track_with_real_audio("RSpec Cue Live State Track", spotify_id: "cue-live-state")
+
+    visit tracks_path
+    cue_button_for(track.name).click
+    sleep 0.3
+
+    button = cue_button_for(track.name)
+    expect(button.text.strip).to eq("⏸")
+    expect(button[:class]).to include("btn-danger")
+  end
+
+  it "faerbt den vorherigen Button zurueck, wenn ein anderer Track vorgehoert wird (Nachtrag)" do
+    first = create_track_with_real_audio("RSpec Cue Live First", spotify_id: "cue-live-first")
+    second = create_track_with_real_audio("RSpec Cue Live Second", spotify_id: "cue-live-second")
+
+    visit tracks_path
+    cue_button_for(first.name).click
+    sleep 0.3
+    cue_button_for(second.name).click
+    sleep 0.3
+
+    expect(cue_button_for(first.name).text.strip).to eq("🎧")
+    expect(cue_button_for(first.name)[:class]).to_not include("btn-danger")
+    expect(cue_button_for(second.name).text.strip).to eq("⏸")
+    expect(cue_button_for(second.name)[:class]).to include("btn-danger")
+  end
+
+  it "beendet das Vorhören per Klick auf den aktiven Button (Nachtrag)" do
+    track = create_track_with_real_audio("RSpec Cue Live End Track", spotify_id: "cue-live-end")
+
+    visit tracks_path
+    cue_button_for(track.name).click
+    sleep 0.3
+    expect(cue_button_for(track.name).text.strip).to eq("⏸")
+
+    cue_button_for(track.name).click
+    sleep 0.3
+
+    expect(cue_button_for(track.name).text.strip).to eq("🎧")
+    expect(cue_button_for(track.name)[:class]).to_not include("btn-danger")
+    cue_audio_paused = page.evaluate_script("document.querySelector('[data-cue-player-target=audio]').paused")
+    expect(cue_audio_paused).to be(true)
+  end
+
+  it "zeigt den roten Live-Zustand auch nach einer Seitennavigation weg und zurueck (Nachtrag)" do
+    track = create_track_with_real_audio("RSpec Cue Live Navigate Track", spotify_id: "cue-live-navigate")
+
+    visit tracks_path
+    cue_button_for(track.name).click
+    sleep 0.3
+    expect(cue_button_for(track.name).text.strip).to eq("⏸")
+
+    click_link "Artists"
+    click_link "Tracks"
+
+    button = cue_button_for(track.name)
+    expect(button.text.strip).to eq("⏸")
+    expect(button[:class]).to include("btn-danger")
+  end
+
+  it "faerbt auch den Play/Pause-Button der unteren Leiste rot, waehrend vorgehoert wird (Nachtrag)" do
+    track = create_track_with_real_audio("RSpec Cue Bar Red Track", spotify_id: "cue-bar-red")
+
+    visit tracks_path
+    cue_button_for(track.name).click
+    sleep 0.3
+
+    bar_button = page.find("[data-cue-player-target='toggleButton']")
+    expect(bar_button[:class]).to include("btn-danger")
+
+    bar_button.click
+    sleep 0.3
+
+    expect(bar_button[:class]).to_not include("btn-danger")
+  end
 end
