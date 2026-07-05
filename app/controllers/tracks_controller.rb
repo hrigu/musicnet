@@ -17,7 +17,8 @@ class TracksController < ApplicationController
   end
 
   def query_suggestions
-    render json: { suggestions: TrackQuerySuggestions.for(params[:term]) }
+    suggestions = TrackQuerySuggestions.for(params[:term], current_user.active_category_substring)
+    render json: { suggestions: suggestions }
   end
 
   # Laeuft im Hintergrund (DownloadMissingTracksJob, Intent 39) statt den Request zu blockieren -

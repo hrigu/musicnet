@@ -268,6 +268,16 @@ RSpec.describe "Tracks", type: :request do
 
       expect(response.parsed_body["suggestions"]).to eq(['genre:"RSpec Jazz"'])
     end
+
+    it "schlägt nur Playlists der aktiven Kategorie vor (Intent 55)" do
+      users(:one).update!(active_playlist_category: "fusion")
+      Playlist.create!(name: "RSpec Zzyzu Blues Runde", spotify_id: "pl-qs-cat-blues")
+      Playlist.create!(name: "RSpec Zzyzu Fusion Runde", spotify_id: "pl-qs-cat-fusion")
+
+      get query_suggestions_tracks_path(term: "playlist:zzyzu")
+
+      expect(response.parsed_body["suggestions"]).to eq(['playlist:"RSpec Zzyzu Fusion Runde"'])
+    end
   end
 
   describe "GET /tracks - Turbo Frame" do

@@ -3,20 +3,15 @@
 # Feldname-Präfix (kein Doppelpunkt) oder feld:teilwert.
 class TrackQuerySuggestions
   MAX_SUGGESTIONS = 10
+  VALUE_SOURCE_FIELDS = %w[genre artist album playlist].freeze
 
-  VALUE_SOURCES = {
-    "genre" => ->(prefix) { Track.distinct.where.not(genre: [nil, ""]).where("LOWER(genre) LIKE ?", "%#{prefix}%").order(:genre).limit(MAX_SUGGESTIONS).pluck(:genre) },
-    "artist" => ->(prefix) { Artist.where("LOWER(name) LIKE ?", "%#{prefix}%").order(:name).limit(MAX_SUGGESTIONS).pluck(:name) },
-    "album" => ->(prefix) { Album.where("LOWER(name) LIKE ?", "%#{prefix}%").order(:name).limit(MAX_SUGGESTIONS).pluck(:name) },
-    "playlist" => ->(prefix) { Playlist.where("LOWER(name) LIKE ?", "%#{prefix}%").order(:name).limit(MAX_SUGGESTIONS).pluck(:name) }
-  }.freeze
-
-  def self.for(term)
-    new(term).suggestions
+  def self.for(term, category_substring = nil)
+    new(term, category_substring).suggestions
   end
 
-  def initialize(term)
+  def initialize(term, category_substring = nil)
     @term = term.to_s
+    @category_substring = category_substring
   end
 
   def suggestions
@@ -35,11 +30,30 @@ class TrackQuerySuggestions
   end
 
   def value_suggestions(field, prefix)
-    source = VALUE_SOURCES[field]
-    return [] unless source
+    return [] unless VALUE_SOURCE_FIELDS.include?(field)
 
     already_typed, current = split_last_item(prefix)
-    source.call(current.downcase).map { |value| "#{field}:#{already_typed}#{quote_if_needed(value)}" }
+    values = send(:"#{field}_values", current.downcase)
+    values.map { |value| "#{field}:#{already_typed}#{quote_if_needed(value)}" }
+  end
+
+  def genre_values(prefix)
+    Track.in_active_category(@category_substring).distinct.where.not(genre: [nil, ""])
+         .where("LOWER(genre) LIKE ?", "%#{prefix}%").order(:genre).limit(MAX_SUGGESTIONS).pluck(:genre)
+  end
+
+  def artist_values(prefix)
+    Artist.in_active_category(@category_substring).where("LOWER(name) LIKE ?", "%#{prefix}%")
+          .order(:name).limit(MAX_SUGGESTIONS).pluck(:name)
+  end
+
+  def album_values(prefix)
+    Album.where("LOWER(name) LIKE ?", "%#{prefix}%").order(:name).limit(MAX_SUGGESTIONS).pluck(:name)
+  end
+
+  def playlist_values(prefix)
+    Playlist.in_active_category(@category_substring).where("LOWER(name) LIKE ?", "%#{prefix}%")
+            .order(:name).limit(MAX_SUGGESTIONS).pluck(:name)
   end
 
   # Nur das letzte, gerade getippte Komma-Item wird fuers Matching verwendet - vorherige Items
