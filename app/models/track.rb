@@ -64,6 +64,92 @@ class Track < ApplicationRecord
       .distinct
   end
 
+  def self.by_genre(match)
+    where(text_match_condition("tracks.genre", match))
+  end
+
+  def self.by_album(match)
+    joins(:album).where(text_match_condition("albums.name", match))
+  end
+
+  # Baut eine LOWER(spalte) LIKE ?-Bedingung, ODER-verknüpft bei mehreren Werten (match[:type]
+  # == :list). Wird von allen Text-Feldern der DSL-Suche (Intent 43) geteilt.
+  def self.text_match_condition(column, match)
+    values = match[:type] == :list ? match[:values] : [match[:value]]
+    sql = values.map { "LOWER(#{column}) LIKE ?" }.join(" OR ")
+    [sql, *values.map { |value| "%#{value.downcase}%" }]
+  end
+  private_class_method :text_match_condition
+
+  # Subquery statt direktem joins(:artists).where(...): ein Track kann mehrere Künstler
+  # haben, zwei verschiedene by_artist-Aufrufe müssen sich daher unabhängig voneinander
+  # gegen die gejointe Zeile auswerten lassen — sonst könnte ein einzelner Join niemals
+  # zwei unterschiedliche Künstlernamen gleichzeitig erfüllen (Intent 43).
+  def self.by_artist(match)
+    where(id: joins(:artists).where(text_match_condition("artists.name", match)).select(:id))
+  end
+
+  # Gleiches Subquery-Pattern wie by_artist — ermöglicht per Wiederholung (playlist:A
+  # playlist:B) eine echte Schnittmenge statt einer Vereinigung (Intent 43).
+  def self.by_playlist(match)
+    where(id: joins(:playlists).where(text_match_condition("playlists.name", match)).select(:id))
+  end
+
+  def self.by_tempo(match)
+    where(numeric_match_condition("json_extract(tracks.audio_features, '$.tempo')", match))
+  end
+
+  def self.by_energy(match)
+    where(numeric_match_condition("json_extract(tracks.audio_features, '$.energy')", match))
+  end
+
+  def self.by_popularity(match)
+    where(numeric_match_condition("tracks.popularity", match))
+  end
+
+  # release_date ist ein Datum, die DSL erlaubt aber nur ein Jahr (year:2015) — Vergleich
+  # daher auf dem per strftime extrahierten Jahr statt auf dem Datum selbst.
+  def self.by_release_year(match)
+    joins(:album).where(numeric_match_condition("CAST(strftime('%Y', albums.release_date) AS INTEGER)", match))
+  end
+
+  ALLOWED_COMPARISON_OPERATORS = %w[> >= < <=].freeze
+
+  # Baut eine Zahlen-Bedingung (exakt, ODER-Liste, Range oder Vergleichsoperator) für eine
+  # Spalte oder ein SQL-Ausdruck (z.B. json_extract). Ungültige numerische Werte werden hier
+  # bewusst nicht abgefangen — das erledigt der Aufrufer in Track.search_query (Intent 43,
+  # Task 3), damit dieser Baustein einfach bleibt.
+  def self.numeric_match_condition(column, match)
+    case match[:type]
+    when :list
+      ["#{column} IN (?)", match[:values].map(&:to_f)]
+    when :range
+      numeric_range_condition(column, match[:min], match[:max])
+    when :comparison
+      return ["1=0"] unless ALLOWED_COMPARISON_OPERATORS.include?(match[:operator])
+
+      ["#{column} #{match[:operator]} ?", match[:value].to_f]
+    else
+      ["#{column} = ?", match[:value].to_f]
+    end
+  end
+  private_class_method :numeric_match_condition
+
+  def self.numeric_range_condition(column, min, max)
+    conditions = []
+    values = []
+    if min.present?
+      conditions << "#{column} >= ?"
+      values << min.to_f
+    end
+    if max.present?
+      conditions << "#{column} <= ?"
+      values << max.to_f
+    end
+    [conditions.join(" AND "), *values]
+  end
+  private_class_method :numeric_range_condition
+
   def self.for_show
     preload({ artists: :tracks }, :playlists, { album: [:artists] }).strict_loading
   end

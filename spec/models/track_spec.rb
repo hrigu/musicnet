@@ -178,6 +178,225 @@ RSpec.describe Track, type: :model do
     end
   end
 
+  describe ".by_genre" do
+    def create_track(name:, spotify_id:, genre:)
+      album = Album.create!(name: "Album", spotify_id: "alb-#{spotify_id}")
+      Track.create!(name: name, spotify_id: spotify_id, album: album, genre: genre)
+    end
+
+    it "findet Tracks über einen Contains-Wert" do
+      match = create_track(name: "A", spotify_id: "by-genre-a", genre: "RSpec Jazz")
+      create_track(name: "B", spotify_id: "by-genre-b", genre: "RSpec Blues")
+
+      result = described_class.by_genre(type: :contains, value: "jazz")
+
+      expect(result.to_a).to eq([match])
+    end
+
+    it "findet Tracks über eine ODER-Liste" do
+      jazz = create_track(name: "A", spotify_id: "by-genre-list-a", genre: "RSpec Jazz")
+      fusion = create_track(name: "B", spotify_id: "by-genre-list-b", genre: "RSpec Fusion")
+      create_track(name: "C", spotify_id: "by-genre-list-c", genre: "RSpec Blues")
+
+      result = described_class.by_genre(type: :list, values: ["rspec jazz", "rspec fusion"])
+
+      expect(result.to_a).to contain_exactly(jazz, fusion)
+    end
+  end
+
+  describe ".by_album" do
+    def create_track(name:, spotify_id:, album_name:)
+      album = Album.create!(name: album_name, spotify_id: "alb-#{spotify_id}")
+      Track.create!(name: name, spotify_id: spotify_id, album: album)
+    end
+
+    it "findet Tracks über einen Contains-Wert auf dem Album-Namen" do
+      match = create_track(name: "A", spotify_id: "by-album-a", album_name: "RSpec Live Session")
+      create_track(name: "B", spotify_id: "by-album-b", album_name: "RSpec Studio Album")
+
+      result = described_class.by_album(type: :contains, value: "live session")
+
+      expect(result.to_a).to eq([match])
+    end
+
+    it "findet Tracks über eine ODER-Liste" do
+      live = create_track(name: "A", spotify_id: "by-album-list-a", album_name: "RSpec Live Session")
+      studio = create_track(name: "B", spotify_id: "by-album-list-b", album_name: "RSpec Studio Album")
+      create_track(name: "C", spotify_id: "by-album-list-c", album_name: "RSpec Andere Scheibe")
+
+      result = described_class.by_album(type: :list, values: ["live session", "studio album"])
+
+      expect(result.to_a).to contain_exactly(live, studio)
+    end
+  end
+
+  describe ".by_artist" do
+    def create_track(name:, spotify_id:, artist_names:)
+      album = Album.create!(name: "Album", spotify_id: "alb-#{spotify_id}")
+      artists = artist_names.map { |n| Artist.create!(name: n, spotify_id: "art-#{n.parameterize}-#{spotify_id}") }
+      Track.create!(name: name, spotify_id: spotify_id, album: album, artists: artists)
+    end
+
+    it "findet Tracks über einen Contains-Wert auf dem Künstlernamen" do
+      match = create_track(name: "A", spotify_id: "by-artist-a", artist_names: ["RSpec Miles Davis"])
+      create_track(name: "B", spotify_id: "by-artist-b", artist_names: ["RSpec John Coltrane"])
+
+      result = described_class.by_artist(type: :contains, value: "miles davis")
+
+      expect(result.to_a).to eq([match])
+    end
+
+    it "findet Tracks über eine ODER-Liste" do
+      davis = create_track(name: "A", spotify_id: "by-artist-list-a", artist_names: ["RSpec Miles Davis"])
+      coltrane = create_track(name: "B", spotify_id: "by-artist-list-b", artist_names: ["RSpec John Coltrane"])
+      create_track(name: "C", spotify_id: "by-artist-list-c", artist_names: ["RSpec Andere Band"])
+
+      result = described_class.by_artist(type: :list, values: ["miles davis", "john coltrane"])
+
+      expect(result.to_a).to contain_exactly(davis, coltrane)
+    end
+
+    it "liefert bei zweifacher Anwendung die Schnittmenge, kein Join-Alias-Konflikt (Design-" \
+       "Entscheidung Intent 43: Subquery statt direktem Join)" do
+      duo_track = create_track(name: "A", spotify_id: "by-artist-and-a",
+                               artist_names: ["RSpec Miles Davis", "RSpec John Coltrane"])
+      create_track(name: "B", spotify_id: "by-artist-and-b", artist_names: ["RSpec Miles Davis"])
+
+      result = described_class.by_artist(type: :contains, value: "miles davis")
+                              .by_artist(type: :contains, value: "john coltrane")
+
+      expect(result.to_a).to eq([duo_track])
+    end
+  end
+
+  describe ".by_playlist" do
+    def create_track(name:, spotify_id:)
+      album = Album.create!(name: "Album", spotify_id: "alb-#{spotify_id}")
+      Track.create!(name: name, spotify_id: spotify_id, album: album)
+    end
+
+    def add_to_playlist(track, playlist_name:, spotify_id:)
+      playlist = Playlist.find_or_create_by!(name: playlist_name) { |p| p.spotify_id = spotify_id }
+      PlaylistTrack.create!(playlist: playlist, track: track, added_at: Time.current)
+    end
+
+    it "findet Tracks über einen Contains-Wert auf dem Playlist-Namen" do
+      match = create_track(name: "A", spotify_id: "by-playlist-a")
+      add_to_playlist(match, playlist_name: "RSpec Fusion Abende", spotify_id: "pl-fusion")
+      miss = create_track(name: "B", spotify_id: "by-playlist-b")
+      add_to_playlist(miss, playlist_name: "RSpec Blues Session", spotify_id: "pl-blues")
+
+      result = described_class.by_playlist(type: :contains, value: "fusion abende")
+
+      expect(result.to_a).to eq([match])
+    end
+
+    it "liefert bei zweifacher Anwendung die Schnittmenge (Playlist-UND, Intent 43)" do
+      both = create_track(name: "A", spotify_id: "by-playlist-and-a")
+      add_to_playlist(both, playlist_name: "RSpec Fusion Abende Und", spotify_id: "pl-fusion-and")
+      add_to_playlist(both, playlist_name: "RSpec Blues Session Und", spotify_id: "pl-blues-and")
+      only_a = create_track(name: "B", spotify_id: "by-playlist-and-b")
+      add_to_playlist(only_a, playlist_name: "RSpec Fusion Abende Und", spotify_id: "pl-fusion-and")
+
+      result = described_class.by_playlist(type: :contains, value: "fusion abende und")
+                              .by_playlist(type: :contains, value: "blues session und")
+
+      expect(result.to_a).to eq([both])
+    end
+  end
+
+  describe ".by_tempo" do
+    def create_track(name:, spotify_id:, tempo:)
+      album = Album.create!(name: "Album", spotify_id: "alb-#{spotify_id}")
+      Track.create!(name: name, spotify_id: spotify_id, album: album, audio_features: { "tempo" => tempo })
+    end
+
+    before do
+      @slow = create_track(name: "Slow", spotify_id: "tempo-slow", tempo: 80.0)
+      @mid = create_track(name: "Mid", spotify_id: "tempo-mid", tempo: 110.0)
+      @fast = create_track(name: "Fast", spotify_id: "tempo-fast", tempo: 140.0)
+    end
+
+    it "filtert exakt bei einem einfachen Wert" do
+      expect(described_class.by_tempo(type: :contains, value: "110").to_a).to eq([@mid])
+    end
+
+    it "filtert per Range inklusive der Grenzen" do
+      result = described_class.by_tempo(type: :range, min: "80", max: "110")
+
+      expect(result.to_a).to contain_exactly(@slow, @mid)
+    end
+  end
+
+  describe ".by_energy" do
+    it "filtert exakt bei einem einfachen Wert" do
+      album = Album.create!(name: "Album", spotify_id: "alb-energy")
+      match = Track.create!(name: "A", spotify_id: "by-energy-a", album: album,
+                            audio_features: { "energy" => 0.7 })
+      Track.create!(name: "B", spotify_id: "by-energy-b", album: album, audio_features: { "energy" => 0.2 })
+
+      expect(described_class.by_energy(type: :contains, value: "0.7").to_a).to eq([match])
+    end
+  end
+
+  describe ".by_popularity" do
+    def create_track(name:, spotify_id:, popularity:)
+      album = Album.create!(name: "Album", spotify_id: "alb-#{spotify_id}")
+      Track.create!(name: name, spotify_id: spotify_id, album: album, popularity: popularity)
+    end
+
+    before do
+      @low = create_track(name: "Low", spotify_id: "pop-low", popularity: 20)
+      @mid = create_track(name: "Mid", spotify_id: "pop-mid", popularity: 50)
+      @high = create_track(name: "High", spotify_id: "pop-high", popularity: 80)
+    end
+
+    it "filtert exakt bei einem einfachen Wert" do
+      expect(described_class.by_popularity(type: :contains, value: "50").to_a).to eq([@mid])
+    end
+
+    it "filtert per ODER-Liste" do
+      result = described_class.by_popularity(type: :list, values: %w[20 80])
+
+      expect(result.to_a).to contain_exactly(@low, @high)
+    end
+
+    it "filtert per Vergleichsoperator" do
+      result = described_class.by_popularity(type: :comparison, operator: ">", value: "40")
+
+      expect(result.to_a).to contain_exactly(@mid, @high)
+    end
+  end
+
+  describe ".by_release_year" do
+    def create_track(name:, spotify_id:, release_date:)
+      album = Album.create!(name: "Album #{spotify_id}", spotify_id: "alb-#{spotify_id}", release_date: release_date)
+      Track.create!(name: name, spotify_id: spotify_id, album: album)
+    end
+
+    before do
+      @old = create_track(name: "Old", spotify_id: "year-old", release_date: "2005-06-01")
+      @mid = create_track(name: "Mid", spotify_id: "year-mid", release_date: "2015-06-01")
+      @new = create_track(name: "New", spotify_id: "year-new", release_date: "2023-06-01")
+    end
+
+    it "filtert exakt bei einem Jahr" do
+      expect(described_class.by_release_year(type: :contains, value: "2015").to_a).to eq([@mid])
+    end
+
+    it "filtert per Range inklusive der Grenzen" do
+      result = described_class.by_release_year(type: :range, min: "2010", max: "2020")
+
+      expect(result.to_a).to eq([@mid])
+    end
+
+    it "filtert per Vergleichsoperator" do
+      result = described_class.by_release_year(type: :comparison, operator: ">", value: "2010")
+
+      expect(result.to_a).to contain_exactly(@mid, @new)
+    end
+  end
+
   describe ".for_index" do
     it "liefert streng geladene Tracks für den Index" do
       album = Album.create!(name: "Album", spotify_id: "alb-strict")
