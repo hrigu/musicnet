@@ -27,6 +27,8 @@ Rails.application.routes.draw do
   end
   resources :artists, only: [:index, :show]
 
+  get "help/suche-syntax", to: "help#search_syntax", as: :search_syntax_help
+
   resources :queue_entries, only: [:create, :destroy] do
     collection do
       post :advance

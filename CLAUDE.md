@@ -235,6 +235,16 @@ Query params:
 There is no `available`/file-availability filter (removed in Intent 45) — it added a second,
 Ruby-array-based pagination path alongside the normal SQL one for comparatively little value.
 
+### Help articles
+
+`doc/*.md` files can double as in-app help articles: `HelpController#search_syntax`
+(`GET /help/suche-syntax`, navbar "Hilfe" dropdown → "Suche") reads `doc/track_search_syntax.md`
+at request time and renders it via `Redcarpet::Markdown.new(Redcarpet::Render::HTML)` — the
+Markdown file is the single source (documents the DSL search syntax from Intent 43/45, including
+the "no space between `field:` and the value" gotcha), never duplicated into a separate view
+(Intent 46). The navbar's "Hilfe" item is a dropdown rather than a flat link specifically so
+further help articles can be added as more entries later.
+
 ### Mixxx crate export
 
 `lib/tasks/write_mixxx_files.rake` (`create_crates_lists`) writes one `.m3u` file per `Playlist` to a hardcoded
