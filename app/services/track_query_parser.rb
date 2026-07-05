@@ -60,7 +60,12 @@ class TrackQueryParser
 
   private
 
+  # "OR" (Grossschreibung) als eigenstaendiges Wort ist der ODER-Operator (Intent 47) - nur wenn
+  # es unquotiert und alleinstehend vorkommt. Ein kleingeschriebenes "or" oder ein gequotetes
+  # "OR" (word waere dann '"OR"', nicht "OR") bleibt bewusst normaler Freitext/Feld-Wert.
   def build_token(word)
+    return Token.new(type: :or, field: nil, value: nil, negate: false) if word == "OR"
+
     negate = word.start_with?("-")
     candidate = negate ? word[1..] : word
     match = FIELD_TOKEN.match(candidate)

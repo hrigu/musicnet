@@ -89,13 +89,38 @@ class Track < ApplicationRecord
   # Joins gegen dieselbe Zeile (siehe by_artist/by_playlist). Unbekannte Felder und
   # ungültige Werte für ein bekanntes Feld werden ignoriert bzw. als Freitext behandelt,
   # nie ein Fehler (Intent 43).
+  #
+  # ODER (Intent 47): der Token-Strom wird an :or-Tokens in UND-Gruppen aufgeteilt (OR bindet
+  # schwächer als das Leerzeichen-UND, wie bei Mixxx). Jede Gruppe wird wie bisher ausgewertet,
+  # aber als `where(id: gruppe.select(:id))` erneut in eine frische, unveränderte Relation
+  # gewrappt, bevor die Gruppen per `Relation#or` vereinigt werden — nötig, weil `Relation#or`
+  # strukturell identische Relationen verlangt (gleiche Joins/`distinct`), einzelne Gruppen aber
+  # unterschiedliche Joins haben können (z.B. nur eine Gruppe mit Freitext, die intern
+  # `Track.search`s left_joins nutzt). Leere Gruppen (führendes/abschliessendes/doppeltes OR)
+  # werden ignoriert, kein Fehler.
   def self.search_query(query)
     return all if query.blank?
 
+    groups = group_tokens_by_or(TrackQueryParser.new(query).tokenize)
+    return all if groups.empty?
+
+    groups.map { |group| where(id: evaluate_and_group(group).select(:id)) }.reduce { |a, b| a.or(b) }
+  end
+
+  def self.group_tokens_by_or(tokens)
+    groups = [[]]
+    tokens.each do |token|
+      token.type == :or ? groups.push([]) : groups.last.push(token)
+    end
+    groups.reject(&:empty?)
+  end
+  private_class_method :group_tokens_by_or
+
+  def self.evaluate_and_group(tokens)
     relation = all
     free_text_terms = []
 
-    TrackQueryParser.new(query).tokenize.each do |token|
+    tokens.each do |token|
       if token.type == :free_text
         free_text_terms << token.value
         next
@@ -116,6 +141,7 @@ class Track < ApplicationRecord
 
     free_text_terms.any? ? relation.search(free_text_terms.join(" ")) : relation
   end
+  private_class_method :evaluate_and_group
 
   def self.valid_match_for_field?(field, match)
     return numeric_match_valid?(match) if NUMERIC_FIELDS.include?(field)

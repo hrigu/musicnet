@@ -269,6 +269,38 @@ RSpec.describe Track, type: :model do
 
       expect(result.to_a).to eq([match])
     end
+
+    it "verknüpft zwei Kriterien mit ODER (Intent 47)" do
+      pop = create_track(name: "A", spotify_id: "sq-or-a", genre: "RSpec Pop")
+      techno = create_track(name: "B", spotify_id: "sq-or-b", genre: "RSpec Techno")
+      create_track(name: "C", spotify_id: "sq-or-c", genre: "RSpec Klassik")
+
+      result = described_class.search_query("genre:pop OR genre:techno")
+
+      expect(result.to_a).to contain_exactly(pop, techno)
+    end
+
+    it "UND bindet staerker als ODER (Intent 47)" do
+      jazz_fast = create_track(name: "A", spotify_id: "sq-or-prec-a", genre: "RSpec Jazz", tempo: 150.0)
+      create_track(name: "B", spotify_id: "sq-or-prec-b", genre: "RSpec Jazz", tempo: 90.0)
+      chill = create_track(name: "C", spotify_id: "sq-or-prec-c", genre: "RSpec Chill")
+      add_to_playlist(chill, playlist_name: "RSpec Chill Playlist", spotify_id: "sq-or-prec-pl")
+
+      # (genre:jazz UND bpm:>140) ODER playlist:"RSpec Chill Playlist"
+      result = described_class.search_query('genre:jazz bpm:>140 OR playlist:"RSpec Chill Playlist"')
+
+      expect(result.to_a).to contain_exactly(jazz_fast, chill)
+    end
+
+    it "ignoriert ein fuehrendes, abschliessendes oder doppeltes OR, ohne Fehler (Intent 47)" do
+      match = create_track(name: "A", spotify_id: "sq-or-edge-a", genre: "RSpec Jazz")
+      create_track(name: "B", spotify_id: "sq-or-edge-b", genre: "RSpec Blues")
+
+      expect { described_class.search_query("OR genre:jazz") }.to_not raise_error
+      expect(described_class.search_query("OR genre:jazz").to_a).to eq([match])
+      expect(described_class.search_query("genre:jazz OR").to_a).to eq([match])
+      expect(described_class.search_query("genre:jazz OR OR").to_a).to eq([match])
+    end
   end
 
   describe ".by_genre" do

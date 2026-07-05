@@ -49,6 +49,34 @@ RSpec.describe TrackQueryParser do
         [TrackQueryParser::Token.new(type: :field, field: "artist", value: '"A.J. Croce",Kingfish', negate: false)]
       )
     end
+
+    it "erkennt OR als eigenstaendigen Operator-Token (Intent 47)" do
+      tokens = described_class.new("genre:pop OR genre:techno").tokenize
+
+      expect(tokens).to eq(
+        [
+          TrackQueryParser::Token.new(type: :field, field: "genre", value: "pop", negate: false),
+          TrackQueryParser::Token.new(type: :or, field: nil, value: nil, negate: false),
+          TrackQueryParser::Token.new(type: :field, field: "genre", value: "techno", negate: false)
+        ]
+      )
+    end
+
+    it "behandelt ein kleingeschriebenes 'or' weiterhin als Freitext" do
+      tokens = described_class.new("or").tokenize
+
+      expect(tokens).to eq(
+        [TrackQueryParser::Token.new(type: :free_text, field: nil, value: "or", negate: false)]
+      )
+    end
+
+    it "behandelt OR innerhalb von Anfuehrungszeichen weiterhin als Teil des Werts" do
+      tokens = described_class.new('artist:"Air OR Water"').tokenize
+
+      expect(tokens).to eq(
+        [TrackQueryParser::Token.new(type: :field, field: "artist", value: '"Air OR Water"', negate: false)]
+      )
+    end
   end
 
   describe ".classify_value" do

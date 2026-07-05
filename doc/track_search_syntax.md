@@ -22,8 +22,9 @@ Reihenfolge, direkt hintereinander** in einem der Felder vorkommt (Gross-/
 Kleinschreibung egal) — z.B. "RSpec Blues Shuffle". Ein Track, der nur "Blues" im
 Genre und "Shuffle" im Namen hat, aber nirgends den zusammenhängenden Text "blues
 shuffle", wird **nicht** gefunden. Für "blues ODER shuffle" unabhängig
-voneinander gibt es aktuell keine Syntax — das wäre eine echte ODER-Verknüpfung
-zwischen Kriterien (siehe "Was nicht geht" unten).
+voneinander gibt es keine reine Freitext-Syntax — es gibt aber ein echtes
+Kriterien-ODER für Feld-Kriterien wie `genre:` (siehe "Kriterien mit ODER
+verknüpfen" unten), z.B. `genre:blues OR genre:shuffle`.
 
 ## Felder
 
@@ -66,6 +67,33 @@ Ein `-` vor dem Feld schliesst Treffer aus:
 -genre:blues
 ```
 
+## Kriterien mit ODER verknüpfen
+
+Das Schlüsselwort `OR` (**gross**geschrieben) verknüpft zwei Kriterien mit ODER:
+
+```
+genre:pop OR genre:techno
+```
+
+`OR` bindet **schwächer** als das Leerzeichen-UND (wie bei Mixxx) — alles links
+und rechts von `OR` wird zuerst für sich mit UND ausgewertet, erst danach werden
+die beiden Seiten mit ODER verbunden:
+
+```
+genre:jazz bpm:>140 OR playlist:"Chill"
+```
+
+heisst also **(Genre Jazz UND Tempo über 140) ODER in der Playlist "Chill"**,
+nicht "Genre Jazz UND (Tempo über 140 ODER in der Playlist Chill)". Es gibt keine
+Klammerung, um diese Reihenfolge zu ändern (siehe "Was nicht geht" unten).
+
+Ein kleingeschriebenes `or` ist **kein** Operator und wird wie jedes andere Wort
+als Freitext behandelt. Ein `OR` innerhalb von Anführungszeichen
+(`artist:"Air OR Water"`) ist ebenfalls kein Operator, sondern Teil des Werts.
+
+Ein führendes, abschliessendes oder doppeltes `OR` (z.B. aus Versehen) wird
+einfach ignoriert, es gibt keinen Fehler.
+
 ## Mehrfaches Vorkommen desselben Feldes (UND)
 
 Zwei `playlist:`-Tokens verlangen, dass ein Track in **beiden** Playlists vorkommt
@@ -107,10 +135,10 @@ Freitext behandelt. Ein ungültiger Wert für ein bekanntes Zahlen-Feld (z.B.
 
 ## Was nicht geht
 
-* **ODER zwischen unterschiedlichen Kriterien.** `genre:jazz OR bpm:>140` sucht
-  nicht "Jazz ODER schnell" — `OR` wird einfach als Freitext-Wort behandelt und
-  beide Seiten bleiben wie immer UND-verknüpft. ODER gibt es nur innerhalb eines
-  einzelnen Feldes, per Komma (siehe oben).
+* **ODER zwischen Freitext-Wörtern.** Anders als ODER zwischen Kriterien (siehe
+  "Kriterien mit ODER verknüpfen" oben) gibt es kein "Wort A ODER Wort B" für
+  reinen Freitext ohne Feld — mehrere Freitext-Wörter werden immer zu einem
+  zusammenhängenden Suchtext zusammengesetzt (siehe Abschnitt "Freitext" oben).
 * **UND zwischen mehreren Werten innerhalb eines Tokens per Leerzeichen.**
   `artist:James Otis` ist **nicht** "Künstler James UND Otis" — das Leerzeichen
   beendet den Token, `James` wird zum eigenständigen Feld-Wert und `Otis` zu einem
@@ -118,8 +146,9 @@ Freitext behandelt. Ein ungültiger Wert für ein bekanntes Zahlen-Feld (z.B.
   durch Wiederholen des ganzen Feldes (siehe "Mehrfaches Vorkommen" oben), und
   auch nur bei mehrwertigen Feldern (`artist`, `playlist`).
 * **Klammerung/Gruppierung.** Es gibt keine Möglichkeit, Kriterien zu gruppieren
-  (z.B. "(A oder B) und C") — die Sprache kennt nur die flache Leerzeichen-UND-
-  Verknüpfung plus Komma-ODER innerhalb eines Feldes.
+  (z.B. "(A oder B) und C") — die Sprache kennt nur die flache Verknüpfung aus
+  Leerzeichen-UND, Komma-ODER innerhalb eines Feldes und `OR` zwischen Kriterien,
+  in dieser festen Präzedenz.
 
 ## Alles kombiniert
 
