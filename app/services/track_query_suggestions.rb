@@ -33,8 +33,15 @@ class TrackQuerySuggestions
     return [] unless VALUE_SOURCE_FIELDS.include?(field)
 
     already_typed, current = split_last_item(prefix)
-    values = send(:"#{field}_values", current.downcase)
+    excluded = already_selected_values(already_typed)
+    values = send(:"#{field}_values", current.downcase).reject { |value| excluded.include?(value.downcase) }
     values.map { |value| "#{field}:#{already_typed}#{quote_if_needed(value)}" }
+  end
+
+  # Werte, die in der Komma-Liste vor dem gerade getippten Item bereits stehen, sollen nicht
+  # nochmals vorgeschlagen werden (Bugfix Intent 55).
+  def already_selected_values(already_typed)
+    already_typed.split(",").map { |value| value.delete_prefix('"').delete_suffix('"').downcase }
   end
 
   def genre_values(prefix)

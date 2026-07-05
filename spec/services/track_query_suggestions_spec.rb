@@ -116,5 +116,26 @@ RSpec.describe TrackQuerySuggestions do
 
       expect(suggestions).to eq(['genre:"RSpec Zzyzv Jazz Fusion"'])
     end
+
+    it "schlägt einen in der Komma-Liste bereits ausgewählten Wert nicht nochmals vor (Intent 55)" do
+      album = Album.create!(name: "Album", spotify_id: "alb-sugg-dup")
+      Track.create!(name: "A", spotify_id: "sugg-dup-a", album: album, genre: "RSpecZzyzDupA")
+      Track.create!(name: "B", spotify_id: "sugg-dup-b", album: album, genre: "RSpecZzyzDupB")
+
+      suggestions = described_class.for("genre:RSpecZzyzDupA,RSpecZzyzDupB,")
+
+      expect(suggestions).to eq([])
+    end
+
+    it "schlägt einen noch nicht ausgewählten Wert trotz gefüllter Komma-Liste weiterhin vor (Intent 55)" do
+      album = Album.create!(name: "Album", spotify_id: "alb-sugg-dup2")
+      Track.create!(name: "A", spotify_id: "sugg-dup2-a", album: album, genre: "RSpecZzyzDupC")
+      Track.create!(name: "B", spotify_id: "sugg-dup2-b", album: album, genre: "RSpecZzyzDupD")
+      Track.create!(name: "C", spotify_id: "sugg-dup2-c", album: album, genre: "RSpecZzyzDupE")
+
+      suggestions = described_class.for("genre:RSpecZzyzDupC,RSpecZzyzDupD,rspeczzyzdupe")
+
+      expect(suggestions).to eq(["genre:RSpecZzyzDupC,RSpecZzyzDupD,RSpecZzyzDupE"])
+    end
   end
 end
