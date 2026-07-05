@@ -1,0 +1,5 @@
+<div class="container-fluid mt-5 text-center">
+  <h2>Anmelden</h2>
+  <%= button_to "Login mit Spotify", omniauth_authorize_path(resource_name, :spotify),
+        class: "btn btn-success", data: { turbo: false } %>
+</div>

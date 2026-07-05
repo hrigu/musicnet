@@ -19,6 +19,6 @@
   <div class="container-fluid page-content">
     <%= yield %>
   </div>
-  <%= render 'layouts/audio_player' %>
+  <%= render 'layouts/audio_player' unless devise_controller? %>
   </body>
 </html>
