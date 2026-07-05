@@ -1,0 +1,71 @@
+require "rails_helper"
+
+RSpec.describe TrackQueryParser do
+  describe "#tokenize" do
+    it "zerlegt reinen Freitext in Freitext-Tokens" do
+      tokens = described_class.new("miles davis").tokenize
+
+      expect(tokens).to eq(
+        [
+          TrackQueryParser::Token.new(type: :free_text, value: "miles", field: nil, negate: false),
+          TrackQueryParser::Token.new(type: :free_text, value: "davis", field: nil, negate: false)
+        ]
+      )
+    end
+
+    it "erkennt feld:wert-Tokens" do
+      tokens = described_class.new("genre:jazz").tokenize
+
+      expect(tokens).to eq(
+        [TrackQueryParser::Token.new(type: :field, field: "genre", value: "jazz", negate: false)]
+      )
+    end
+
+    it "erkennt ein Minus-Praefix als Negation" do
+      tokens = described_class.new("-genre:blues").tokenize
+
+      expect(tokens).to eq(
+        [TrackQueryParser::Token.new(type: :field, field: "genre", value: "blues", negate: true)]
+      )
+    end
+
+    it "behandelt einen in Anfuehrungszeichen gesetzten Wert als einen zusammenhaengenden Token" do
+      tokens = described_class.new('playlist:"Fusion Abende" bpm:80').tokenize
+
+      expect(tokens).to eq(
+        [
+          TrackQueryParser::Token.new(type: :field, field: "playlist", value: "Fusion Abende", negate: false),
+          TrackQueryParser::Token.new(type: :field, field: "bpm", value: "80", negate: false)
+        ]
+      )
+    end
+  end
+
+  describe ".classify_value" do
+    it "klassifiziert einen einfachen Wert als contains" do
+      expect(described_class.classify_value("jazz")).to eq(type: :contains, value: "jazz")
+    end
+
+    it "klassifiziert eine kommagetrennte Liste als ODER-Liste" do
+      expect(described_class.classify_value("jazz,fusion,blues")).to eq(
+        type: :list, values: %w[jazz fusion blues]
+      )
+    end
+
+    it "klassifiziert min..max als Range" do
+      expect(described_class.classify_value("80..100")).to eq(type: :range, min: "80", max: "100")
+    end
+
+    it "klassifiziert eine offene Range mit nur einem Ende" do
+      expect(described_class.classify_value("80..")).to eq(type: :range, min: "80", max: nil)
+      expect(described_class.classify_value("..100")).to eq(type: :range, min: nil, max: "100")
+    end
+
+    it "klassifiziert Vergleichsoperatoren" do
+      expect(described_class.classify_value(">50")).to eq(type: :comparison, operator: ">", value: "50")
+      expect(described_class.classify_value(">=50")).to eq(type: :comparison, operator: ">=", value: "50")
+      expect(described_class.classify_value("<50")).to eq(type: :comparison, operator: "<", value: "50")
+      expect(described_class.classify_value("<=50")).to eq(type: :comparison, operator: "<=", value: "50")
+    end
+  end
+end
