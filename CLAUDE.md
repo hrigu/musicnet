@@ -322,8 +322,31 @@ a real, separate headless Chrome via CDP directly (no Selenium/webdriver binarie
 first and only place in the suite verifying real browser/Turbo/Stimulus behavior; everything else
 is request/model/service specs. `login_as` works with the real-browser driver because Capybara
 runs the Rails app in-process for system specs, sharing Warden's test-mode state. Shared helpers
-(`create_playable_track`, `play_button_for`, `enqueue_button_for`) live in
+(`create_playable_track`, `play_button_for`, `enqueue_button_for`, `cue_button_for`) live in
 `spec/support/playback_test_helpers.rb`.
+
+**Cue-/Vorhörkanal (Intent 51):** a second, independent `<audio>` channel for previewing a track
+without interrupting the main player's queue playback — e.g. cueing up a candidate track through
+headphones while the current track keeps playing to the room, like the cue/PFL channel on a real
+DJ mixer. Lives as an extra compact row inside the same permanent `#global-audio-player` container
+(no second `fixed-bottom` element, avoids overlap/extra `.page-content` padding math) with its own
+`cue_player_controller.js`, which — like `audio_player_controller.js` — knows nothing about the
+other controller; both only react to events dispatched by `audio_trigger_controller.js`
+(`audio-player:play` vs. the new `audio-player:cue`) on the per-track "▶"/"🎧" buttons in
+`components/_audio_file.html.erb`. The "🎧" button stays visible even for an already-queued track
+(unlike "▶"/"+", replaced by an "in Queue" badge) since previewing is independent of queue state.
+Output device routing uses `navigator.mediaDevices.selectAudioOutput()` (opens the browser's own
+native device-picker, requires a secure context — satisfied here by `127.0.0.1`/`localhost` — and
+must be called from a real click handler) to get a `deviceId`, then
+`HTMLMediaElement.setSinkId()` on the cue channel's `<audio>` element only — the main player is
+left on the system default output. Chosen device id is cached in `localStorage` and silently
+reapplied on load (a stale/no-longer-present id just fails quietly, same soft-failure style as
+elsewhere). Chrome-only as of this writing (not Safari) — guarded by a
+`navigator.mediaDevices?.selectAudioOutput` feature check that shows a message instead of erroring.
+**Testability limit:** the native device-picker dialog itself has no DOM and can't be driven by
+Cuprite/Capybara — only the two-channel independence (previewing doesn't touch the main player) is
+covered by a system spec (`spec/system/cue_player_spec.rb`); actually picking a device and hearing
+it come out the right output remains a manual check.
 
 **Song queue (Intent 41, moved to the DB in Intent 42):** builds on the persistent player above.
 Originally a pure client-side JS array on the permanent element (Intent 41) — moved to a real

@@ -36,6 +36,10 @@ module PlaybackTestHelpers
     page.find("tr", text: track_name).find_button("Zur Queue hinzufügen")
   end
 
+  def cue_button_for(track_name)
+    page.find("tr", text: track_name).find_button("Vorhören (separater Kanal)")
+  end
+
   def player_toggle_button
     page.find("#global-audio-player").find_button("Play/Pause")
   end

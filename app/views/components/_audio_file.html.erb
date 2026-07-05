@@ -7,6 +7,16 @@
     sofort zu aktualisieren, statt erst beim naechsten Laden der Seite (Intent 42 Nachtrag). %>
 <div id="<%= dom_id(track, :audio_file) %>" class="d-flex align-items-center gap-2">
   <% if track.track_path %>
+    <%# Bleibt auch fuer bereits gequeueste Tracks sichtbar (anders als Play/+) - Vorhoeren ist
+        vom Queue-Status unabhaengig sinnvoll, z.B. nochmals reinhoeren kurz bevor der Track
+        dran ist (Intent 51). %>
+    <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle" title="Vorhören (separater Kanal)"
+            data-controller="audio-trigger"
+            data-audio-trigger-url-value="<%= stream_track_path(track.id) %>"
+            data-audio-trigger-name-value="<%= track.name %>"
+            data-action="audio-trigger#cue">
+      🎧
+    </button>
     <% if queued_track_ids.include?(track.id) %>
       <%# Ersetzt bewusst die Buttons statt daneben zu stehen - Platzgrund, und ein bereits
           gequeueter Track muss nicht nochmals eingereiht werden. %>
