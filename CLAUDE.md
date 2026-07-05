@@ -196,9 +196,37 @@ update only the table, not the whole page (navbar included) — this needs no co
 swaps in a minimal layout whenever a request carries a `Turbo-Frame` header.
 
 Query params:
-- `q` — full-text search (`Track.search`), case-insensitive over name/artist/album/genre/
-  playlist name, `LEFT JOIN` + `distinct` (a track with several artists or in several playlists
-  must not appear twice). Blank query returns the relation unchanged (no join overhead).
+- `q` — a small DSL (`Track.search_query`, Intent 43), not just plain full-text. Tokens are
+  whitespace-separated; a bare word (no `field:`) is free text, matched exactly like the old
+  `Track.search` (still used internally for the free-text portion) — case-insensitive substring
+  over name/artist/album/genre/playlist name, `LEFT JOIN` + `distinct` so a track with several
+  artists/playlists doesn't appear twice. A `field:value` token filters one attribute instead:
+  `artist:`, `album:`, `genre:`, `playlist:` (substring match), `bpm`/`tempo:`, `energy:`,
+  `popularity:`, `year`/`release:` (numeric/date, support `min..max` ranges and `>`/`>=`/`<`/`<=`
+  comparisons). A comma-separated value (`genre:jazz,fusion`) is OR'd; a `-` prefix
+  (`-genre:blues`) negates the token; quote a value with spaces (`playlist:"Fusion Abende"`).
+  Repeating the same field as separate tokens (`playlist:A playlist:B`) is AND — each token is
+  applied as its own `where(id: <field-scope>.select(:id))` subquery rather than a direct
+  `joins(...).where(...)` on the main relation, specifically so two tokens for the same m:n
+  association (`by_artist`/`by_playlist`) each get their own independent join instead of both
+  constraining the same joined row (which could never satisfy two different values at once).
+  Single-valued fields (`by_genre`/`by_album`/the numeric fields) don't strictly need this, but
+  use the same subquery shape for consistency. `TrackQueryParser` (tokenizing + classifying a
+  value as list/range/comparison/plain) and the per-field `Track.by_*` scopes are deliberately
+  hand-rolled rather than a gem (`search_cop`'s fulltext-index features target MySQL/Postgres, not
+  documented against SQLite; `scoped_search` has been unmaintained since 2017) — consistent with
+  the existing whitelist-based raw-SQL style already used for `SORT_COLUMNS`. An unknown field
+  name falls back to being treated as a free-text term (e.g. `composer:Bach` — there is no
+  `composer` field/data source at all); an invalid value for a known numeric field (`bpm:abc`) is
+  silently ignored — same soft-failure philosophy as the rest of this app, never an error. Blank
+  query returns the relation unchanged (no join overhead).
+  `TracksController#query_suggestions` (`GET /tracks/query_suggestions?term=...`,
+  `TrackQuerySuggestions`) backs a small autocomplete: given the last token being typed, it
+  suggests matching field names (no `:` yet) or matching DB values for text fields (genre/artist/
+  album/playlist substring match, quoted if the value contains a space) — wired up via the
+  `search-suggestions` Stimulus controller (debounced fetch, dropdown, click inserts the
+  suggestion). Verified with a Cuprite system spec (`spec/system/track_search_autocomplete_spec.rb`),
+  same rationale as Intent 40: this interaction is only observable in a real browser.
 - `sort`/`direction` — `Track.sorted`, driven by the `Track::SORT_COLUMNS` whitelist (never raw
   param into `order()`); unknown column/direction silently falls back to the default (`name`,
   `asc`). `energy`/`tempo` sort via `json_extract(tracks.audio_features, '$.energy'/'$.tempo')`
