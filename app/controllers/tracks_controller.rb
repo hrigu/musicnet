@@ -15,6 +15,10 @@ class TracksController < ApplicationController
     @pagy, @tracks = paginate_for_index(tracks)
   end
 
+  def query_suggestions
+    render json: { suggestions: TrackQuerySuggestions.for(params[:term]) }
+  end
+
   # Laeuft im Hintergrund (DownloadMissingTracksJob, Intent 39) statt den Request zu blockieren -
   # ein Fehler im Job ist dadurch nicht mehr synchron abfangbar, daher der Guard vorab.
   def download

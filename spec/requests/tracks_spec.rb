@@ -218,6 +218,17 @@ RSpec.describe "Tracks", type: :request do
     end
   end
 
+  describe "GET /tracks/query_suggestions" do
+    it "liefert Vorschläge als JSON" do
+      album = Album.create!(name: "Album", spotify_id: "alb-qs")
+      Track.create!(name: "A", spotify_id: "qs-a", album: album, genre: "RSpec Jazz", duration_ms: 200_000)
+
+      get query_suggestions_tracks_path(term: "genre:ja")
+
+      expect(response.parsed_body["suggestions"]).to eq(['genre:"RSpec Jazz"'])
+    end
+  end
+
   describe "GET /tracks - Verfügbarkeits-Filter" do
     before do
       create_track(name: "RSpec Vorhanden", spotify_id: "avail-hit")
