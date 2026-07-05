@@ -5,7 +5,8 @@ class HelpController < ApplicationController
   ARTICLES = {
     "suche-syntax" => { title: "Suche", file: "track_search_syntax.md" },
     "installation" => { title: "Installation", file: "installation.md" },
-    "bedienung" => { title: "Bedienung", file: "usage.md" }
+    "bedienung" => { title: "Bedienung", file: "usage.md" },
+    "diary" => { title: "Diary", file: "diary.md" }
   }.freeze
 
   MARKDOWN_RENDERER = Redcarpet::Markdown.new(Redcarpet::Render::HTML, fenced_code_blocks: true, tables: true)

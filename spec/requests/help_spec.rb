@@ -35,6 +35,15 @@ RSpec.describe "Help", type: :request do
     end
   end
 
+  describe "GET /help/diary" do
+    it "rendert das Diary als HTML" do
+      get help_path(page: "diary")
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Essentia")
+    end
+  end
+
   describe "GET /help/:page mit unbekanntem Slug" do
     it "liefert 404 statt eines Server-Fehlers" do
       get help_path(page: "unbekannt")
@@ -67,6 +76,22 @@ RSpec.describe "Help", type: :request do
       dropdown = Nokogiri::HTML(response.body).at_css(".nav-item.dropdown")
       link = dropdown.at_css("a[href='#{help_path(page: 'bedienung')}']")
       expect(link.text.strip).to eq("Bedienung")
+    end
+
+    it "zeigt zusätzlich einen Eintrag Diary, der auf den Hilfeartikel verlinkt" do
+      get tracks_path
+
+      dropdown = Nokogiri::HTML(response.body).at_css(".nav-item.dropdown")
+      link = dropdown.at_css("a[href='#{help_path(page: 'diary')}']")
+      expect(link.text.strip).to eq("Diary")
+    end
+
+    it "zeigt alle vier Hilfeartikel" do
+      get tracks_path
+
+      dropdown = Nokogiri::HTML(response.body).at_css(".nav-item.dropdown")
+      links = dropdown.css("a.dropdown-item").map { |link| link.text.strip }
+      expect(links).to eq(%w[Suche Installation Bedienung Diary])
     end
   end
 end
