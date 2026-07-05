@@ -193,7 +193,18 @@ gem/bundled dependency) via `system(...)`, always after `Dir.chdir`-ing into `do
 query params, all wrapped in a `turbo_frame_tag "tracks"` so sorting/searching/filtering/paging
 update only the table, not the whole page (navbar included) — this needs no controller code:
 `turbo-rails` auto-includes `Turbo::Frames::FrameRequest` in `ActionController::Base`, which
-swaps in a minimal layout whenever a request carries a `Turbo-Frame` header.
+swaps in a minimal layout whenever a request carries a `Turbo-Frame` header. The frame carries
+`data: { turbo_action: "advance" }` (Intent 50) so these frame-only navigations also push the
+browser URL/history, same as a normal page visit — without it, Turbo updates the frame silently
+and the address bar always stayed at plain `/tracks`, losing the search/sort/page state on leave
+and return, back/forward, or a shared link. Verified only via Cuprite system specs (pure browser
+behavior, invisible to request specs): URL sync, back-button restoration, and — since the
+persistent audio player and the live download-log (Intent 39/40, both deliberately outside this
+frame) are unaffected by construction (still only the frame's own content is ever replaced) —
+that a track keeps playing uninterrupted (same DOM node) across a search. Accepted side effect:
+page scroll now resets to top on every action (advance is handled like a real visit, including
+scroll reset) where it previously stayed put — negligible for search/sort (controls sit at the
+top already) and only noticeable when paginating (links sit below the table).
 
 Query params:
 - `q` — a small DSL (`Track.search_query`, Intent 43), not just plain full-text. Tokens are

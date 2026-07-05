@@ -10,7 +10,13 @@
 <%= turbo_stream_from "downloads" %>
 <div id="download-log" class="mb-3"></div>
 
-<%= turbo_frame_tag "tracks" do %>
+<%# turbo_action: advance (Intent 50) promotet Suche/Sortierung/Pagination innerhalb dieses
+    Frames zu echten Browser-Visits mit URL-/History-Update - vorher blieb die Adresszeile immer
+    bei /tracks, ein Verlassen und Zurueckkommen (oder Teilen des Links) verlor den Suchzustand.
+    Akzeptierter Nebeneffekt: der Scroll springt bei jeder Aktion nach oben statt stehen zu
+    bleiben - fuer Suche/Sortierung kaum spuerbar (Bedienelemente liegen oben), nur bei
+    Pagination-Klicks (Links liegen unter der Tabelle) merkbar. %>
+<%= turbo_frame_tag "tracks", data: { turbo_action: "advance" } do %>
   <%= form_with url: tracks_path, method: :get, id: "tracks-search", class: "mb-3" do %>
     <%= hidden_field_tag :sort, params[:sort] %>
     <%= hidden_field_tag :direction, params[:direction] %>
