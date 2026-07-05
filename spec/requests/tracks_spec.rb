@@ -195,6 +195,22 @@ RSpec.describe "Tracks", type: :request do
     end
   end
 
+  describe "GET /tracks - DSL-Suche" do
+    it "filtert über ein feld:wert-Kriterium (Intent 43)" do
+      album = Album.create!(name: "Album", spotify_id: "alb-dsl-hit")
+      Track.create!(name: "RSpec Jazz Track", spotify_id: "dsl-hit", album: album, genre: "RSpec Jazz",
+                    duration_ms: 200_000)
+      album_miss = Album.create!(name: "Album", spotify_id: "alb-dsl-miss")
+      Track.create!(name: "RSpec Blues Track", spotify_id: "dsl-miss", album: album_miss, genre: "RSpec Blues",
+                    duration_ms: 200_000)
+
+      get tracks_path(q: "genre:jazz")
+
+      names = Nokogiri::HTML(response.body).css("tbody tr th a").map(&:text)
+      expect(names).to eq(["RSpec Jazz Track"])
+    end
+  end
+
   describe "GET /tracks - Verfügbarkeits-Filter" do
     before do
       create_track(name: "RSpec Vorhanden", spotify_id: "avail-hit")

@@ -11,7 +11,7 @@ class TracksController < ApplicationController
   end
 
   def index
-    tracks = Track.for_index.search(params[:q]).sorted(params[:sort], params[:direction])
+    tracks = Track.for_index.search_query(params[:q]).sorted(params[:sort], params[:direction])
     @pagy, @tracks = paginate_for_index(tracks)
   end
 
