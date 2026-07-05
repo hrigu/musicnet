@@ -27,7 +27,7 @@
               Hilfe
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
-              <li><%= link_to 'Suche', search_syntax_help_path, class: "dropdown-item" %></li>
+              <li><%= link_to 'Suche', help_path(page: "suche-syntax"), class: "dropdown-item" %></li>
             </ul>
           </div>
           <%= link_to('Einstellungen', edit_settings_path, class: "nav-link") %>

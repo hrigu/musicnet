@@ -27,7 +27,7 @@ Rails.application.routes.draw do
   end
   resources :artists, only: [:index, :show]
 
-  get "help/suche-syntax", to: "help#search_syntax", as: :search_syntax_help
+  get "help/:page", to: "help#show", as: :help
 
   resource :settings, only: %i[edit update]
 
