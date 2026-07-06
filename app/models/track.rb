@@ -259,7 +259,7 @@ class Track < ApplicationRecord
   private_class_method :numeric_range_condition
 
   def self.for_show
-    preload({ artists: :tracks }, :playlists, { album: [:artists] }).strict_loading
+    preload({ artists: :tracks }, { playlists: :libraries }, { album: [:artists] }).strict_loading
   end
 
   def self.for_download

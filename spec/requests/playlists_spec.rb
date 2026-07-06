@@ -57,7 +57,7 @@ RSpec.describe "Playlists", type: :request do
 
       get playlists_path
 
-      names = Nokogiri::HTML(response.body).css("tbody tr td:nth-child(4) a").map(&:text)
+      names = Nokogiri::HTML(response.body).css("tbody tr td:nth-child(5) a").map(&:text)
       expect(names).to include("RSpec Blues Session Idx")
       expect(names).to_not include("RSpec Fusion Abende Idx")
     end
@@ -84,6 +84,29 @@ RSpec.describe "Playlists", type: :request do
         expect(queries.count { |sql| sql.include?('FROM "tracks"') }).to eq(0)
         expect(response.body).to include("<td>2</td>")
         expect(response.body).to include("<td>0</td>")
+      end
+    end
+
+    it "zeigt die zugeordneten Bibliotheken ohne eine Query pro Playlist (Intent 57)" do
+      blues = Library.create!(name: "Blues", keyword: "blues")
+      fusion = Library.create!(name: "Fusion", keyword: "fusion")
+      both = Playlist.create!(spotify_id: "pl-lib-idx", name: "RSpec Blues Fusion Idx")
+      both.libraries << [blues, fusion]
+
+      queries = []
+      callback = lambda do |_name, _start, _finish, _id, payload|
+        queries << payload[:sql] unless payload[:name] == "SCHEMA"
+      end
+      ActiveSupport::Notifications.subscribed(callback, "sql.active_record") do
+        get playlists_path
+      end
+
+      library_queries = queries.count do |sql|
+        sql.include?('FROM "libraries"') || sql.include?('FROM "library_playlists"')
+      end
+      aggregate_failures do
+        expect(library_queries).to be <= 2
+        expect(response.body).to include("Blues, Fusion")
       end
     end
 
