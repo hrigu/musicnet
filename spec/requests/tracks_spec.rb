@@ -315,6 +315,26 @@ RSpec.describe "Tracks", type: :request do
       expect(response).to have_http_status(:success)
     end
 
+    it "zeigt Album-Name und Release-Datum gelabelt (Intent 64 Nachtrag)" do
+      album = Album.create!(name: "RSpec Album Show", spotify_id: "alb-label-1", release_date: Date.new(2020, 5, 1))
+      track = Track.create!(name: "Track", spotify_id: "trk-label-1", album: album, duration_ms: 200_000)
+
+      get track_path(track)
+
+      text = Nokogiri::HTML(response.body).at_css(".text-muted").text.squish
+      expect(text).to eq("Album: RSpec Album Show von #{I18n.l(Date.new(2020, 5, 1))}")
+    end
+
+    it "zeigt nur den Album-Namen, wenn kein Release-Datum vorhanden ist (Intent 64 Nachtrag)" do
+      album = Album.create!(name: "RSpec Album Ohne Datum", spotify_id: "alb-label-2")
+      track = Track.create!(name: "Track", spotify_id: "trk-label-2", album: album, duration_ms: 200_000)
+
+      get track_path(track)
+
+      expect(response.body).to include("Album: RSpec Album Ohne Datum")
+      expect(response.body).to_not include(" von ")
+    end
+
     it "lädt Album, Artists und Playlists für die Show ohne Lazy Loading" do
       album = Album.create!(name: "Album Show", spotify_id: "alb-show-1")
       artist = Artist.create!(name: "Artist Show", spotify_id: "art-show-1")
@@ -334,7 +354,7 @@ RSpec.describe "Tracks", type: :request do
       expect(response).to have_http_status(:success)
       aggregate_failures do
         expect(queries.count { |sql| sql.include?('FROM "albums"') }).to eq(1)
-        expect(queries.count { |sql| sql.include?('FROM "artists"') }).to eq(2)
+        expect(queries.count { |sql| sql.include?('FROM "artists"') }).to eq(1)
         expect(queries.count { |sql| sql.include?('FROM "playlist_tracks"') }).to eq(1)
         expect(queries.count { |sql| sql.include?('FROM "playlists"') }).to eq(1)
       end
@@ -355,6 +375,17 @@ RSpec.describe "Tracks", type: :request do
         expect(badges).to include("F_Badge")
         expect(response.body).to include(I18n.l(Date.new(2026, 1, 15)))
       end
+    end
+
+    it "umrahmt Playlist-Badge und Hinzugefügt-Datum als eine Einheit (Intent 64 Nachtrag)" do
+      track = create_track
+      playlist = Playlist.create!(spotify_id: "pl-frame-1", name: "Fusion Frame")
+      PlaylistTrack.create!(playlist: playlist, track: track, added_at: Date.new(2026, 1, 15))
+
+      get track_path(track)
+
+      frame = Nokogiri::HTML(response.body).css(".border").find { |el| el.text.include?("F_Frame") }
+      expect(frame).to be_present
     end
 
     it "zeigt eine Playlist ohne Datum, wenn added_at fehlt (Intent 64)" do
@@ -398,7 +429,7 @@ RSpec.describe "Tracks", type: :request do
       end
     end
 
-    it "labelt Genre, Energie und Tempo (Intent 64)" do
+    it "labelt Dauer, Genre, Energie und Tempo (Intent 64 Nachtrag)" do
       track = create_track
       track.update!(audio_features: { "tempo" => 128.4, "energy" => 0.734 })
       track.update_column(:genre, "RSpec Deep House")
@@ -407,9 +438,33 @@ RSpec.describe "Tracks", type: :request do
 
       labels = Nokogiri::HTML(response.body).css(".text-muted.small").map(&:text)
       aggregate_failures do
+        expect(labels).to include("Dauer")
         expect(labels).to include("Genre")
         expect(labels).to include("Energie")
         expect(labels).to include("Tempo")
+      end
+    end
+
+    it "zeigt die Dauer des Tracks (Intent 64 Nachtrag)" do
+      track = create_track
+
+      get track_path(track)
+
+      expect(response.body).to include(track.dauer)
+    end
+
+    it "zeigt keine Künstler des Albums mehr (Intent 64 Nachtrag)" do
+      album = Album.create!(name: "Album", spotify_id: "alb-no-album-artists")
+      album_artist = Artist.create!(name: "RSpec Album Only Artist", spotify_id: "art-album-only")
+      Track.create!(name: "Anderer Track", spotify_id: "trk-other-album-track", album: album,
+                    artists: [album_artist], duration_ms: 200_000)
+      track = Track.create!(name: "Track", spotify_id: "trk-no-album-artists", album: album, duration_ms: 200_000)
+
+      get track_path(track)
+
+      aggregate_failures do
+        expect(response.body).to_not include("Künstler des Albums")
+        expect(response.body).to_not include("RSpec Album Only Artist")
       end
     end
 
@@ -439,6 +494,25 @@ RSpec.describe "Tracks", type: :request do
 
       badges = Nokogiri::HTML(response.body).css(".badge").map(&:text)
       expect(badges).to include("RSpec Deep House")
+    end
+
+    it "verlinkt das Genre auf die gefilterte Tracks-Seite (Intent 64 Nachtrag)" do
+      track = create_track
+      track.update_column(:genre, "RSpec Deep House")
+
+      get track_path(track)
+
+      link = Nokogiri::HTML(response.body).css("a").find { |a| a.text.include?("RSpec Deep House") }
+      expect(link[:href]).to eq(tracks_path(q: 'genre:"RSpec Deep House"'))
+    end
+
+    it "verlinkt das Genre nicht, wenn keins vorhanden ist (Intent 64 Nachtrag)" do
+      track = create_track
+
+      get track_path(track)
+
+      link = Nokogiri::HTML(response.body).css("a").find { |a| a.text.include?("–") }
+      expect(link).to be_nil
     end
   end
 

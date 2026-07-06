@@ -2,9 +2,9 @@
   <div>
     <h1 class="mb-1"><%= @track.name %></h1>
     <div class="text-muted">
-      aus: <%= @track.album.name %>
+      Album: <%= @track.album.name %>
       <% if @track.album.release_date %>
-        | <%= l(@track.album.release_date) %>
+        von <%= l(@track.album.release_date) %>
       <% end %>
     </div>
   </div>
@@ -22,8 +22,16 @@
 
 <div class="d-flex flex-wrap gap-4 my-3">
   <div>
+    <div class="text-muted small mb-1">Dauer</div>
+    <span><%= @track.dauer %></span>
+  </div>
+  <div>
     <div class="text-muted small mb-1">Genre</div>
-    <%= genre_badge(@track.genre) %>
+    <% if @track.genre.present? %>
+      <%= link_to genre_badge(@track.genre), tracks_path(q: %(genre:"#{@track.genre}")) %>
+    <% else %>
+      <%= genre_badge(@track.genre) %>
+    <% end %>
   </div>
   <% if @track.energy %>
     <div style="min-width: 160px">
@@ -48,22 +56,11 @@
   </div>
 </div>
 
-<% if @track.album.artists.any? %>
-  <div class="mb-3">
-    <div class="text-muted small mb-1">Künstler des Albums</div>
-    <div class="d-flex flex-wrap gap-2">
-      <% @track.album.artists.each do |a| %>
-        <%= link_to a.name, artist_path(a.id), class: "d-inline-block" %>
-      <% end %>
-    </div>
-  </div>
-<% end %>
-
 <div class="mb-3">
   <div class="text-muted small mb-1">Playlists die diesen Track enthalten</div>
   <div class="d-flex flex-wrap gap-3">
     <% @track.playlist_tracks.each do |pt| %>
-      <div class="d-flex align-items-center gap-1">
+      <div class="d-flex align-items-center gap-2 border rounded-pill px-2 py-1">
         <%= link_to playlist_path(pt.playlist.id) do %>
           <span class="badge <%= playlist_color_class(pt.playlist) %>"><%= playlist_short_name(pt.playlist) %></span>
         <% end %>
