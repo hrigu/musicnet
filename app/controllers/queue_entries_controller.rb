@@ -71,7 +71,8 @@ class QueueEntriesController < ApplicationController
     {
       url: stream_track_path(track.id),
       name: track.name,
-      artist: helpers.artist_names_for(track),
+      track_id: track.id,
+      artist: track.artists.first&.name,
       playlists: helpers.playlist_names_for(track)
     }
   end

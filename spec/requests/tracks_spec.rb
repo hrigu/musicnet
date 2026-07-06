@@ -511,8 +511,10 @@ RSpec.describe "Tracks", type: :request do
 
       get track_path(track)
 
-      link = Nokogiri::HTML(response.body).css("a").find { |a| a.text.include?("–") }
-      expect(link).to be_nil
+      html = Nokogiri::HTML(response.body)
+      genre_label = html.css("div.text-muted.small").find { |el| el.text == "Genre" }
+      genre_container = genre_label.parent
+      expect(genre_container.css("a")).to be_empty
     end
   end
 

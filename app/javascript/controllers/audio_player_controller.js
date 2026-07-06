@@ -117,9 +117,13 @@ export default class extends Controller {
     this.play(await response.json())
   }
 
-  play({ url, name }) {
+  // Titelanzeige verlinkt auf die Track-Detailseite und zeigt den Hauptkuenstler mit (Intent 67) -
+  // trackId/artist kommen sowohl vom Zeilen-Play-Button (audio_trigger_controller.js) als auch vom
+  // Queue-Advance-JSON (QueueEntriesController#track_json), daher hier einheitlich behandelt.
+  play({ url, name, trackId, artist }) {
     this.audioTarget.src = url
-    this.nameTarget.textContent = name
+    this.nameTarget.textContent = artist ? `${name} – ${artist}` : name
+    this.nameTarget.href = trackId ? `/tracks/${trackId}` : "#"
     this.audioTarget.play()
   }
 

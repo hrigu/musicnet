@@ -63,6 +63,19 @@ RSpec.describe "QueueEntries", type: :request do
       expect(json["name"]).to eq("Advance Song")
       expect(json["artist"]).to eq("Advance Artist")
       expect(json["url"]).to eq(stream_track_path(track.id))
+      expect(json["track_id"]).to eq(track.id)
+    end
+
+    it "liefert nur den Hauptkuenstler (ersten), nicht alle kommagetrennt (Intent 67)" do
+      first_artist = Artist.create!(name: "Erster Kuenstler", spotify_id: "qec-artist-main")
+      second_artist = Artist.create!(name: "Zweiter Kuenstler", spotify_id: "qec-artist-feat")
+      track = create_track(name: "Advance Multi", spotify_id: "qec-multi")
+      track.artists = [first_artist, second_artist]
+      QueueEntry.create!(track: track)
+
+      post advance_queue_entries_path
+
+      expect(response.parsed_body["artist"]).to eq("Erster Kuenstler")
     end
 
     it "entnimmt den am laengsten wartenden Eintrag zuerst (FIFO)" do

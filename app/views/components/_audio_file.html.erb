@@ -14,6 +14,8 @@
             data-controller="audio-trigger"
             data-audio-trigger-url-value="<%= stream_track_path(track.id) %>"
             data-audio-trigger-name-value="<%= track.name %>"
+            data-audio-trigger-track-id-value="<%= track.id %>"
+            data-audio-trigger-artist-value="<%= track.artists.first&.name %>"
             data-audio-trigger-mode-value="cue"
             data-action="audio-trigger#cue">
       🎧
@@ -27,6 +29,8 @@
               data-controller="audio-trigger"
               data-audio-trigger-url-value="<%= stream_track_path(track.id) %>"
               data-audio-trigger-name-value="<%= track.name %>"
+              data-audio-trigger-track-id-value="<%= track.id %>"
+              data-audio-trigger-artist-value="<%= track.artists.first&.name %>"
               data-action="audio-trigger#play">
         ▶
       </button>

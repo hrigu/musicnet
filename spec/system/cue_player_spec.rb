@@ -58,6 +58,39 @@ RSpec.describe "Cue-/Vorhörkanal (Intent 51)", type: :system do
     expect(page).to have_button("Ausgabegerät (Vorhören)")
   end
 
+  it "zeigt ein Kanal-Symbol beim Hauptkanal, analog zum 🎧-Symbol des Cue-Kanals (Intent 67 Nachtrag)" do
+    visit tracks_path
+
+    expect(page).to have_selector("[title='Hauptkanal']", text: "🔊")
+    expect(page).to have_selector("[title='Vorhörkanal']", text: "🎧")
+  end
+
+  it "zeigt Titel mit Hauptkuenstler und verlinkt auf die Track-Detailseite (Intent 67 Nachtrag)" do
+    track = create_playable_track("RSpec Cue Title", spotify_id: "cue-title", artist_name: "RSpec Cue Hauptkuenstler")
+
+    visit tracks_path
+    cue_button_for(track.name).click
+
+    name_link = page.find("[data-cue-player-target='name']")
+    aggregate_failures do
+      expect(name_link.text).to eq("RSpec Cue Title – RSpec Cue Hauptkuenstler")
+      expect(name_link[:href]).to end_with(track_path(track))
+    end
+  end
+
+  it "positioniert den Ausgabegeraet-Link rechts, wie beim Hauptkanal (Intent 67 Nachtrag)" do
+    visit tracks_path
+
+    main_right = page.evaluate_script(
+      "document.querySelector('[data-audio-player-target=chooseButton]').getBoundingClientRect().right"
+    )
+    cue_right = page.evaluate_script(
+      "document.querySelector('[data-cue-player-target=chooseButton]').getBoundingClientRect().right"
+    )
+
+    expect(cue_right).to be_within(2).of(main_right)
+  end
+
   it "faerbt den Vorhoer-Button des gerade spielenden Tracks rot mit Pause-Symbol (Nachtrag)" do
     track = create_track_with_real_audio("RSpec Cue Live State Track", spotify_id: "cue-live-state")
 

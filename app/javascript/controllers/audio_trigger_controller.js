@@ -7,7 +7,9 @@ import { Controller } from "@hotwired/stimulus"
 // Tabelle, Track-Detailseite). Das Einreihen in die Queue laeuft seit Intent 42 ueber einen
 // normalen button_to-POST-Request statt ueber diesen Controller.
 export default class extends Controller {
-  static values = { url: String, name: String, mode: { type: String, default: "play" } }
+  static values = {
+    url: String, name: String, mode: { type: String, default: "play" }, trackId: Number, artist: String,
+  }
 
   // Beide Modi zeigen den Live-Zustand (Play seit Intent 62, Cue seit Intent 51 Nachtrag) -
   // gruen+Pause fuer den Hauptkanal, rot+Pause fuer den Vorhoerkanal.
@@ -79,7 +81,9 @@ export default class extends Controller {
     }
 
     document.dispatchEvent(
-      new CustomEvent("audio-player:play", { detail: { url: this.urlValue, name: this.nameValue } })
+      new CustomEvent("audio-player:play", {
+        detail: { url: this.urlValue, name: this.nameValue, trackId: this.trackIdValue, artist: this.artistValue },
+      })
     )
   }
 
@@ -94,7 +98,9 @@ export default class extends Controller {
     }
 
     document.dispatchEvent(
-      new CustomEvent("audio-player:cue", { detail: { url: this.urlValue, name: this.nameValue } })
+      new CustomEvent("audio-player:cue", {
+        detail: { url: this.urlValue, name: this.nameValue, trackId: this.trackIdValue, artist: this.artistValue },
+      })
     )
   }
 

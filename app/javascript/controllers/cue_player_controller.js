@@ -68,10 +68,13 @@ export default class extends Controller {
     })
   }
 
+  // Titelanzeige verlinkt auf die Track-Detailseite und zeigt den Hauptkuenstler mit (Intent 67
+  // Nachtrag), gleiches Muster wie audio_player_controller.js#play.
   handleCueEvent(event) {
-    const { url, name } = event.detail
+    const { url, name, trackId, artist } = event.detail
     this.audioTarget.src = url
-    this.nameTarget.textContent = name
+    this.nameTarget.textContent = artist ? `${name} – ${artist}` : name
+    this.nameTarget.href = trackId ? `/tracks/${trackId}` : "#"
     this.audioTarget.play()
   }
 

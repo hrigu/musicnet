@@ -163,6 +163,39 @@ RSpec.describe "Dauerhafte Track-Wiedergabe (Intent 40)", type: :system do
     expect(button[:class]).to include("btn-success")
   end
 
+  it "zeigt Titel mit Hauptkuenstler und verlinkt auf die Track-Detailseite (Intent 67)" do
+    track = create_playable_track("RSpec Player Title", spotify_id: "player-title", artist_name: "RSpec Hauptkuenstler")
+
+    visit tracks_path
+    play_button_for(track.name).click
+
+    name_link = page.find("[data-audio-player-target='name']")
+    aggregate_failures do
+      expect(name_link.text).to eq("RSpec Player Title – RSpec Hauptkuenstler")
+      expect(name_link[:href]).to end_with(track_path(track))
+    end
+  end
+
+  it "gibt der Titelanzeige mehr Platz als dem Fortschrittsbalken (Intent 67 Nachtrag)" do
+    track = create_track_with_real_audio("RSpec Player Width", spotify_id: "player-width")
+
+    visit tracks_path
+    play_button_for(track.name).click
+    sleep 0.3
+
+    name_width = page.evaluate_script(
+      "document.querySelector('[data-audio-player-target=name]').getBoundingClientRect().width"
+    )
+    progress_width = page.evaluate_script(
+      "document.querySelector('[data-audio-player-target=progress]').getBoundingClientRect().width"
+    )
+
+    aggregate_failures do
+      expect(name_width).to be > 400
+      expect(progress_width).to be < 250
+    end
+  end
+
   it "springt an die per Slider gewaehlte Position im Track (Seek)" do
     track = create_track_with_real_audio("System Spec Seek", spotify_id: "sys-seek")
 
