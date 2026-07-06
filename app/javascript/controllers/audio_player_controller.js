@@ -15,7 +15,7 @@ const SINK_ID_STORAGE_KEY = "musicnet:mainPlayerSinkId"
 export default class extends Controller {
   static targets = [
     "audio", "icon", "name", "progress", "currentTime", "duration", "deviceSelect", "chooseButton",
-    "toggleButton",
+    "toggleButton", "deviceName",
   ]
 
   connect() {
@@ -56,7 +56,7 @@ export default class extends Controller {
       this.audioTarget.addEventListener(type, this.handleDiagnosticEvent)
     )
 
-    restoreOutputDevice(this.audioTarget, SINK_ID_STORAGE_KEY)
+    restoreOutputDevice(this.audioTarget, SINK_ID_STORAGE_KEY, this.deviceNameTarget)
   }
 
   disconnect() {
@@ -184,6 +184,7 @@ export default class extends Controller {
   }
 
   selectOutputDevice() {
-    applyOutputDevice(this.audioTarget, this.deviceSelectTarget.value, SINK_ID_STORAGE_KEY)
+    const label = this.deviceSelectTarget.selectedOptions[0].text
+    applyOutputDevice(this.audioTarget, this.deviceSelectTarget.value, label, SINK_ID_STORAGE_KEY, this.deviceNameTarget)
   }
 }

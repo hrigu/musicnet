@@ -196,6 +196,24 @@ RSpec.describe "Dauerhafte Track-Wiedergabe (Intent 40)", type: :system do
     end
   end
 
+  it "zeigt ein zuvor gewaehltes Ausgabegeraet-Label sofort nach dem Laden an (Intent 68)" do
+    visit tracks_path
+    page.execute_script(<<~JS)
+      localStorage.setItem('musicnet:mainPlayerSinkId', 'rspec-fake-device')
+      localStorage.setItem('musicnet:mainPlayerSinkId:label', 'RSpec Externe Box')
+    JS
+
+    visit tracks_path
+
+    expect(page).to have_selector("[data-audio-player-target='deviceName']", text: "RSpec Externe Box")
+  end
+
+  it "zeigt kein Ausgabegeraet-Label, wenn noch nie eines gewaehlt wurde (Intent 68)" do
+    visit tracks_path
+
+    expect(page.find("[data-audio-player-target='deviceName']").text).to eq("")
+  end
+
   it "springt an die per Slider gewaehlte Position im Track (Seek)" do
     track = create_track_with_real_audio("System Spec Seek", spotify_id: "sys-seek")
 

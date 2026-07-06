@@ -30,6 +30,7 @@
             data-audio-player-target="chooseButton">
       Ausgabegerät (Hauptkanal)
     </button>
+    <span data-audio-player-target="deviceName" class="small text-muted"></span>
     <select class="form-select form-select-sm w-auto d-none" data-audio-player-target="deviceSelect"
             data-action="audio-player#selectOutputDevice"></select>
     <audio data-audio-player-target="audio" preload="none"></audio>
@@ -47,6 +48,7 @@
             data-cue-player-target="chooseButton">
       Ausgabegerät (Vorhören)
     </button>
+    <span data-cue-player-target="deviceName" class="small text-muted"></span>
     <select class="form-select form-select-sm w-auto d-none" data-cue-player-target="deviceSelect"
             data-action="cue-player#selectOutputDevice"></select>
     <audio data-cue-player-target="audio" preload="none"></audio>

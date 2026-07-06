@@ -18,14 +18,23 @@ export async function loadOutputDevices() {
 
 // Geraete-IDs sind nicht ueber alle Sessions/Neustarts hinweg garantiert stabil - ein
 // Fehlschlag hier bedeutet nur, dass das Geraet nicht mehr verfuegbar ist, kein Fehlerzustand.
-export function restoreOutputDevice(audioElement, storageKey) {
+// labelElement zeigt den zuletzt gewaehlten Geraetenamen sofort an (Intent 68) - das Label liegt
+// bereits in localStorage, ein erneuter enumerateDevices()-Aufruf (mit erneuter
+// getUserMedia-Berechtigungsabfrage) ist dafuer nicht noetig.
+export function restoreOutputDevice(audioElement, storageKey, labelElement) {
   const sinkId = localStorage.getItem(storageKey)
-  if (!sinkId || !audioElement.setSinkId) return
+  if (!sinkId) return
+
+  if (labelElement) labelElement.textContent = localStorage.getItem(`${storageKey}:label`) || ""
+
+  if (!audioElement.setSinkId) return
 
   audioElement.setSinkId(sinkId).catch(() => {})
 }
 
-export async function applyOutputDevice(audioElement, deviceId, storageKey) {
+export async function applyOutputDevice(audioElement, deviceId, deviceLabel, storageKey, labelElement) {
   await audioElement.setSinkId(deviceId)
   localStorage.setItem(storageKey, deviceId)
+  localStorage.setItem(`${storageKey}:label`, deviceLabel)
+  if (labelElement) labelElement.textContent = deviceLabel
 }

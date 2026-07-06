@@ -65,6 +65,18 @@ RSpec.describe "Cue-/Vorhörkanal (Intent 51)", type: :system do
     expect(page).to have_selector("[title='Vorhörkanal']", text: "🎧")
   end
 
+  it "zeigt ein zuvor gewaehltes Ausgabegeraet-Label des Cue-Kanals sofort nach dem Laden an (Intent 68)" do
+    visit tracks_path
+    page.execute_script(<<~JS)
+      localStorage.setItem('musicnet:cuePlayerSinkId', 'rspec-fake-device')
+      localStorage.setItem('musicnet:cuePlayerSinkId:label', 'RSpec Kopfhoerer')
+    JS
+
+    visit tracks_path
+
+    expect(page).to have_selector("[data-cue-player-target='deviceName']", text: "RSpec Kopfhoerer")
+  end
+
   it "zeigt Titel mit Hauptkuenstler und verlinkt auf die Track-Detailseite (Intent 67 Nachtrag)" do
     track = create_playable_track("RSpec Cue Title", spotify_id: "cue-title", artist_name: "RSpec Cue Hauptkuenstler")
 
