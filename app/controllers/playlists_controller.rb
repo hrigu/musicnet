@@ -5,8 +5,12 @@ class PlaylistsController < ApplicationController
   # viele Eintraege deren ~4KB-Limit (ActionDispatch::Cookies::CookieOverflow), daher gedeckelt.
   MAX_FLASH_ENTRIES = 8
 
+  # Redirect-nach-Mutation statt direktem Render (Intent 37/38, siehe refresh/download unten) -
+  # vorher fehlte das hier und der data-turbo-method:-post-Link liess den Sync ohne sichtbares
+  # Feedback verschwinden (Intent 58).
   def fetch_all
-    @info = BuildMusicNetService.new(current_user).build
+    info = BuildMusicNetService.new(current_user).build
+    redirect_to playlists_path, notice: fetch_all_summary(info)
   rescue BuildMusicNetService::SyncAlreadyRunningError => e
     redirect_to playlists_path, alert: e.message
   end
@@ -54,6 +58,29 @@ class PlaylistsController < ApplicationController
   end
 
   private
+
+  RESOURCE_LABELS = { playlists: "Playlists", tracks: "Tracks", artists: "Artists", albums: "Alben" }.freeze
+  ACTION_LABELS = { created: "neu", deleted: "gelöscht" }.freeze
+
+  # Bloss Anzahlen, keine Namenslisten wie bei set_download_flash/set_refresh_flash unten - ein
+  # erster Voll-Import kann tausende Namen umfassen (Intent 33), das wuerde das ~4KB-Flash-Cookie-
+  # Limit sprengen (CookieOverflow, siehe Intent 38). ServiceInfo#add haengt bei Einzel-Aufrufen
+  # (add_new_created_*) flache Namens-Arrays an, bei den Loesch-Pfaden dagegen ein verschachteltes
+  # Array (die ganze Namensliste als ein Element) - .flatten.size liefert in beiden Faellen die
+  # richtige Anzahl, ohne ServiceInfo selbst anzufassen.
+  def fetch_all_summary(info)
+    parts = info.hash.flat_map do |resource, actions|
+      actions.filter_map do |action, entries|
+        count = entries.flatten.size
+        next if count.zero?
+
+        "#{count} #{RESOURCE_LABELS.fetch(resource, resource)} #{ACTION_LABELS.fetch(action, action)}"
+      end
+    end
+    return "Sync abgeschlossen: keine Änderungen." if parts.empty?
+
+    "Sync abgeschlossen: #{parts.join(', ')}."
+  end
 
   def set_refresh_flash(info)
     flash[:refresh_added] = info.added

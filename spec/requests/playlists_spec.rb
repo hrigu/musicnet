@@ -126,15 +126,35 @@ RSpec.describe "Playlists", type: :request do
       expect(response.body).to include("Fusion Dark")
     end
 
-    it "POST /playlists/fetch_all ruft BuildMusicNetService auf und liefert Erfolg" do
+    it "POST /playlists/fetch_all ruft BuildMusicNetService auf und leitet mit Zusammenfassung weiter" do
       info = BuildMusicNetService::ServiceInfo.new
+      info.add_new_created_playlist("RSpec Neue Playlist")
+      info.add_new_created_playlist("RSpec Zweite Playlist")
+      info.add_new_created_track("RSpec Neuer Track")
       service = instance_double(BuildMusicNetService, build: info)
       allow(BuildMusicNetService).to receive(:new).and_return(service)
 
       post fetch_all_playlists_path
 
-      expect(response).to have_http_status(:success)
+      expect(response).to redirect_to(playlists_path)
       expect(service).to have_received(:build)
+      follow_redirect!
+      expect(response.body).to include("2 Playlists neu")
+      expect(response.body).to include("1 Tracks neu")
+
+      notice = Nokogiri::HTML(response.body).at_css(".alert.alert-success")
+      expect(notice.text).to include("2 Playlists neu")
+    end
+
+    it "POST /playlists/fetch_all zeigt eine Bestätigung, auch wenn sich nichts geändert hat" do
+      info = BuildMusicNetService::ServiceInfo.new
+      service = instance_double(BuildMusicNetService, build: info)
+      allow(BuildMusicNetService).to receive(:new).and_return(service)
+
+      post fetch_all_playlists_path
+      follow_redirect!
+
+      expect(response.body).to include("keine Änderungen")
     end
 
     it "GET /playlists/:id lädt tracks, artists und albums mit je genau einer Query" do
