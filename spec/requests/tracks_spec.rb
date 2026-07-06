@@ -347,7 +347,7 @@ RSpec.describe "Tracks", type: :request do
       get track_path(track)
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("<td>1</td>")
+      expect(response.body).to include("<td>1 (0)</td>")
     end
   end
 

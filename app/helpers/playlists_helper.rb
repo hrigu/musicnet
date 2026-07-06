@@ -35,6 +35,12 @@ module PlaylistsHelper
     playlist_tracks.all? { |pt| pt.track.track_path.present? }
   end
 
+  # playlist.tracks braucht bereits preload_track_paths (siehe PlaylistsController#index),
+  # sonst ein Verzeichnis-Scan pro Track statt einem fürs ganze Batch (Intent 61).
+  def downloaded_tracks_count(playlist)
+    playlist.tracks.count { |track| track.track_path.present? }
+  end
+
   private
 
   def checksum(str)

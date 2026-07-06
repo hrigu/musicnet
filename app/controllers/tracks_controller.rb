@@ -35,6 +35,7 @@ class TracksController < ApplicationController
 
   def show
     @track = Track.for_show.find(params[:id])
+    Track.preload_track_paths(@track.playlists.flat_map(&:tracks))
   end
 
   # send_file allein unterstuetzt keine HTTP-Range-Requests (nur ueber X-Sendfile/einen

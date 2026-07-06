@@ -6,7 +6,7 @@
     <% end %>
   </td>
   <td><%= playlist.public ? "öffentlich" : "privat" %></td>
-  <td><%= playlist.tracks_count %></td>
+  <td><%= playlist.tracks_count %> (<%= downloaded_tracks_count(playlist) %>)</td>
   <td><%= playlist.libraries.map(&:name).join(", ") %></td>
   <td><%= playlist.name %></td>
   <td><%= link_to("edit", edit_playlist_path(playlist))  %></td>

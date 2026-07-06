@@ -81,10 +81,28 @@ RSpec.describe "Playlists", type: :request do
 
       expect(response).to have_http_status(:success)
       aggregate_failures do
-        expect(queries.count { |sql| sql.include?('FROM "tracks"') }).to eq(0)
-        expect(response.body).to include("<td>2</td>")
-        expect(response.body).to include("<td>0</td>")
+        # Ein gebündelter Preload der Tracks (Intent 61) ist erlaubt (max. 1 Query fürs ganze
+        # Batch), aber keine COUNT/SELECT pro einzelner Playlist (kein N+1).
+        expect(queries.count { |sql| sql.include?('FROM "tracks"') }).to be <= 1
+        expect(response.body).to include("<td>2 (0)</td>")
+        expect(response.body).to include("<td>0 (0)</td>")
       end
+    end
+
+    it "zeigt in Klammern, wie viele Tracks bereits heruntergeladen sind (Intent 61)" do
+      album = Album.create!(spotify_id: "alb-dl1", name: "A Go Go")
+      playlist = Playlist.create!(spotify_id: "pl-dl1", name: "Fusion Downloads")
+      downloaded = Track.create!(spotify_id: "trk-dl1", name: "RSpec Heruntergeladen", album: album,
+                                 duration_ms: 200_000)
+      missing = Track.create!(spotify_id: "trk-dl2", name: "RSpec Fehlend", album: album, duration_ms: 200_000)
+      PlaylistTrack.create!(playlist: playlist, track: downloaded, added_at: Time.current)
+      PlaylistTrack.create!(playlist: playlist, track: missing, added_at: Time.current)
+
+      with_download_file("RSpec Artist - RSpec Heruntergeladen.m4a") do
+        get playlists_path
+      end
+
+      expect(response.body).to include("<td>2 (1)</td>")
     end
 
     it "zeigt die zugeordneten Bibliotheken ohne eine Query pro Playlist (Intent 57)" do
