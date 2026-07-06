@@ -15,6 +15,7 @@ const SINK_ID_STORAGE_KEY = "musicnet:mainPlayerSinkId"
 export default class extends Controller {
   static targets = [
     "audio", "icon", "name", "progress", "currentTime", "duration", "deviceSelect", "chooseButton",
+    "toggleButton",
   ]
 
   connect() {
@@ -26,10 +27,14 @@ export default class extends Controller {
     this.broadcastState = this.broadcastState.bind(this)
     this.handleAudioPlay = () => {
       this.iconTarget.textContent = "⏸"
+      this.toggleButtonTarget.classList.add("btn-success")
+      this.toggleButtonTarget.classList.remove("btn-outline-secondary")
       this.broadcastState()
     }
     this.handleAudioPause = () => {
       this.iconTarget.textContent = "▶"
+      this.toggleButtonTarget.classList.remove("btn-success")
+      this.toggleButtonTarget.classList.add("btn-outline-secondary")
       this.broadcastState()
     }
     this.handleAudioEnded = () => this.playNextInQueue()

@@ -115,6 +115,22 @@ RSpec.describe "Dauerhafte Track-Wiedergabe (Intent 40)", type: :system do
     expect(button[:class]).to include("btn-success")
   end
 
+  it "faerbt auch den Play/Pause-Button der unteren Leiste gruen, waehrend abgespielt wird (Intent 62)" do
+    track = create_track_with_real_audio("RSpec Main Bar Green Track", spotify_id: "main-bar-green")
+
+    visit tracks_path
+    play_button_for(track.name).click
+    sleep 0.3
+
+    bar_button = page.find("[data-audio-player-target='toggleButton']")
+    expect(bar_button[:class]).to include("btn-success")
+
+    bar_button.click
+    sleep 0.3
+
+    expect(bar_button[:class]).to_not include("btn-success")
+  end
+
   it "faerbt den vorherigen Button zurueck, wenn ein anderer Track gestartet wird (Intent 62)" do
     first = create_track_with_real_audio("RSpec Main Live First", spotify_id: "main-live-first")
     second = create_track_with_real_audio("RSpec Main Live Second", spotify_id: "main-live-second")

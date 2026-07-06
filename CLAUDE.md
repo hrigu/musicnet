@@ -504,7 +504,12 @@ event, which `audio_player_controller.js` wires straight to its existing `toggle
 method the bar's own Play/Pause button already calls); if the main channel is playing a *different*
 track, `confirm()` gates switching to this one; if nothing is playing, it plays immediately with no
 dialog. System specs drive the native dialog via Capybara's `accept_confirm`/`dismiss_confirm`
-(supported out of the box by Cuprite).
+(supported out of the box by Cuprite). The persistent bar's own Play/Pause button mirrors this same
+green state (`data-audio-player-target="toggleButton"` in `layouts/_audio_player.html.erb`, toggled
+by the same `handleAudioPlay`/`handleAudioPause` listeners that already drove the bar's icon and
+`broadcastState()`) — same DJ request extended to the one button that's always on screen regardless
+of which row is visible, exactly mirroring the cue channel's bottom-bar button, which already turned
+red under the same logic.
 
 **Song queue (Intent 41, moved to the DB in Intent 42):** builds on the persistent player above.
 Originally a pure client-side JS array on the permanent element (Intent 41) — moved to a real
