@@ -26,3 +26,37 @@ function logTurboAudioDiagnostic(phase) {
 ;["turbo:before-cache", "turbo:before-render", "turbo:render", "turbo:load"].forEach((eventName) =>
   document.addEventListener(eventName, () => logTurboAudioDiagnostic(eventName))
 )
+
+// Nachtrag: ein real beobachteter Aussetzer endete im Log abrupt bei einem blossen "pause" auf dem
+// Hauptkanal, OHNE dass danach irgendein turbo:*-Lifecycle-Event mehr auftrat und OHNE sichtbaren
+// JS-Fehler in der Konsole - beides deutete bisher auf einen kompletten Seiten-Reload (statt einer
+// Turbo-Navigation) oder einen stillen Fehler hin, den das bisherige Logging nicht erfasst.
+// pagehide unterscheidet das beim naechsten Mal zweifelsfrei: persisted=false + kein weiteres
+// turbo:*-Log danach bestaetigt einen echten Reload/Tab-Wechsel. window.onerror/unhandledrejection
+// fangen Fehler ab, die in der Konsole leicht uebersehen werden.
+window.addEventListener("pagehide", (event) => {
+  console.log("[audio-diagnostic]", {
+    lifecycle: "window",
+    phase: "pagehide",
+    persisted: event.persisted,
+    timestamp: new Date().toISOString(),
+  })
+})
+
+window.addEventListener("error", (event) => {
+  console.log("[audio-diagnostic]", {
+    lifecycle: "error",
+    message: event.message,
+    filename: event.filename,
+    lineno: event.lineno,
+    timestamp: new Date().toISOString(),
+  })
+})
+
+window.addEventListener("unhandledrejection", (event) => {
+  console.log("[audio-diagnostic]", {
+    lifecycle: "unhandledrejection",
+    reason: String(event.reason),
+    timestamp: new Date().toISOString(),
+  })
+})
