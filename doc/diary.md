@@ -1,4 +1,70 @@
 # Diary
+## 2026-07-06
+* Grosses Feature: Intent 57 - konfigurierbare "Bibliotheken" (`Library`-Model, Name + Stichwort)
+  ersetzen die bisher hardcoded Blues/Fusion-Unterscheidung, sowohl für den Spotify-Import-Filter
+  (`SpotifyPlaylistsGateway#owned_library_playlist?`) als auch für den Anzeige-Filter
+  (`User#active_library_id` ersetzt den alten `active_playlist_category`-Enum aus Intent 54). Eine
+  Playlist kann jetzt mehreren Bibliotheken gleichzeitig angehören (echte n:m-Beziehung statt
+  Single-Select). `Library.matching(name)` ist die einzige Stelle mit der
+  Stichwort-Teilstring-Logik - sowohl Import als auch automatische Zuordnung nutzen nur diese.
+* Manuell beim Ausprobieren gefunden: eine neu angelegte Bibliothek ("Salsadancers", Stichwort
+  "salsa") zeigte trotz mehrerer bereits importierter "...Salsa..."-Playlists 0 Treffer - die
+  automatische Zuordnung griff bisher nur beim Spotify-Sync, nie rückwirkend auf schon vorhandene
+  Playlists. Fix: `Library#resync_playlist_assignments!`, aufgerufen beim Anlegen/Bearbeiten einer
+  Bibliothek über die neue Verwaltungsseite (`/libraries`).
+* Beim Anzeigen der zugeordneten Bibliotheken auf `/playlists` eine Regression entdeckt:
+  `TracksController#show` nutzt dasselbe `_playlist.erb`-Partial (für "Playlists die diesen Track
+  enthalten") und brauchte darum denselben `libraries`-Preload, sonst `StrictLoadingViolationError`.
+* Bug (nicht von mir eingeführt, beim Ausprobieren aufgefallen): "Alle Playlists holen" zeigte nach
+  dem Sync gar kein Feedback - `PlaylistsController#fetch_all` rendert nach dem POST-Request direkt
+  eine Debug-Seite statt umzuleiten, genau das Turbo/Rails-Anti-Pattern, das CLAUDE.md selbst unter
+  "Sync flow" dokumentiert (Intent 37) und das bei `refresh`/`download` damals schon behoben wurde,
+  bei `fetch_all` aber offenbar nie. Fix: Redirect mit einer kompakten Anzahl-Zusammenfassung
+  ("3 Playlists neu, 1 Tracks neu") statt Namenslisten - ein Erstimport kann tausende Namen
+  umfassen (Intent 33), das würde das ~4KB-Flash-Cookie-Limit sprengen.
+* Dabei gleich noch eine app-weite Alt-Baustelle mitgenommen: `notice`/`alert` waren im Layout
+  simple, unstylte `<p>`-Tags ohne Bootstrap-Klasse, ohne Container - klebten am linken Rand.
+  Jetzt echte Bootstrap-`.alert`-Boxen (grün/rot), nur gerendert wenn tatsächlich Inhalt da ist.
+* Kleines Polishing: die "Download"-Spalte auf `/playlists` war zugleich die einzige Stelle mit dem
+  vollen Playlist-Namen (Spalte 1 zeigt nur ein gekürztes, farbcodiertes Badge) - durch reinen
+  Klartext-Namen ersetzt, Download bleibt über die Playlist-Detailseite erreichbar.
+* Wiederkehrende Falle heute: `git mv` einer Intent-Datei mit noch unstaged Änderungen hat mehrfach
+  den *letzten committeten* Stand gestaged statt den aktuellen Working-Tree-Stand - Checkbox-Updates
+  gingen dadurch zweimal beim Verschieben nach `completed/` verloren, erst ein erneutes `git add`
+  auf die Datei hat den echten Stand erfasst. Im Zweifel nach einem `git mv` auf eine gerade
+  bearbeitete Datei den Diff nochmal gegenprüfen.
+
+## 2026-07-05
+* Kurioser Bug beim Ausprobieren: die Login-Seite (Devise) warf `MissingTemplate` für
+  `devise/queue_entries/_queue_entry`, sobald die Song-Queue nicht leer war. Ursache: Rails'
+  `prefix_partial_path_with_controller_namespace`-Feature - `Devise::SessionsController` ist ein
+  *namespaced* Controller (Präfix `devise/sessions`), und ein implizites `render entries` versucht
+  dann, das Namespace-Präfix in den Partial-Pfad einzumischen, ohne zu prüfen ob das Ergebnis
+  überhaupt existiert. Fix: `render partial:`/`collection:` explizit statt implizit. Gleich noch
+  den Player auf Devise-Seiten ganz ausgeblendet (`devise_controller?`) und die Login-Seite auf
+  reinen "Login mit Spotify"-Button reduziert, da die App ohnehin nie Multiuser war.
+* Intent 52 nachgeholt (war seit einer Weile liegen geblieben): `HelpController` von einer
+  hardcoded Action auf eine `ARTICLES`-Whitelist umgebaut, drei neue Hilfeartikel (Installation,
+  Bedienung, Diary) ergänzt. Kleiner Folgefehler dabei selbst verursacht und gleich behoben: jede
+  Markdown-Datei bringt ihre `# Titel`-Überschrift schon selbst mit, die View setzte zusätzlich ein
+  eigenes `<h1>` davor - jeder Artikel zeigte den Titel doppelt.
+* Intent 55: gleich vier Bugs in der Tracks-Suche-Autocomplete auf einmal behoben (Kategorie-Filter
+  wurde bei Vorschlägen ignoriert, Dropdown nicht scrollbar, ein schon in der Komma-Liste stehender
+  Wert wurde nochmals vorgeschlagen, Übernehmen eines Vorschlags hängte ein störendes Leerzeichen
+  an, das Komma-Listen-Weitertippen kaputt machte).
+* Intent 56: ein einmaliger, nicht reproduzierbarer Aussetzer (beide Audio-Kanäle verstummten bei
+  einem Seitenwechsel) mit reinem Diagnose-Logging angegangen, statt blind zu raten. Ergebnis schon
+  beim ersten Test aufschlussreich: Haupt- und Cue-Player-Controller disconnecten/reconnecten bei
+  *jeder* Navigation (bekannte Turbo-Permanent-Eigenheit), normalerweise ohne die Wiedergabe zu
+  stören - der Verdacht verschiebt sich auf ein selteneres Versagen der Permanent-Element-Übernahme
+  in genau diesem Fenster. Funde/Lösungsideen dafür in neuer `.intents/Ideen.md` festgehalten, statt
+  sie ungeprüft gleich umzusetzen.
+* Lehrreicher Fehler (zweimal an verschiedenen Stellen passiert): ein Request-Spec-Test, der nur
+  auf Textfragmente im Response-Body prüfte, wurde von einer 500er-Rails-Debug-Fehlerseite zufällig
+  "grün" bestätigt, weil die Fehlerseite die gesuchten Wörter (z.B. Werte aus einem SQL-Insert-Log)
+  selbst enthielt. Seitdem in neuen Tests konsequent zuerst den HTTP-Status explizit geprüft, bevor
+  auf Body-Inhalt geprüft wird.
+
 ## 2026-07-04
 * Rate-Limit-Fix zuerst: `release_date`/`popularity` bei Alben und Artists waren durchgehend
   leer, weil bei einem vollen Sync über viele Playlists praktisch jeder Alben-/Artists-Batch
