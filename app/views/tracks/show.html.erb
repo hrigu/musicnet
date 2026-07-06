@@ -1,69 +1,76 @@
-<h1><%= @track.name %></h1>
-<div> aus: <%= @track.album.name %> | <%= @track.album.release_date ? l(@track.album.release_date) : nil %></div>
-<div><a href="<%= @track.url %>">Track in Spotify hören</a></div>
-<div>
-  <%= render partial: 'components/audio_file', locals: {track: @track}  %>
-</div>
-<div>
-  <%= render partial: 'components/spotify_player', locals: {track: @track} %>
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+  <div>
+    <h1 class="mb-1"><%= @track.name %></h1>
+    <div class="text-muted">
+      aus: <%= @track.album.name %>
+      <% if @track.album.release_date %>
+        | <%= l(@track.album.release_date) %>
+      <% end %>
+    </div>
+  </div>
+  <%= render partial: 'components/audio_file', locals: { track: @track } %>
 </div>
 
-<div>
-    Genre: <%= @track.genre%>
-</div>
-
-<br>
-  <table class="table caption-top">
-    <caption>Künstler</caption>
-    <thead>
-    <tr>
-      <th scope="col">Name</th>
-      <th scope="col">Bekanntheit</th>
-      <th scope="col">Anzahl Tracks</th>
-    </tr>
-    </thead>
-    <tbody>
-    <%= render @track.artists %>
-    </tbody>
-  </table>
-
-<div> Die Künstler des Albums</div>
-<% @track.album.artists.each do |a| %>
-  <a><%= link_to a.name, artist_path(a.id)  %></a>
+<% if @track.track_path.blank? %>
+  <%# Solange keine lokale Datei existiert, bleibt Spotify die einzige Anhoer-Moeglichkeit
+      (Intent 64) - sobald heruntergeladen, uebernimmt der Play-Button oben. %>
+  <div class="my-3">
+    <div class="mb-2"><%= link_to "Track in Spotify hören", @track.url %></div>
+    <%= render partial: 'components/spotify_player', locals: { track: @track } %>
+  </div>
 <% end %>
 
+<div class="d-flex flex-wrap gap-4 my-3">
+  <div>
+    <div class="text-muted small mb-1">Genre</div>
+    <%= genre_badge(@track.genre) %>
+  </div>
+  <% if @track.energy %>
+    <div style="min-width: 160px">
+      <div class="text-muted small mb-1">Energie</div>
+      <%= track_meter(engergie_to_view(@track.energy), variant: "warning") %>
+    </div>
+  <% end %>
+  <% if @track.tempo %>
+    <div>
+      <div class="text-muted small mb-1">Tempo</div>
+      <span><%= tempo_to_view(@track.tempo) %> <span class="small text-muted">BPM</span></span>
+    </div>
+  <% end %>
+</div>
 
-<br>
-<br>
+<div class="mb-3">
+  <div class="text-muted small mb-1">Künstler</div>
+  <div class="d-flex flex-wrap gap-2">
+    <% @track.artists.each do |a| %>
+      <%= link_to a.name, artist_path(a.id), class: "d-inline-block" %>
+    <% end %>
+  </div>
+</div>
 
-
-<% if @track.af.present? %>
-  <ul>
-    <li> Acousticness: <%= @track.af.acousticness %>   </li>
-    <li> Danceability: <%= @track.af.danceability %>   </li>
-    <li> Energy: <%= @track.af.energy %>   </li>
-    <li> Mode: <%= @track.af.mode == 1 ? "Major" : "Minor" %>   </li>
-    <li> time_signature: <%= @track.af.time_signature %>   </li>
-    <li> Tempo: BPM <%= @track.af.tempo %>  </li>
-    <li> instrumentalness: <%= @track.af.instrumentalness %>  </li>
-    <li> liveness: <%= @track.af.liveness %>  </li>
-    <li> loudness: <%= @track.af.loudness %>  </li>
-    <li> valence: <%= @track.af.valence %>  </li>
-  </ul>
+<% if @track.album.artists.any? %>
+  <div class="mb-3">
+    <div class="text-muted small mb-1">Künstler des Albums</div>
+    <div class="d-flex flex-wrap gap-2">
+      <% @track.album.artists.each do |a| %>
+        <%= link_to a.name, artist_path(a.id), class: "d-inline-block" %>
+      <% end %>
+    </div>
+  </div>
 <% end %>
 
-
-<table class="table caption-top">
-  <caption>Playlists die diesen Track enthalten</caption>
-  <thead>
-  <tr>
-    <th scope="col">Name</th>
-    <th scope="col">Sichtbarkeit</th>
-    <th scope="col">Anzahl Tracks</th>
-    <th scope="col">Download</th>
-  </tr>
-  </thead>
-  <tbody>
-  <%= render @track.playlists %> <%# magischerweise weiss Rails wie rendern. Nämlich mit playlists/_playlist.erb %>
-  </tbody>
-</table>
+<div class="mb-3">
+  <div class="text-muted small mb-1">Playlists die diesen Track enthalten</div>
+  <div class="d-flex flex-wrap gap-3">
+    <% @track.playlist_tracks.each do |pt| %>
+      <div class="d-flex align-items-center gap-1">
+        <%= link_to playlist_path(pt.playlist.id) do %>
+          <span class="badge <%= playlist_color_class(pt.playlist) %>"><%= playlist_short_name(pt.playlist) %></span>
+        <% end %>
+        <% if pt.added_at %>
+          <span class="text-muted small"><%= l(pt.added_at.to_date) %></span>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>

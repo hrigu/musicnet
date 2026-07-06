@@ -335,19 +335,110 @@ RSpec.describe "Tracks", type: :request do
       aggregate_failures do
         expect(queries.count { |sql| sql.include?('FROM "albums"') }).to eq(1)
         expect(queries.count { |sql| sql.include?('FROM "artists"') }).to eq(2)
+        expect(queries.count { |sql| sql.include?('FROM "playlist_tracks"') }).to eq(1)
         expect(queries.count { |sql| sql.include?('FROM "playlists"') }).to eq(1)
       end
     end
 
-    it "rendert die Playlist-Zeile inkl. Track-Anzahl, wenn der Track in einer Playlist ist" do
+    it "zeigt eine Playlist als Element mit Badge und Hinzugefügt-Datum (Intent 64)" do
       track = create_track
       playlist = Playlist.create!(spotify_id: "pl-t1", name: "Fusion Badge")
-      PlaylistTrack.create!(playlist: playlist, track: track, added_at: Time.current)
+      PlaylistTrack.create!(playlist: playlist, track: track, added_at: Date.new(2026, 1, 15))
+
+      get track_path(track)
+
+      html = Nokogiri::HTML(response.body)
+      aggregate_failures do
+        expect(response).to have_http_status(:success)
+        expect(html.css("table")).to be_empty
+        badges = html.css(".badge").map(&:text)
+        expect(badges).to include("F_Badge")
+        expect(response.body).to include(I18n.l(Date.new(2026, 1, 15)))
+      end
+    end
+
+    it "zeigt eine Playlist ohne Datum, wenn added_at fehlt (Intent 64)" do
+      track = create_track
+      playlist = Playlist.create!(spotify_id: "pl-t2", name: "Fusion Kein Datum")
+      PlaylistTrack.create!(playlist: playlist, track: track, added_at: nil)
 
       get track_path(track)
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("<td>1 (0)</td>")
+      badges = Nokogiri::HTML(response.body).css(".badge").map(&:text)
+      expect(badges).to include("F_KeinDatum")
+    end
+
+    it "zeigt Künstler nur mit Namen als Elemente statt als Tabelle (Intent 64)" do
+      album = Album.create!(name: "Album", spotify_id: "alb-artist-el")
+      artist = Artist.create!(name: "RSpec Element Artist", spotify_id: "art-el-1", popularity: 42)
+      track = Track.create!(name: "Track", spotify_id: "trk-artist-el", album: album,
+                            artists: [artist], duration_ms: 200_000)
+
+      get track_path(track)
+
+      html = Nokogiri::HTML(response.body)
+      aggregate_failures do
+        expect(html.css("table")).to be_empty
+        expect(html.css("a").map(&:text)).to include("RSpec Element Artist")
+      end
+    end
+
+    it "zeigt Energie und Tempo als Meter/BPM statt der alten Audio-Features-Liste (Intent 64)" do
+      track = create_track
+      track.update!(audio_features: { "tempo" => 128.4, "energy" => 0.734 })
+
+      get track_path(track)
+
+      html = Nokogiri::HTML(response.body)
+      aggregate_failures do
+        expect(response.body).to_not include("Acousticness")
+        expect(response.body).to include("128 <span class=\"small text-muted\">BPM</span>")
+        expect(html.at_css(".track-meter .progress-bar")).to be_present
+      end
+    end
+
+    it "labelt Genre, Energie und Tempo (Intent 64)" do
+      track = create_track
+      track.update!(audio_features: { "tempo" => 128.4, "energy" => 0.734 })
+      track.update_column(:genre, "RSpec Deep House")
+
+      get track_path(track)
+
+      labels = Nokogiri::HTML(response.body).css(".text-muted.small").map(&:text)
+      aggregate_failures do
+        expect(labels).to include("Genre")
+        expect(labels).to include("Energie")
+        expect(labels).to include("Tempo")
+      end
+    end
+
+    it "zeigt die Spotify-Einbettung, solange der Track noch nicht heruntergeladen ist (Intent 64)" do
+      track = create_track
+
+      get track_path(track)
+
+      expect(response.body).to include("open.spotify.com/embed")
+    end
+
+    it "zeigt keine Spotify-Einbettung mehr, sobald der Track heruntergeladen ist (Intent 64)" do
+      track = create_track
+
+      with_download_file("RSpec Artist - Song.m4a") do
+        get track_path(track)
+      end
+
+      expect(response.body).to_not include("open.spotify.com/embed")
+    end
+
+    it "zeigt das Genre als Badge (Intent 64)" do
+      track = create_track
+      track.update_column(:genre, "RSpec Deep House")
+
+      get track_path(track)
+
+      badges = Nokogiri::HTML(response.body).css(".badge").map(&:text)
+      expect(badges).to include("RSpec Deep House")
     end
   end
 
