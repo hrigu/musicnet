@@ -5,6 +5,8 @@ class Playlist < ApplicationRecord
   # Zuordnungen mitgehen — die Tracks selbst räumt der Orphan-Cleanup des Syncs ab.
   has_many :playlist_tracks, dependent: :destroy
   has_many :tracks, through: :playlist_tracks
+  has_many :library_playlists, dependent: :destroy
+  has_many :libraries, through: :library_playlists
 
   scope :for_index, -> { order(:name).strict_loading }
 

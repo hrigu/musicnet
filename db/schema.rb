@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_05_150000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_06_101249) do
   create_table "albums", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name"
@@ -34,6 +34,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_05_150000) do
     t.integer "track_id", null: false
     t.index ["artist_id"], name: "index_artists_tracks_on_artist_id"
     t.index ["track_id"], name: "index_artists_tracks_on_track_id"
+  end
+
+  create_table "libraries", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "keyword", null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_libraries_on_name", unique: true
+  end
+
+  create_table "library_playlists", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "library_id", null: false
+    t.integer "playlist_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["library_id", "playlist_id"], name: "index_library_playlists_on_library_id_and_playlist_id", unique: true
+    t.index ["library_id"], name: "index_library_playlists_on_library_id"
+    t.index ["playlist_id"], name: "index_library_playlists_on_playlist_id"
   end
 
   create_table "playlist_tracks", force: :cascade do |t|
@@ -94,6 +112,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_05_150000) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
+  add_foreign_key "library_playlists", "libraries"
+  add_foreign_key "library_playlists", "playlists"
   add_foreign_key "playlist_tracks", "playlists", on_delete: :cascade
   add_foreign_key "playlist_tracks", "tracks", on_delete: :cascade
   add_foreign_key "queue_entries", "tracks"
