@@ -11,7 +11,7 @@ RSpec.describe DownloadPlaylistCommandBuilder do
       expect(described_class.new(playlist).build).to eq(
         "spotdl sync https://open.spotify.com/playlist/abc123 --save-file FusionDark.spotdl " \
         "--sync-without-deleting --user-auth --format m4a " \
-        "--audio youtube bandcamp --save-errors FusionDark-errors.txt"
+        "--audio youtube bandcamp --save-errors FusionDark-errors.txt --simple-tui"
       )
     end
 
@@ -21,7 +21,7 @@ RSpec.describe DownloadPlaylistCommandBuilder do
       expect(described_class.new(playlist).build).to eq(
         "spotdl sync https://open.spotify.com/playlist/spotify_id_1 --save-file FusionDark.spotdl " \
         "--sync-without-deleting --user-auth --format m4a " \
-        "--audio youtube bandcamp --save-errors FusionDark-errors.txt"
+        "--audio youtube bandcamp --save-errors FusionDark-errors.txt --simple-tui"
       )
     end
 
@@ -58,7 +58,7 @@ RSpec.describe DownloadPlaylistCommandBuilder do
           "spotdl download https://open.spotify.com/track/#{tracks[0].spotify_id} " \
           "https://open.spotify.com/track/#{tracks[1].spotify_id} " \
           "--format m4a --audio youtube bandcamp --save-file playlist_#{playlist.id}_missing.spotdl " \
-          "--save-errors playlist_#{playlist.id}_missing-errors.txt"
+          "--save-errors playlist_#{playlist.id}_missing-errors.txt --simple-tui"
         )
         expect(command).to_not include("--user-auth")
         expect(command).to_not include("--sync-without-deleting")
@@ -74,7 +74,8 @@ RSpec.describe DownloadPlaylistCommandBuilder do
 
       expect(command).to eq(
         "spotdl sync https://open.spotify.com/playlist/pl-cpc-2 --save-file FusionGross.spotdl " \
-        "--sync-without-deleting --format m4a --audio youtube bandcamp --save-errors FusionGross-errors.txt"
+        "--sync-without-deleting --format m4a --audio youtube bandcamp --save-errors FusionGross-errors.txt " \
+        "--simple-tui"
       )
     end
 
@@ -86,7 +87,8 @@ RSpec.describe DownloadPlaylistCommandBuilder do
 
       expect(command).to eq(
         "spotdl sync https://open.spotify.com/playlist/pl-cpc-3 --save-file FusionKomplett.spotdl " \
-        "--sync-without-deleting --format m4a --audio youtube bandcamp --save-errors FusionKomplett-errors.txt"
+        "--sync-without-deleting --format m4a --audio youtube bandcamp --save-errors FusionKomplett-errors.txt " \
+        "--simple-tui"
       )
     end
   end

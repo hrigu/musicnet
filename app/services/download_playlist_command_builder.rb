@@ -35,6 +35,11 @@ class DownloadPlaylistCommandBuilder
     @errors_file_path = small_batch? ? "playlist_#{@playlist.id}_missing-errors.txt" : sync_errors_file_path
   end
 
+  # --simple-tui auf beiden Varianten: system(...) leitet stdout nicht um, spotdl erbt es also
+  # direkt vom Rails-Prozess. Ohne dieses Flag rendert spotdl einen animierten Rich-Fortschritts-
+  # balken, der eine echte interaktive TTY mit In-Place-Redraw voraussetzt - landet die Ausgabe
+  # stattdessen in einem Log, wird jeder Redraw-Tick als eigener, kompletter Textblock angehaengt
+  # (Intent 60). --simple-tui liefert stattdessen eine Zeile pro Ereignis.
   def build
     if small_batch?
       build_track_urls_command
@@ -58,12 +63,12 @@ class DownloadPlaylistCommandBuilder
   def build_track_urls_command
     urls = @missing_tracks.map { |track| track_url(track) }.join(' ')
     "spotdl download #{urls} --format m4a --audio #{AUDIO_PROVIDERS} " \
-      "--save-file #{save_file_path} --save-errors #{errors_file_path}"
+      "--save-file #{save_file_path} --save-errors #{errors_file_path} --simple-tui"
   end
 
   def build_sync_command
     "spotdl sync #{playlist_url} --save-file #{save_file_path} --sync-without-deleting" \
-      "#{user_auth_flag} --format m4a --audio #{AUDIO_PROVIDERS} --save-errors #{errors_file_path}"
+      "#{user_auth_flag} --format m4a --audio #{AUDIO_PROVIDERS} --save-errors #{errors_file_path} --simple-tui"
   end
 
   def track_url(track)
