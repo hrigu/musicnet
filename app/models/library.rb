@@ -14,4 +14,19 @@ class Library < ApplicationRecord
   def self.matching(playlist_name)
     all.select { |library| playlist_name.downcase.include?(library.keyword.downcase) }
   end
+
+  # Ergaenzt Library.matching/assign_libraries (die nur beim Spotify-Sync greifen) um die
+  # umgekehrte Richtung: bereits lokal vorhandene Playlists werden ohne einen erneuten Sync
+  # abzuwarten dieser einen Library zugeordnet bzw. wieder entfernt, sobald ihr Stichwort neu
+  # gesetzt/geaendert wird (Intent 57, manuell entdeckte Luecke).
+  def resync_playlist_assignments!
+    Playlist.find_each do |playlist|
+      matches = playlist.name.to_s.downcase.include?(keyword.downcase)
+      if matches
+        library_playlists.find_or_create_by!(playlist: playlist)
+      else
+        library_playlists.where(playlist: playlist).destroy_all
+      end
+    end
+  end
 end

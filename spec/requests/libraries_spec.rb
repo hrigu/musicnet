@@ -41,6 +41,15 @@ RSpec.describe "Libraries", type: :request do
       expect(response).to have_http_status(:unprocessable_content)
       expect(Library.find_by(keyword: "house")).to be_nil
     end
+
+    it "ordnet bereits importierte, passende Playlists sofort der neuen Bibliothek zu (Intent 57)" do
+      matching = Playlist.create!(name: "RSpec Salsa Nacht", spotify_id: "pl-salsa-1")
+      Playlist.create!(name: "RSpec Merengue Nacht", spotify_id: "pl-merengue-1")
+
+      post libraries_path, params: { library: { name: "Salsadancers", keyword: "salsa" } }
+
+      expect(matching.reload.libraries.map(&:name)).to eq(["Salsadancers"])
+    end
   end
 
   describe "GET /libraries/:id/edit" do
@@ -62,6 +71,18 @@ RSpec.describe "Libraries", type: :request do
 
       expect(response).to redirect_to(libraries_path)
       expect(library.reload.name).to eq("Blues Nights")
+    end
+
+    it "aktualisiert bestehende Zuordnungen, wenn sich das Stichwort ändert (Intent 57)" do
+      library = Library.create!(name: "Salsadancers", keyword: "salsa")
+      no_longer_matching = Playlist.create!(name: "RSpec Salsa Nacht", spotify_id: "pl-salsa-2")
+      no_longer_matching.libraries << library
+      newly_matching = Playlist.create!(name: "RSpec Bachata Nacht", spotify_id: "pl-bachata-2")
+
+      patch library_path(library), params: { library: { name: "Salsadancers", keyword: "bachata" } }
+
+      expect(no_longer_matching.reload.libraries).to be_empty
+      expect(newly_matching.reload.libraries).to eq([library])
     end
 
     it "rendert das Formular erneut mit Fehlermeldung bei fehlendem Stichwort" do

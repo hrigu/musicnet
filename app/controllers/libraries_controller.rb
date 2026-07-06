@@ -10,6 +10,7 @@ class LibrariesController < ApplicationController
   def create
     @library = Library.new(library_params)
     if @library.save
+      @library.resync_playlist_assignments!
       redirect_to libraries_path, notice: "Bibliothek erstellt."
     else
       render :new, status: :unprocessable_content
@@ -23,6 +24,7 @@ class LibrariesController < ApplicationController
   def update
     @library = Library.find(params[:id])
     if @library.update(library_params)
+      @library.resync_playlist_assignments!
       redirect_to libraries_path, notice: "Bibliothek gespeichert."
     else
       render :edit, status: :unprocessable_content
