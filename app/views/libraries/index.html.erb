@@ -1,0 +1,28 @@
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <h1 class="mb-0">Bibliotheken</h1>
+  <%= link_to("Neue Bibliothek", new_library_path, class: "btn btn-outline-secondary") %>
+</div>
+
+<table class="table mt-3">
+  <thead>
+    <tr>
+      <th scope="col">Name</th>
+      <th scope="col">Stichwort</th>
+      <th scope="col"></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @libraries.each do |library| %>
+      <tr>
+        <td><%= library.name %></td>
+        <td><%= library.keyword %></td>
+        <td class="text-end">
+          <%= link_to "Bearbeiten", edit_library_path(library), class: "btn btn-sm btn-outline-secondary" %>
+          <%= button_to "Löschen", library_path(library), method: :delete,
+                data: { turbo_confirm: "Bibliothek \"#{library.name}\" wirklich löschen?" },
+                class: "btn btn-sm btn-outline-danger" %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

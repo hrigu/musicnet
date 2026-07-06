@@ -24,4 +24,28 @@ RSpec.describe Library, type: :model do
       expect(Library.matching("RSpec Deep House Vibes")).to eq([])
     end
   end
+
+  describe "Validierungen" do
+    it "ist ungültig ohne Namen" do
+      library = Library.new(name: "", keyword: "blues")
+
+      expect(library).to_not be_valid
+      expect(library.errors[:name]).to be_present
+    end
+
+    it "ist ungültig ohne Stichwort" do
+      library = Library.new(name: "Blues", keyword: "")
+
+      expect(library).to_not be_valid
+      expect(library.errors[:keyword]).to be_present
+    end
+
+    it "ist ungültig mit einem bereits vergebenen Namen" do
+      Library.create!(name: "Blues", keyword: "blues")
+      duplicate = Library.new(name: "Blues", keyword: "andere-blues")
+
+      expect(duplicate).to_not be_valid
+      expect(duplicate.errors[:name]).to be_present
+    end
+  end
 end

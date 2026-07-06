@@ -26,6 +26,7 @@ Rails.application.routes.draw do
     end
   end
   resources :artists, only: [:index, :show]
+  resources :libraries, except: [:show]
 
   get "help/:page", to: "help#show", as: :help
 
