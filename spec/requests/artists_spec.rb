@@ -115,5 +115,28 @@ RSpec.describe "Artists", type: :request do
         expect(Dir).to have_received(:children).with(TrackFileLocator.downloads_dir).at_most(:once)
       end
     end
+
+    it "verlinkt Sortier-Header auf die Artist-Seite selbst statt auf /tracks (Intent 63)" do
+      artist = create_artist_with_track
+
+      get artist_path(artist)
+
+      link = Nokogiri::HTML(response.body).css("thead th a").find { |a| a.text.start_with?("Dauer") }
+      expect(link[:href]).to eq(artist_path(artist, sort: "duration_ms", direction: "asc"))
+    end
+
+    it "sortiert die Tracks-Tabelle nach der gewählten Spalte und Richtung (Intent 63)" do
+      album = Album.create!(name: "Album", spotify_id: "alb-s2")
+      artist = Artist.create!(name: "Artist Sort", spotify_id: "art-s2")
+      # In Erstellungsreihenfolge (B vor A) angelegt, damit ein Test, der ohne echte Sortierung
+      # zufaellig durch die natuerliche DB-Reihenfolge "besteht", hier tatsaechlich rot wird.
+      Track.create!(name: "B Track", spotify_id: "trk-s2-b", album: album, artists: [artist], duration_ms: 200_000)
+      Track.create!(name: "A Track", spotify_id: "trk-s2-a", album: album, artists: [artist], duration_ms: 100_000)
+
+      get artist_path(artist, sort: "name", direction: "asc")
+
+      names = Nokogiri::HTML(response.body).css("tbody tr th a").map(&:text)
+      expect(names).to eq(["A Track", "B Track"])
+    end
   end
 end

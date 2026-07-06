@@ -7,7 +7,7 @@ module TracksHelper
     query = request.query_parameters.merge("sort" => column, "direction" => next_direction).except("page")
     indicator = sort_indicator(active)
 
-    link_to("#{label}#{indicator}", tracks_path(query))
+    link_to("#{label}#{indicator}", url_for(query))
   end
 
   def genre_badge(genre)

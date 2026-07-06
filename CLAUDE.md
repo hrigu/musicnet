@@ -275,6 +275,16 @@ page scroll now resets to top on every action (advance is handled like a real vi
 scroll reset) where it previously stayed put — negligible for search/sort (controls sit at the
 top already) and only noticeable when paginating (links sit below the table).
 
+**Shared sort headers (`tracks/_tracks.erb`, `TracksHelper#sort_link`, bug fix Intent 63):**
+`sort_link` links via `url_for(query)`, not a hardcoded `tracks_path(query)` — this partial is
+also rendered by `artists#show` (`Artist.for_show(@artist).sorted(...)`, same `Track.sorted`/
+`SORT_COLUMNS` whitelist as here), and `url_for` in a view fills in whatever's missing from the
+given Hash (controller/action, path params like an artist's `:id`) from the current request, so a
+click stays on whichever page rendered it — `/tracks` stays `/tracks`, `/artists/:id` stays
+`/artists/:id` — without `sort_link` needing to know which page it's on. Before this fix, a sort
+click from `artists#show` always navigated away to `/tracks` and, since `artists#show` didn't
+apply `sort`/`direction` at all, wouldn't even have sorted anything if it had stayed.
+
 Query params:
 - `q` — a small DSL (`Track.search_query`, Intent 43), not just plain full-text. Tokens are
   whitespace-separated; a bare word (no `field:`) is free text, matched exactly like the old

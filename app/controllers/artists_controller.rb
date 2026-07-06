@@ -8,7 +8,7 @@ class ArtistsController < ApplicationController
 
   def show
     @artist = Artist.find(params[:id])
-    @tracks = Artist.for_show(@artist)
+    @tracks = Artist.for_show(@artist).sorted(params[:sort], params[:direction])
     Track.preload_track_paths(@tracks)
     @albums = Artist.albums_for_show(@artist)
   end
