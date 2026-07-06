@@ -22,8 +22,16 @@ export default class extends Controller {
       channel: "main", lifecycle: "connect", timestamp: new Date().toISOString(),
     })
     this.handlePlayEvent = this.handlePlayEvent.bind(this)
-    this.handleAudioPlay = () => (this.iconTarget.textContent = "⏸")
-    this.handleAudioPause = () => (this.iconTarget.textContent = "▶")
+    this.handleToggleEvent = this.toggle.bind(this)
+    this.broadcastState = this.broadcastState.bind(this)
+    this.handleAudioPlay = () => {
+      this.iconTarget.textContent = "⏸"
+      this.broadcastState()
+    }
+    this.handleAudioPause = () => {
+      this.iconTarget.textContent = "▶"
+      this.broadcastState()
+    }
     this.handleAudioEnded = () => this.playNextInQueue()
     this.handleTimeUpdate = () => this.updateProgress()
     this.handleLoadedMetadata = () => this.updateDuration()
@@ -32,6 +40,7 @@ export default class extends Controller {
     this.handleDiagnosticEvent = (event) => this.logDiagnostic(event)
 
     document.addEventListener("audio-player:play", this.handlePlayEvent)
+    document.addEventListener("audio-player:toggle", this.handleToggleEvent)
 
     this.audioTarget.addEventListener("play", this.handleAudioPlay)
     this.audioTarget.addEventListener("pause", this.handleAudioPause)
@@ -50,6 +59,7 @@ export default class extends Controller {
       channel: "main", lifecycle: "disconnect", timestamp: new Date().toISOString(),
     })
     document.removeEventListener("audio-player:play", this.handlePlayEvent)
+    document.removeEventListener("audio-player:toggle", this.handleToggleEvent)
 
     this.audioTarget.removeEventListener("play", this.handleAudioPlay)
     this.audioTarget.removeEventListener("pause", this.handleAudioPause)
@@ -74,6 +84,17 @@ export default class extends Controller {
 
   handlePlayEvent(event) {
     this.play(event.detail)
+  }
+
+  // Informiert die Zeilen-Play-Buttons (audio_trigger_controller.js) darueber, welcher Track
+  // gerade im Hauptkanal spielt, damit genau dieser Button gruen mit Pause-Symbol angezeigt
+  // werden kann (Intent 62, gleiches Muster wie cue_player_controller.js#broadcastState).
+  broadcastState() {
+    document.dispatchEvent(
+      new CustomEvent("audio-player:state", {
+        detail: { url: this.audioTarget.src, playing: !this.audioTarget.paused },
+      })
+    )
   }
 
   async playNextInQueue() {

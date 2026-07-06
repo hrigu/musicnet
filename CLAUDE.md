@@ -383,8 +383,10 @@ element anymore — they carry a tiny `audio-trigger` Stimulus controller that o
 `audio-player:play` event (`{ url, name }`) on `document`; the single `audio-player` controller
 instance on the persistent bar listens for that event and does the actual `src`/play switch. This
 event-based decoupling avoids needing a direct reference (e.g. a Stimulus outlet) between
-controllers that live in unrelated parts of the DOM. Row buttons always show "▶" — play/pause
-state is only ever shown in the global bar, avoiding needing to sync state across every row.
+controllers that live in unrelated parts of the DOM. Row buttons originally always showed "▶"
+regardless of playback state, to avoid needing to sync state across every row — reversed for the
+main channel in Intent 62, see "Live row state" below (the cue channel already broke this rule
+earlier, in Intent 51 Nachtrag).
 **Seeking (`TracksController#stream`):** plain `send_file` only ever returns the full file
 (`ActionDispatch::Response::FileBody`, no partial-content handling) unless a reverse proxy adds
 `X-Sendfile`/`X-Accel-Redirect` support, which this single-user local app doesn't have — so
@@ -485,6 +487,24 @@ later Drive visit alike, so reading the live audio state there is race-free. An 
 this used a request/response event pair (row asks, cue player answers) instead of a direct DOM
 read; same race, since the request could equally be dispatched before the answering listener was
 back in the live document — direct-DOM-read-on-`turbo:load` was the version that actually held up.
+
+**Live row state for the main channel + fehlmanipulation guard (Intent 62):** the DJ asked to see
+which track is playing on the main/dancefloor channel directly in the row list (not just the
+persistent bar), plus protection against an accidental click stopping or replacing a live track.
+Extends exactly the Intent 51 Nachtrag mechanism above to `audio_trigger_controller.js`'s `"play"`
+mode (green `btn-success` + "⏸" instead of red `btn-danger` + "⏸", same `applyPlayState`/
+`handlePlayState`/turbo:load-resync structure as the cue channel's `applyCueState`/`handleCueState`
+— `audio_player_controller.js` gained its own `broadcastState()` on the same `play`/`pause`
+listeners that already drove the bottom bar's icon, mirroring `cue_player_controller.js`'s existing
+`broadcastState()`). Unlike the cue channel, clicking an already-active row button does **not**
+just toggle — `audio-trigger#play` first does a live, uncached
+`document.querySelector('[data-audio-player-target="audio"]')` read: if *this* row is the active
+track, a native `confirm()` gates pausing it (accepting dispatches a new `audio-player:toggle`
+event, which `audio_player_controller.js` wires straight to its existing `toggle()` — the same
+method the bar's own Play/Pause button already calls); if the main channel is playing a *different*
+track, `confirm()` gates switching to this one; if nothing is playing, it plays immediately with no
+dialog. System specs drive the native dialog via Capybara's `accept_confirm`/`dismiss_confirm`
+(supported out of the box by Cuprite).
 
 **Song queue (Intent 41, moved to the DB in Intent 42):** builds on the persistent player above.
 Originally a pure client-side JS array on the permanent element (Intent 41) — moved to a real

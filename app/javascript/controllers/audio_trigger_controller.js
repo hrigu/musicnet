@@ -9,42 +9,75 @@ import { Controller } from "@hotwired/stimulus"
 export default class extends Controller {
   static values = { url: String, name: String, mode: { type: String, default: "play" } }
 
-  // Nur Vorhoer-Buttons (mode: "cue") zeigen den Live-Zustand (Intent 51 Nachtrag) - Play-Buttons
-  // bleiben laut CLAUDE.md-Vorgabe bewusst immer "▶", kein Zustand pro Zeile.
+  // Beide Modi zeigen den Live-Zustand (Play seit Intent 62, Cue seit Intent 51 Nachtrag) -
+  // gruen+Pause fuer den Hauptkanal, rot+Pause fuer den Vorhoerkanal.
   //
   // Sync auf turbo:load statt (nur) beim Verbinden (Nachtrag): waehrend einer Turbo-Drive-
-  // Navigation verbinden sich die neuen Zeilen-Buttons, BEVOR das permanente Cue-Player-Element
+  // Navigation verbinden sich die neuen Zeilen-Buttons, BEVOR das permanente Player-Element
   // wieder in das neue Dokument eingehaengt ist - ein direkter DOM-Read zum Zeitpunkt von
   // connect() findet das <audio>-Element daher manchmal noch gar nicht (empirisch verifiziert).
   // turbo:load feuert erst, wenn Turbo die Seite inkl. aller permanenten Elemente fertig
   // gerendert hat, und deckt sowohl den allerersten Seitenaufruf als auch jede weitere
   // Drive-Navigation ab.
   connect() {
-    if (this.modeValue !== "cue") return
-
     this.isActiveCueTrack = false
-    this.handleCueState = this.handleCueState.bind(this)
-    this.syncInitialCueState = this.syncInitialCueState.bind(this)
-    document.addEventListener("cue-player:state", this.handleCueState)
-    document.addEventListener("turbo:load", this.syncInitialCueState)
-    this.syncInitialCueState()
+    this.isActivePlayTrack = false
+    this.syncInitialState = this.syncInitialState.bind(this)
+    document.addEventListener("turbo:load", this.syncInitialState)
+
+    if (this.modeValue === "cue") {
+      this.handleCueState = this.handleCueState.bind(this)
+      document.addEventListener("cue-player:state", this.handleCueState)
+    } else {
+      this.handlePlayState = this.handlePlayState.bind(this)
+      document.addEventListener("audio-player:state", this.handlePlayState)
+    }
+
+    this.syncInitialState()
   }
 
   disconnect() {
-    if (this.modeValue !== "cue") return
+    document.removeEventListener("turbo:load", this.syncInitialState)
 
-    document.removeEventListener("cue-player:state", this.handleCueState)
-    document.removeEventListener("turbo:load", this.syncInitialCueState)
+    if (this.modeValue === "cue") {
+      document.removeEventListener("cue-player:state", this.handleCueState)
+    } else {
+      document.removeEventListener("audio-player:state", this.handlePlayState)
+    }
   }
 
-  syncInitialCueState() {
-    const cueAudio = document.querySelector('[data-cue-player-target="audio"]')
-    if (!cueAudio) return
+  syncInitialState() {
+    if (this.modeValue === "cue") {
+      const cueAudio = document.querySelector('[data-cue-player-target="audio"]')
+      if (!cueAudio) return
 
-    this.applyCueState(cueAudio.src, !cueAudio.paused)
+      this.applyCueState(cueAudio.src, !cueAudio.paused)
+    } else {
+      const mainAudio = document.querySelector('[data-audio-player-target="audio"]')
+      if (!mainAudio) return
+
+      this.applyPlayState(mainAudio.src, !mainAudio.paused)
+    }
   }
 
+  // Schutz vor Fehlmanipulation waehrend einer laufenden Hauptkanal-Wiedergabe (Intent 62) - ein
+  // Fehlklick soll den Dancefloor nicht versehentlich stoppen oder umschalten. Direkter, lebender
+  // DOM-Read des Hauptkanal-<audio>-Elements statt eines gecachten Werts, damit der Zustand im
+  // Klickmoment garantiert aktuell ist.
   play() {
+    const mainAudio = document.querySelector('[data-audio-player-target="audio"]')
+
+    if (this.isActivePlayTrack) {
+      if (!confirm("Laufende Wiedergabe wirklich pausieren?")) return
+
+      document.dispatchEvent(new CustomEvent("audio-player:toggle"))
+      return
+    }
+
+    if (mainAudio && !mainAudio.paused) {
+      if (!confirm(`Laufenden Song stoppen und "${this.nameValue}" abspielen?`)) return
+    }
+
     document.dispatchEvent(
       new CustomEvent("audio-player:play", { detail: { url: this.urlValue, name: this.nameValue } })
     )
@@ -69,6 +102,10 @@ export default class extends Controller {
     this.applyCueState(event.detail.url, event.detail.playing)
   }
 
+  handlePlayState(event) {
+    this.applyPlayState(event.detail.url, event.detail.playing)
+  }
+
   applyCueState(url, playing) {
     const resolvedUrl = new URL(this.urlValue, window.location.origin).href
     const isActive = url === resolvedUrl && playing
@@ -77,5 +114,15 @@ export default class extends Controller {
     this.element.classList.toggle("btn-danger", isActive)
     this.element.classList.toggle("btn-outline-secondary", !isActive)
     this.element.textContent = isActive ? "⏸" : "🎧"
+  }
+
+  applyPlayState(url, playing) {
+    const resolvedUrl = new URL(this.urlValue, window.location.origin).href
+    const isActive = url === resolvedUrl && playing
+    this.isActivePlayTrack = isActive
+
+    this.element.classList.toggle("btn-success", isActive)
+    this.element.classList.toggle("btn-outline-secondary", !isActive)
+    this.element.textContent = isActive ? "⏸" : "▶"
   }
 }
