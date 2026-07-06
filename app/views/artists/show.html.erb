@@ -2,22 +2,22 @@
 
 <%= render 'tracks/tracks', tracks: @tracks %>
 
-
-<table class="table caption-top">
-  <caption>Alben</caption>
-  <thead>
-  <tr>
-    <th scope="col">Name</th>
-    <th scope="col">Release Date</th>
-    <th scope="col">Bekanntheit</th>
-    <th scope="col">Tracks</th>
-    <th scope="col">URL</th>
-    <th scope="col">Künstler</th>
-    <%# p.album.genres.join(", ") Teuer!!%>
-  </tr>
-  </thead>
-  <tbody>
-  <%= render @albums %>
-  </tbody>
-</table>
+<h2 class="mt-4">Alben</h2>
+<div class="table-responsive rounded border">
+  <table class="table table-hover align-middle mb-0 table-tracks table-tracks-detailed">
+    <thead class="table-light">
+    <tr>
+      <th scope="col">Name</th>
+      <th scope="col">Release Date</th>
+      <th scope="col">Bekanntheit</th>
+      <th scope="col">Tracks</th>
+      <th scope="col">Künstler</th>
+      <th scope="col">Spotify</th>
+    </tr>
+    </thead>
+    <tbody>
+    <%= render @albums %>
+    </tbody>
+  </table>
+</div>
 

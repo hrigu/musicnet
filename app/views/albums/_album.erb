@@ -1,20 +1,27 @@
 <%# Repräsentiert einen Eintrag in der Tabelle %>
 <tr>
   <th scope="row"><%= album.name %></th>
-  <td> <%= if album.release_date.present? then
-             l(album.release_date)
-           end %> </td>
-  <td><%= album.popularity %></td>
-  <td>
-    <% album.tracks.each do |t| %>
-      <%= link_to t.name, track_path(t.id) %>
-    <% end %>
+  <td class="text-muted">
+    <%= l(album.release_date) if album.release_date.present? %>
   </td>
-
-  <td><a href="<%= album.url %>">zu Spotify</a></td>
+  <td><%= track_meter(album.popularity, variant: "info") %></td>
   <td>
-    <% album.artists.each do |a| %>
-      <%= link_to(a.name, artist_path(a.id)) %>
-    <% end %>
+    <div class="d-flex flex-wrap gap-2">
+      <% album.tracks.each do |t| %>
+        <%= link_to t.name, track_path(t.id), class: "badge rounded-pill text-bg-light border text-truncate",
+                    style: "max-width: 160px;" %>
+      <% end %>
+    </div>
+  </td>
+  <td>
+    <div class="d-flex flex-wrap gap-2">
+      <% album.artists.each do |a| %>
+        <%= link_to a.name, artist_path(a.id), class: "badge rounded-pill text-bg-light border text-truncate",
+                    style: "max-width: 160px;" %>
+      <% end %>
+    </div>
+  </td>
+  <td>
+    <%= link_to "↗", album.url, target: "_blank", rel: "noopener", title: "Zu Spotify" %>
   </td>
 </tr>

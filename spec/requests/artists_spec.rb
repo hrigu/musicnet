@@ -138,5 +138,101 @@ RSpec.describe "Artists", type: :request do
       names = Nokogiri::HTML(response.body).css("tbody tr th a").map(&:text)
       expect(names).to eq(["A Track", "B Track"])
     end
+
+    it "zeigt 'Alben' als Ueberschrift statt als Tabellen-Caption (Intent 65)" do
+      artist = create_artist_with_track
+
+      get artist_path(artist)
+
+      html = Nokogiri::HTML(response.body)
+      aggregate_failures do
+        expect(html.css("h2").map(&:text)).to include("Alben")
+        expect(html.css("caption")).to be_empty
+      end
+    end
+
+    it "sortiert die Alben absteigend nach Release Date (Intent 65)" do
+      artist = Artist.create!(name: "Artist Albums Sort", spotify_id: "art-alb-sort")
+      old_album = Album.create!(name: "Altes Album", spotify_id: "alb-sort-old", release_date: Date.new(2000, 1, 1))
+      new_album = Album.create!(name: "Neues Album", spotify_id: "alb-sort-new", release_date: Date.new(2020, 1, 1))
+      Track.create!(name: "Track Alt", spotify_id: "trk-sort-old", album: old_album, artists: [artist],
+                    duration_ms: 200_000)
+      Track.create!(name: "Track Neu", spotify_id: "trk-sort-new", album: new_album, artists: [artist],
+                    duration_ms: 200_000)
+
+      get artist_path(artist)
+
+      names = Nokogiri::HTML(response.body).css("table.table-tracks-detailed").last.css("tbody tr th").map do |th|
+        th.text.squish
+      end
+      expect(names).to eq(["Neues Album", "Altes Album"])
+    end
+
+    it "zeigt die Album-Bekanntheit als Meter statt als nackte Zahl (Intent 65)" do
+      artist = Artist.create!(name: "Artist Album Meter", spotify_id: "art-alb-meter")
+      album = Album.create!(name: "Album Meter", spotify_id: "alb-meter", popularity: 55)
+      Track.create!(name: "Track", spotify_id: "trk-alb-meter", album: album, artists: [artist], duration_ms: 200_000)
+
+      get artist_path(artist)
+
+      html = Nokogiri::HTML(response.body)
+      albums_table = html.css("table.table-tracks-detailed").last
+      expect(albums_table.at_css(".track-meter .progress-bar")).to be_present
+    end
+
+    it "verlinkt Spotify als Symbol in der letzten Spalte mit neuem Tab (Intent 65)" do
+      artist = Artist.create!(name: "Artist Album Spotify", spotify_id: "art-alb-spotify")
+      album = Album.create!(name: "Album Spotify", spotify_id: "alb-spotify", url: "https://open.spotify.com/album/x")
+      Track.create!(name: "Track", spotify_id: "trk-alb-spotify", album: album, artists: [artist],
+                    duration_ms: 200_000)
+
+      get artist_path(artist)
+
+      html = Nokogiri::HTML(response.body)
+      albums_table = html.css("table.table-tracks-detailed").last
+      row = albums_table.at_css("tbody tr")
+      cells = row.css("th, td")
+      spotify_link = cells.last.at_css("a")
+      aggregate_failures do
+        expect(spotify_link[:href]).to eq("https://open.spotify.com/album/x")
+        expect(spotify_link.text.strip).to eq("↗")
+        expect(spotify_link[:target]).to eq("_blank")
+        expect(response.body).to_not include("zu Spotify")
+      end
+    end
+
+    it "zeigt den vollen Album-Namen ohne kuenstliche Kuerzung (Intent 65 Nachtrag)" do
+      album = Album.create!(name: "Ein ziemlich langer, aber vollstaendig lesbarer Album-Titel", 
+spotify_id: "alb-fullname")
+      artist = Artist.create!(name: "Artist Full Name", spotify_id: "art-fullname")
+      Track.create!(name: "Track", spotify_id: "trk-fullname", album: album, artists: [artist], duration_ms: 200_000)
+
+      get artist_path(artist)
+
+      html = Nokogiri::HTML(response.body)
+      albums_table = html.css("table.table-tracks-detailed").last
+      name_cell = albums_table.at_css("tbody tr th")
+      expect(name_cell.text.squish).to eq("Ein ziemlich langer, aber vollstaendig lesbarer Album-Titel")
+    end
+
+    it "zeigt Tracks und Künstler des Albums als unterscheidbare Chips statt als Fliesstext (Intent 65 Nachtrag)" do
+      artist = Artist.create!(name: "Artist Chips", spotify_id: "art-chips")
+      album = Album.create!(name: "Album Chips", spotify_id: "alb-chips")
+      Track.create!(name: "Track Eins", spotify_id: "trk-chips-1", album: album, artists: [artist],
+                    duration_ms: 200_000)
+      Track.create!(name: "Track Zwei", spotify_id: "trk-chips-2", album: album, artists: [artist],
+                    duration_ms: 200_000)
+
+      get artist_path(artist)
+
+      html = Nokogiri::HTML(response.body)
+      albums_table = html.css("table.table-tracks-detailed").last
+      row = albums_table.at_css("tbody tr")
+      tracks_cell, artists_cell = row.css("td")[2, 2]
+      aggregate_failures do
+        expect(tracks_cell.css("a.badge").map(&:text)).to eq(["Track Eins", "Track Zwei"])
+        expect(artists_cell.css("a.badge").map(&:text)).to eq(["Artist Chips"])
+      end
+    end
   end
 end

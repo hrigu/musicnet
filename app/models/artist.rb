@@ -16,7 +16,7 @@ class Artist < ApplicationRecord
   end
 
   def self.albums_for_show(artist)
-    artist.albums.preload(:tracks, :artists).strict_loading
+    artist.albums.preload(:tracks, :artists).order(release_date: :desc).strict_loading
   end
 
   # Die Playlists aller Künstler auf einmal, gruppiert nach Künstler-ID — eine Query für
