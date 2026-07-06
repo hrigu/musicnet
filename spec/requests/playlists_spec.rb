@@ -143,6 +143,49 @@ RSpec.describe "Playlists", type: :request do
       expect(response).to have_http_status(:success)
     end
 
+    it "GET /playlists/:id/edit liefert Erfolg mit Farbwaehler (Intent 71)" do
+      get edit_playlist_path(playlists(:dark))
+
+      aggregate_failures do
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('type="color"')
+      end
+    end
+
+    it "GET /playlists/:id/edit zeigt die eigene Farbe im Farbwaehler vorbefuellt (Intent 71 Nachtrag)" do
+      playlist = playlists(:dark)
+      playlist.update!(color: "#3366cc")
+
+      get edit_playlist_path(playlist)
+
+      expect(response.body).to include('value="#3366cc"')
+    end
+
+    it "GET /playlists/:id/edit zeigt ohne eigene Farbe die tatsaechliche Automatik-Farbe, nicht Schwarz (Intent 71 Nachtrag)" do
+      playlist = playlists(:dark)
+
+      get edit_playlist_path(playlist)
+
+      expect(response.body).to_not include('value="#000000"')
+    end
+
+    it "PATCH /playlists/:id speichert eine eigene Farbe (Intent 71)" do
+      playlist = playlists(:dark)
+
+      patch playlist_path(playlist), params: { playlist: { color: "#3366cc" } }
+
+      expect(playlist.reload.color).to eq("#3366cc")
+    end
+
+    it "PATCH /playlists/:id setzt die Farbe wieder auf automatisch zurueck (Intent 71)" do
+      playlist = playlists(:dark)
+      playlist.update!(color: "#3366cc")
+
+      patch playlist_path(playlist), params: { playlist: { color: "" } }
+
+      expect(playlist.reload.color).to be_blank
+    end
+
     it "GET /playlists/:id bleibt für einen anderen eingeloggten User sichtbar" do
       sign_out users(:one)
       sign_in users(:two)

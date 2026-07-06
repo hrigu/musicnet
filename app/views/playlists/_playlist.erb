@@ -1,9 +1,7 @@
 <tr>
 
   <td>
-    <%= link_to playlist_path(playlist.id) do %>
-      <span class="badge <%= playlist_color_class(playlist) %>"><%= playlist_short_name(playlist) %></span>
-    <% end %>
+    <%= link_to playlist_badge(playlist), playlist_path(playlist.id) %>
   </td>
   <td><%= playlist.public ? "öffentlich" : "privat" %></td>
   <td><%= playlist.tracks_count %> (<%= downloaded_tracks_count(playlist) %>)</td>

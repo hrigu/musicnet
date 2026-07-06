@@ -1,4 +1,8 @@
 <%= bootstrap_form_for(@playlist) do |f| %>
   <%= f.text_field :name %>
+  <%= f.color_field :color, value: playlist_preview_color(@playlist) %>
   <%= f.submit "save" %>
 <% end %>
+
+<%= button_to "Automatische Farbe verwenden", playlist_path(@playlist), method: :patch,
+              params: { playlist: { color: "" } }, class: "btn btn-outline-secondary btn-sm mt-2" %>

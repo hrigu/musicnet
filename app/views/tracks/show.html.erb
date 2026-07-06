@@ -61,9 +61,7 @@
   <div class="d-flex flex-wrap gap-3">
     <% @track.playlist_tracks.each do |pt| %>
       <div class="d-flex align-items-center gap-2 border rounded-pill px-2 py-1">
-        <%= link_to playlist_path(pt.playlist.id) do %>
-          <span class="badge <%= playlist_color_class(pt.playlist) %>"><%= playlist_short_name(pt.playlist) %></span>
-        <% end %>
+        <%= link_to playlist_badge(pt.playlist), playlist_path(pt.playlist.id) %>
         <% if pt.added_at %>
           <span class="text-muted small"><%= l(pt.added_at.to_date) %></span>
         <% end %>

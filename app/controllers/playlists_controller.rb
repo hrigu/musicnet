@@ -44,7 +44,7 @@ class PlaylistsController < ApplicationController
 
   def update
     @playlist = Playlist.find(params[:id])
-    @playlist.save!
+    @playlist.update!(playlist_params)
     redirect_to playlists_path
   end
 
@@ -60,6 +60,12 @@ class PlaylistsController < ApplicationController
   end
 
   private
+
+  # :color leer ("") bedeutet "automatische Farbe" - Playlist#color.blank? behandelt das wie nil,
+  # kein Sonderfall noetig (Intent 71).
+  def playlist_params
+    params.require(:playlist).permit(:name, :color)
+  end
 
   RESOURCE_LABELS = { playlists: "Playlists", tracks: "Tracks", artists: "Artists", albums: "Alben" }.freeze
   ACTION_LABELS = { created: "neu", deleted: "gelöscht" }.freeze
