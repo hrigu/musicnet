@@ -8,7 +8,9 @@ RSpec.describe SpotifyPlaylistsGateway do
   let(:gateway) { described_class.new(user) }
 
   describe "#all" do
-    it "holt alle Seiten und filtert auf eigene Fusion-/Blues-Playlists" do
+    it "holt alle Seiten und filtert auf eigene Playlists, die einer Library entsprechen" do
+      Library.create!(name: "Fusion", keyword: "fusion")
+      Library.create!(name: "Blues", keyword: "blues")
       own_fusion = spotify_playlist(id: "pl-1", name: "Fusion Favorites", owner_id: "spotify-user-1")
       own_blues = spotify_playlist(id: "pl-2", name: "Blues Favorites", owner_id: "spotify-user-1")
       foreign = spotify_playlist(id: "pl-3", name: "Fusion Foreign", owner_id: "other-user")
@@ -22,6 +24,16 @@ RSpec.describe SpotifyPlaylistsGateway do
         .and_return([])
 
       expect(gateway.all).to contain_exactly(own_fusion, own_blues)
+    end
+
+    it "berücksichtigt frei konfigurierte Libraries, nicht nur Fusion/Blues" do
+      Library.create!(name: "Deep House", keyword: "house")
+      own_house = spotify_playlist(id: "pl-5", name: "Deep House Vibes", owner_id: "spotify-user-1")
+
+      allow(spotify_user).to receive(:playlists).with(limit: 50, offset: 0).and_return([own_house])
+      allow(spotify_user).to receive(:playlists).with(limit: 50, offset: 50).and_return([])
+
+      expect(gateway.all).to contain_exactly(own_house)
     end
   end
 

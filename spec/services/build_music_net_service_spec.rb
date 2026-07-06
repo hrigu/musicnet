@@ -5,6 +5,11 @@ require "rails_helper"
 RSpec.describe BuildMusicNetService do
   fixtures :users
 
+  before do
+    Library.create!(name: "Fusion", keyword: "fusion")
+    Library.create!(name: "Blues", keyword: "blues")
+  end
+
   let(:user) { users(:one) }
   let(:spotify_user_id) { "spotify-user-1" }
   let(:artist) { spotify_artist(id: "art1", name: "John Scofield") }
@@ -34,6 +39,25 @@ RSpec.describe BuildMusicNetService do
         expect(track_record.album.name).to eq("A Go Go")
         expect(track_record.artists.map(&:name)).to eq(["John Scofield"])
         expect(PlaylistTrack.find_by(playlist: playlist_record, track: track_record)).to be_present
+      end
+
+      it "ordnet die neu erstellte Playlist der passenden Library zu" do
+        BuildMusicNetService.new(user).build
+
+        playlist_record = Playlist.find_by(spotify_id: "pl1")
+
+        expect(playlist_record.libraries.map(&:name)).to eq(["Fusion"])
+      end
+
+      it "ordnet eine Playlist mehreren Libraries zu, wenn mehrere Stichwoerter passen" do
+        both_playlist = spotify_playlist(id: "pl-both", name: "Blues Fusion Night", owner_id: spotify_user_id,
+                                         tracks: [track])
+        stub_spotify_playlists([both_playlist])
+
+        BuildMusicNetService.new(user).build
+
+        playlist_record = Playlist.find_by(spotify_id: "pl-both")
+        expect(playlist_record.libraries.map(&:name)).to contain_exactly("Fusion", "Blues")
       end
 
       it "legt bei einem erneuten Lauf keine Duplikate an" do
@@ -108,6 +132,7 @@ RSpec.describe BuildMusicNetService do
           expect(playlist_record.snapshot_id).to eq("snap-neu")
           expect(playlist_record.tracks.map(&:name)).to eq(["Green Tea"])
           expect(Track.find_by(spotify_id: "trk1")).to be_nil
+          expect(playlist_record.libraries.map(&:name)).to eq(["Blues"])
         end
       end
     end

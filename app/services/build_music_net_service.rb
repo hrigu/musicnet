@@ -77,6 +77,7 @@ class BuildMusicNetService
       end
 
       playlist.update!(name: spot_playlist.name, snapshot_id: spot_playlist.snapshot_id)
+      assign_libraries(playlist)
       RefreshInfo.new(new_spot_tracks.map(&:name), removed_names)
     end
   end
@@ -109,11 +110,19 @@ class BuildMusicNetService
         p.name = spot_playlist.name
         p.public = spot_playlist.public
       end
+      assign_libraries(playlist)
 
       spot_tracks.each do |spot_track|
         build_track(playlist, spot_track, added_at: added_at_by_track_id[spot_track.id], prefetched: prefetched)
       end
     end
+  end
+
+  # Ordnet die Playlist allen Libraries zu, deren Stichwort im aktuellen Namen vorkommt (Intent
+  # 57) - eine Playlist kann mehreren Libraries gleichzeitig angehören. library_ids= gleicht die
+  # n:m-Zeilen automatisch ab (fuegt neue hinzu, entfernt nicht mehr passende).
+  def assign_libraries(playlist)
+    playlist.library_ids = Library.matching(playlist.name).map(&:id)
   end
 
   # Alben und Artists der lokal noch nicht vorhandenen Tracks gebündelt vorladen: wenige

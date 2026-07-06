@@ -8,7 +8,7 @@ class User < ApplicationRecord
          :omniauthable, omniauth_providers: %i[spotify]
 
   # Reiner Anzeige-Filter (Intent 54) - schraenkt ein, was auf Tracks/Playlists/Artists und in
-  # der Suche sichtbar ist. Bewusst getrennt von SpotifyPlaylistsGateway#owned_fusion_or_blues_playlist?,
+  # der Suche sichtbar ist. Bewusst getrennt von SpotifyPlaylistsGateway#owned_library_playlist?,
   # das weiterhin unveraendert bestimmt, was ueberhaupt von Spotify importiert wird - ein
   # Kategorie-Wechsel hier aendert nichts an der lokalen DB oder am naechsten Sync.
   ACTIVE_PLAYLIST_CATEGORIES = %w[all blues fusion].freeze

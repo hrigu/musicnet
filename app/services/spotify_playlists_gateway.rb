@@ -7,7 +7,7 @@ class SpotifyPlaylistsGateway
 
   def all
     fetch_pages(:playlists)
-      .select { |playlist| owned_fusion_or_blues_playlist?(playlist) }
+      .select { |playlist| owned_library_playlist?(playlist) }
   end
 
   def find(spotify_id)
@@ -115,7 +115,7 @@ class SpotifyPlaylistsGateway
     pages
   end
 
-  def owned_fusion_or_blues_playlist?(playlist)
-    playlist.owner.id == @spotify_user.id && /fusion|blues/i.match?(playlist.name)
+  def owned_library_playlist?(playlist)
+    playlist.owner.id == @spotify_user.id && Library.matching(playlist.name).any?
   end
 end
