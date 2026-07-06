@@ -491,13 +491,36 @@ RSpec.describe Track, type: :model do
   end
 
   describe ".by_energy" do
-    it "filtert exakt bei einem einfachen Wert" do
+    it "filtert exakt bei einem einfachen Wert, auf derselben 0-100-Skala wie die Anzeige (Intent 70)" do
       album = Album.create!(name: "Album", spotify_id: "alb-energy")
       match = Track.create!(name: "A", spotify_id: "by-energy-a", album: album,
                             audio_features: { "energy" => 0.7 })
       Track.create!(name: "B", spotify_id: "by-energy-b", album: album, audio_features: { "energy" => 0.2 })
 
-      expect(described_class.by_energy(type: :contains, value: "0.7").to_a).to eq([match])
+      expect(described_class.by_energy(type: :contains, value: "70").to_a).to eq([match])
+    end
+
+    it "filtert mit einem Vergleichsoperator auf der 0-100-Skala (Intent 70)" do
+      album = Album.create!(name: "Album", spotify_id: "alb-energy-cmp")
+      high = Track.create!(name: "High", spotify_id: "by-energy-high", album: album,
+                           audio_features: { "energy" => 0.73 })
+      Track.create!(name: "Low", spotify_id: "by-energy-low", album: album, audio_features: { "energy" => 0.2 })
+
+      result = described_class.by_energy(type: :comparison, operator: ">", value: "50").to_a
+
+      expect(result).to eq([high])
+    end
+
+    it "filtert mit einem Bereich auf der 0-100-Skala (Intent 70)" do
+      album = Album.create!(name: "Album", spotify_id: "alb-energy-range")
+      low = Track.create!(name: "Low", spotify_id: "by-energy-range-low", album: album,
+                          audio_features: { "energy" => 0.2 })
+      Track.create!(name: "High", spotify_id: "by-energy-range-high", album: album,
+                    audio_features: { "energy" => 0.73 })
+
+      result = described_class.by_energy(type: :range, min: "0", max: "30").to_a
+
+      expect(result).to eq([low])
     end
   end
 

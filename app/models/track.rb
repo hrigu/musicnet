@@ -207,8 +207,11 @@ class Track < ApplicationRecord
     where(numeric_match_condition("json_extract(tracks.audio_features, '$.tempo')", match))
   end
 
+  # *100, da der rohe Essentia-Wert (0.0-1.0) skaliert wird, um auf derselben 0-100-Skala zu
+  # vergleichen wie die Anzeige (engergie_to_view) - sonst matcht z.B. "energy:>5" nie und
+  # "energy:0..30" matcht ausnahmslos jeden Track (Intent 70).
   def self.by_energy(match)
-    where(numeric_match_condition("json_extract(tracks.audio_features, '$.energy')", match))
+    where(numeric_match_condition("json_extract(tracks.audio_features, '$.energy') * 100", match))
   end
 
   def self.by_popularity(match)

@@ -35,7 +35,7 @@ verknüpfen" unten), z.B. `genre:blues OR genre:shuffle`.
 | `genre:` | `genre:jazz` |
 | `playlist:` | `playlist:"Fusion Abende"` |
 | `bpm:` / `tempo:` | `bpm:80..100` |
-| `energy:` | `energy:0.5..0.8` |
+| `energy:` | `energy:50..80` |
 | `popularity:` | `popularity:>50` |
 | `year:` / `release:` | `year:2015` |
 
