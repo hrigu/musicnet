@@ -96,10 +96,11 @@ users (separate: local login identity + holds serialized RSpotify::User via User
 Entry point: `PlaylistsController#fetch_all` → `BuildMusicNetService.new(current_user).build`.
 
 1. Fetches all of the current user's own Spotify playlists (paginated), filters to those whose name contains
-   "fusion" or "blues" (`SpotifyPlaylistsGateway#all`). This import filter is a fixed, hardcoded regex
-   (`owned_fusion_or_blues_playlist?`) and is **not** user-configurable — do not confuse it with the separate,
-   user-configurable *display* filter described under "Active category display filter" below, which affects
-   only what's shown, never what's imported.
+   the keyword of at least one configured `Library` (`SpotifyPlaylistsGateway#owned_library_playlist?`, Intent
+   57 — replaced a fixed, hardcoded `/fusion|blues/i` regex). This import filter is driven by `Library` records
+   the user manages themselves (see "Bibliotheken (Libraries)" below) — do not confuse it with that same
+   section's *display* filter, which affects only what's shown, never what's imported, even though both key
+   off the same `Library#keyword` values.
 2. Per playlist, compares the local `snapshot_id` with Spotify's (Spotify changes it on every playlist
    modification; delivered with the playlist list, no extra API call):
    - not present locally → created with all its tracks (`build_playlist`; `find_or_create_by!` for
@@ -140,39 +141,70 @@ anti-pattern that can silently fail to show feedback (Intent 37) — redirect-af
 renamed playlists **are** updated (step 2, changed snapshot), renamed tracks are not — a renamed track only
 corrects itself once the old row is orphaned and recreated.
 
-### Active category display filter (Intent 54)
+### Bibliotheken (Libraries) — configurable import/display filter (Intent 57, replaces Intent 54)
 
-The DJ plays both Blues and Fusion dance events and wanted a way to see just one at a time for a clearer
-overview — but explicitly **not** by changing what gets synced (they have many Spotify playlists and didn't
-want switching category to alter local data). This is a pure display-time filter, fully independent from the
-sync-time import filter in `SpotifyPlaylistsGateway` described above — the two look similar (both key off
-"fusion"/"blues" in a playlist name) but solve different problems and deliberately don't share code.
+The DJ has many Spotify playlists beyond just Fusion/Blues and wanted both the sync-time import filter and the
+display-time category filter to be user-configurable and open-ended, instead of two hardcoded categories baked
+into the code. `Library` (`name`, `keyword`) is the single model behind both: `Library.matching(playlist_name)`
+(the *only* place that does the case-insensitive keyword-in-name substring check) returns every `Library` whose
+`keyword` appears in a given playlist name — used both to decide what gets imported and which library(ies) a
+playlist belongs to. A playlist can belong to **multiple** libraries at once (`Playlist has_many :libraries,
+through: :library_playlists`, a real m:n join, not the single-select enum Intent 54 used) — e.g. a playlist
+named "Blues Fusion Night" matching both a "Blues" and a "Fusion" library's keyword.
 
-`User#active_playlist_category` (`"all"` default / `"blues"` / `"fusion"`, validated inclusion) drives
-`User#active_category_substring`, which returns `nil` for `"all"` or any unexpected/blank value (soft-failure:
-`nil` always means "no filter" to the scopes below, never an error) or else the plain substring `"blues"`/
-`"fusion"` — deliberately a substring match, not a real regex, since SQLite has no `REGEXP` support without a
-custom extension and a substring is all "blues"/"fusion"-in-the-name needs.
+**Import filter:** `SpotifyPlaylistsGateway#owned_library_playlist?` = owned by the current user AND
+`Library.matching(playlist.name).any?` — replaces the old hardcoded `/fusion|blues/i` regex, now fully driven
+by whatever `Library` rows exist.
 
-Three model scopes, all `in_active_category(substring)`, blank/nil substring → unchanged relation:
-- `Playlist.in_active_category` — direct `LOWER(name) LIKE ?`.
-- `Track.in_active_category` / `Artist.in_active_category` — same subquery-over-`where(id: ...)` pattern as
-  `Track.by_artist`/`by_playlist` (Intent 43): `Track` joins `:playlists` directly, `Artist` joins
-  `tracks: :playlists` (an artist counts as "in category X" if *any* of their tracks sits in a matching
-  playlist). The subquery shape matters here for the same reason it did in Intent 43 — it composes safely with
-  whatever other joins/conditions the base relation already carries (search, sorting, preloads) instead of
-  risking a join-fanout or an alias collision.
+**Automatic assignment during sync:** `BuildMusicNetService#assign_libraries(playlist)` sets
+`playlist.library_ids = Library.matching(playlist.name).map(&:id)` — Rails' `collection_ids=` diffs the m:n
+rows automatically (adds new, removes stale). Called at the end of both `build_playlist` (newly-imported
+playlist) and `sync_playlist_with_spotify` (so a rename on Spotify recomputes the assignment, same spot that
+already updates `name`/`snapshot_id`).
 
-Wired into `TracksController#index` (chained *after* `search_query`, so the DSL search — including an
-internal `OR` producing a unioned relation — still gets AND-ed with the category filter correctly),
-`PlaylistsController#index`, and `ArtistsController#index`. Changed via a small `SettingsController`
-(`resource :settings, only: %i[edit update]`, radio buttons, navbar "Einstellungen" link) — deliberately a
-full settings page rather than a navbar quick-toggle dropdown, since switching category isn't expected to
-happen many times per session.
+**Bibliotheken-Verwaltung (`LibrariesController`, `resources :libraries, except: [:show]`):** plain CRUD
+(name + keyword) with a "Bibliotheken" navbar entry. Deleting a `Library` nullifies any `User#active_library_id`
+pointing at it (`Library has_many :users, foreign_key: :active_library_id, dependent: :nullify`) so "Alle"
+(nil) is always a safe fallback state, never a dangling foreign key.
 
-A follow-up idea floated but explicitly deferred (not part of Intent 54): making the *import* filter itself
-configurable too (the DJ has many playlists beyond Fusion/Blues and may want to choose import patterns) — kept
-as a separate, later concern rather than conflated with this display filter.
+**Retroactive resync (manually discovered gap, fixed same intent):** the mechanisms above only ever fire during
+a Spotify sync (new import or a rename-triggered re-sync) — creating or editing a `Library` through the admin
+UI had **zero** effect on playlists already sitting in the local DB, since nothing about editing a `Library`
+itself triggers a sync. Confirmed the hard way: creating a "Salsadancers" library with keyword "salsa" showed
+zero matching playlists/tracks despite several already-imported "...Salsa..." playlists existing locally.
+Fixed by having `LibrariesController#create`/`#update` call `Library#resync_playlist_assignments!` right after
+a successful save — iterates every local `Playlist` and adds/removes *this one* library's join row depending
+on whether its keyword currently matches the name, using the same match predicate as everywhere else. Note this
+only fires on an actual create/edit of the `Library` record; merely selecting an already-existing, already-fully-
+synced library as the active display filter in Settings never needed this (nothing about its assignments would
+be stale in that case).
+
+**Display filter:** `User#active_library` (`belongs_to :active_library, class_name: "Library", optional: true`
+— nil means "Alle", no filter; replaces Intent 54's `active_playlist_category` string enum +
+`active_category_substring`). Three model scopes, all `in_active_library(library_id)`, blank/nil id → unchanged
+relation:
+- `Playlist.in_active_library` — subquery `where(id: joins(:libraries).where(libraries: { id: library_id
+  }).select(:id))`.
+- `Track.in_active_library` / `Artist.in_active_library` — same subquery-over-`where(id: ...)` pattern as
+  `Track.by_artist`/`by_playlist` (Intent 43): `Track` joins `playlists: :libraries`, `Artist` joins
+  `tracks: { playlists: :libraries }` (an artist counts as "in library X" if *any* of their tracks sits in a
+  playlist belonging to that library). The subquery shape matters here for the same reason it did in Intent 43
+  — it composes safely with whatever other joins/conditions the base relation already carries (search, sorting,
+  preloads) instead of risking a join-fanout or an alias collision. The m:n join's unique index on
+  `[library_id, playlist_id]` means filtering by one specific `library_id` can never fan out into duplicate
+  rows here, even though the underlying relationship is m:n.
+
+Wired into `TracksController#index` (chained *after* `search_query`, so the DSL search — including an internal
+`OR` producing a unioned relation — still gets AND-ed with the library filter correctly), `PlaylistsController
+#index` (also `.includes(:libraries)` there and in `Track.for_show`, since `playlists/_playlist.erb` — reused
+by both `playlists#index` and `tracks#show`'s "Playlists die diesen Track enthalten" table — renders
+`playlist.libraries.map(&:name)` and both call sites are `strict_loading`), `ArtistsController#index`, and
+`TrackQuerySuggestions` (Intent 55, playlist-/artist-/genre-suggestions). Changed via `SettingsController`
+(`resource :settings, only: %i[edit update]`, radio buttons built dynamically from `Library.order(:name)` plus
+a fixed "Alle" option, navbar "Einstellungen" link) — deliberately a full settings page rather than a navbar
+quick-toggle dropdown, since switching library isn't expected to happen many times per session. `playlists
+#index`/`#show` also list each playlist's library names directly (read-only — assignment is always automatic,
+never edited from the playlist side).
 
 ### Download flow
 
