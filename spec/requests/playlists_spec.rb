@@ -57,7 +57,7 @@ RSpec.describe "Playlists", type: :request do
 
       get playlists_path
 
-      names = Nokogiri::HTML(response.body).css("tbody tr td:nth-child(5) a").map(&:text)
+      names = Nokogiri::HTML(response.body).css("tbody tr td:nth-child(5)").map(&:text)
       expect(names).to include("RSpec Blues Session Idx")
       expect(names).to_not include("RSpec Fusion Abende Idx")
     end
@@ -108,6 +108,15 @@ RSpec.describe "Playlists", type: :request do
         expect(library_queries).to be <= 2
         expect(response.body).to include("Blues, Fusion")
       end
+    end
+
+    it "zeigt den vollen Playlist-Namen statt eines Download-Links (Intent 59)" do
+      playlist = Playlist.create!(spotify_id: "pl-name-idx", name: "RSpec Volle Namensanzeige")
+
+      get playlists_path
+
+      expect(response.body).to include("RSpec Volle Namensanzeige")
+      expect(response.body).to_not include(download_playlist_path(playlist))
     end
 
     it "GET /playlists/:id liefert Erfolg" do

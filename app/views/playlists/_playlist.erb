@@ -8,6 +8,6 @@
   <td><%= playlist.public ? "öffentlich" : "privat" %></td>
   <td><%= playlist.tracks_count %></td>
   <td><%= playlist.libraries.map(&:name).join(", ") %></td>
-  <td><%= link_to(playlist.name, download_playlist_path(playlist.id), data: { turbo_method: :post })  %></td>
+  <td><%= playlist.name %></td>
   <td><%= link_to("edit", edit_playlist_path(playlist))  %></td>
 </tr>
