@@ -202,8 +202,8 @@ RSpec.describe "Artists", type: :request do
     end
 
     it "zeigt den vollen Album-Namen ohne kuenstliche Kuerzung (Intent 65 Nachtrag)" do
-      album = Album.create!(name: "Ein ziemlich langer, aber vollstaendig lesbarer Album-Titel", 
-spotify_id: "alb-fullname")
+      album = Album.create!(name: "Ein ziemlich langer, aber vollstaendig lesbarer Album-Titel",
+                            spotify_id: "alb-fullname")
       artist = Artist.create!(name: "Artist Full Name", spotify_id: "art-fullname")
       Track.create!(name: "Track", spotify_id: "trk-fullname", album: album, artists: [artist], duration_ms: 200_000)
 
@@ -213,6 +213,17 @@ spotify_id: "alb-fullname")
       albums_table = html.css("table.table-tracks-detailed").last
       name_cell = albums_table.at_css("tbody tr th")
       expect(name_cell.text.squish).to eq("Ein ziemlich langer, aber vollstaendig lesbarer Album-Titel")
+    end
+
+    it "reserviert der Album-Name-Spalte mehr Tabellenbreite (Intent 65 Nachtrag)" do
+      artist = create_artist_with_track
+
+      get artist_path(artist)
+
+      html = Nokogiri::HTML(response.body)
+      albums_table = html.css("table.table-tracks-detailed").last
+      name_header = albums_table.at_css("thead th")
+      expect(name_header[:style]).to match(/width:\s*\d/)
     end
 
     it "zeigt Tracks und Künstler des Albums als unterscheidbare Chips statt als Fliesstext (Intent 65 Nachtrag)" do
