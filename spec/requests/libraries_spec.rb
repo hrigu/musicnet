@@ -83,6 +83,15 @@ RSpec.describe "Libraries", type: :request do
       expect(response).to redirect_to(libraries_path)
       expect(Library.find_by(id: library.id)).to be_nil
     end
+
+    it "setzt die aktive Bibliothek betroffener User auf 'Alle' zurück (Intent 57)" do
+      library = Library.create!(name: "Blues", keyword: "blues")
+      users(:one).update!(active_library: library)
+
+      delete library_path(library)
+
+      expect(users(:one).reload.active_library_id).to be_nil
+    end
   end
 
   describe "Navbar" do

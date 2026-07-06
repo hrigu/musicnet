@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_06_101249) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_06_113925) do
   create_table "albums", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name"
@@ -97,7 +97,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_06_101249) do
   end
 
   create_table "users", force: :cascade do |t|
-    t.string "active_playlist_category", default: "all", null: false
+    t.integer "active_library_id"
     t.datetime "created_at", null: false
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
@@ -108,6 +108,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_06_101249) do
     t.json "spotify_user_data"
     t.string "uid"
     t.datetime "updated_at", null: false
+    t.index ["active_library_id"], name: "index_users_on_active_library_id"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
@@ -118,4 +119,5 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_06_101249) do
   add_foreign_key "playlist_tracks", "tracks", on_delete: :cascade
   add_foreign_key "queue_entries", "tracks"
   add_foreign_key "tracks", "albums", on_delete: :cascade
+  add_foreign_key "users", "libraries", column: "active_library_id"
 end

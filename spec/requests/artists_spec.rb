@@ -25,8 +25,9 @@ RSpec.describe "Artists", type: :request do
       expect(response).to have_http_status(:success)
     end
 
-    it "zeigt nur Artists der aktiven Kategorie, wenn eine gesetzt ist (Intent 54)" do
-      users(:one).update!(active_playlist_category: "blues")
+    it "zeigt nur Artists der aktiven Bibliothek, wenn eine gesetzt ist (Intent 57)" do
+      blues = Library.create!(name: "Blues", keyword: "blues")
+      users(:one).update!(active_library: blues)
       album = Album.create!(name: "Album", spotify_id: "alb-cat")
       blues_artist = Artist.create!(name: "RSpec Blues Artist Idx", spotify_id: "art-cat-idx-blues")
       fusion_artist = Artist.create!(name: "RSpec Fusion Artist Idx", spotify_id: "art-cat-idx-fusion")
@@ -36,6 +37,7 @@ RSpec.describe "Artists", type: :request do
                                    artists: [fusion_artist], duration_ms: 200_000)
       blues_playlist = Playlist.create!(name: "RSpec Blues Session Idx", spotify_id: "pl-cat-idx-art-blues")
       fusion_playlist = Playlist.create!(name: "RSpec Fusion Abende Idx", spotify_id: "pl-cat-idx-art-fusion")
+      blues_playlist.libraries << blues
       PlaylistTrack.create!(playlist: blues_playlist, track: blues_track, added_at: Time.current)
       PlaylistTrack.create!(playlist: fusion_playlist, track: fusion_track, added_at: Time.current)
 

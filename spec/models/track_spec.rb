@@ -437,30 +437,33 @@ RSpec.describe Track, type: :model do
     end
   end
 
-  describe ".in_active_category (Intent 54)" do
+  describe ".in_active_library (Intent 57)" do
     def create_track(name:, spotify_id:)
       album = Album.create!(name: "Album", spotify_id: "alb-#{spotify_id}")
       Track.create!(name: name, spotify_id: spotify_id, album: album)
     end
 
-    def add_to_playlist(track, playlist_name:, spotify_id:)
+    def add_to_playlist(track, playlist_name:, spotify_id:, library: nil)
       playlist = Playlist.find_or_create_by!(name: playlist_name) { |p| p.spotify_id = spotify_id }
+      playlist.libraries << library if library
       PlaylistTrack.create!(playlist: playlist, track: track, added_at: Time.current)
     end
 
-    it "liefert die unveraenderte Relation, wenn kein Substring uebergeben wird (Kategorie 'all')" do
+    it "liefert die unveraenderte Relation, wenn keine Library-Id uebergeben wird" do
       create_track(name: "A", spotify_id: "cat-all-a")
 
-      expect(described_class.in_active_category(nil).count).to eq(described_class.count)
+      expect(described_class.in_active_library(nil).count).to eq(described_class.count)
     end
 
-    it "findet nur Tracks aus Playlists, die den Substring enthalten" do
+    it "findet nur Tracks aus Playlists, die der gegebenen Library zugeordnet sind" do
+      blues = Library.create!(name: "Blues", keyword: "blues")
+      Library.create!(name: "Fusion", keyword: "fusion")
       blues_track = create_track(name: "A", spotify_id: "cat-blues-a")
-      add_to_playlist(blues_track, playlist_name: "RSpec Blues Session Cat", spotify_id: "pl-cat-blues")
+      add_to_playlist(blues_track, playlist_name: "RSpec Blues Session Cat", spotify_id: "pl-cat-blues", library: blues)
       fusion_track = create_track(name: "B", spotify_id: "cat-fusion-b")
       add_to_playlist(fusion_track, playlist_name: "RSpec Fusion Abende Cat", spotify_id: "pl-cat-fusion")
 
-      expect(described_class.in_active_category("blues").to_a).to eq([blues_track])
+      expect(described_class.in_active_library(blues.id).to_a).to eq([blues_track])
     end
   end
 

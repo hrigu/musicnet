@@ -225,15 +225,16 @@ RSpec.describe "Tracks", type: :request do
     end
   end
 
-  describe "GET /tracks - Aktive Kategorie (Intent 54)" do
-    def create_track_in_playlist(name:, spotify_id:, playlist_name:, playlist_spotify_id:)
+  describe "GET /tracks - Aktive Bibliothek (Intent 57)" do
+    def create_track_in_playlist(name:, spotify_id:, playlist_name:, playlist_spotify_id:, library: nil)
       track = create_track(name: name, spotify_id: spotify_id)
       playlist = Playlist.find_or_create_by!(name: playlist_name) { |p| p.spotify_id = playlist_spotify_id }
+      playlist.libraries << library if library
       PlaylistTrack.create!(playlist: playlist, track: track, added_at: Time.current)
       track
     end
 
-    it "zeigt alle Tracks, wenn die Kategorie 'all' ist (Standard)" do
+    it "zeigt alle Tracks, wenn keine Bibliothek aktiv ist (Standard = 'Alle')" do
       create_track_in_playlist(name: "RSpec Blues Cat A", spotify_id: "cat-idx-a",
                                playlist_name: "RSpec Blues Session Idx", playlist_spotify_id: "pl-cat-idx-blues")
       create_track_in_playlist(name: "RSpec Fusion Cat B", spotify_id: "cat-idx-b",
@@ -245,10 +246,12 @@ RSpec.describe "Tracks", type: :request do
       expect(names).to contain_exactly("RSpec Blues Cat A", "RSpec Fusion Cat B")
     end
 
-    it "zeigt nur Tracks aus Playlists der aktiven Kategorie, kombiniert mit Suche" do
-      users(:one).update!(active_playlist_category: "blues")
+    it "zeigt nur Tracks aus Playlists der aktiven Bibliothek, kombiniert mit Suche" do
+      blues = Library.create!(name: "Blues", keyword: "blues")
+      users(:one).update!(active_library: blues)
       create_track_in_playlist(name: "RSpec Blues Cat Match", spotify_id: "cat-idx-match",
-                               playlist_name: "RSpec Blues Session Idx2", playlist_spotify_id: "pl-cat-idx2-blues")
+                               playlist_name: "RSpec Blues Session Idx2", playlist_spotify_id: "pl-cat-idx2-blues",
+                               library: blues)
       create_track_in_playlist(name: "RSpec Fusion Cat Miss", spotify_id: "cat-idx-miss",
                                playlist_name: "RSpec Fusion Abende Idx2", playlist_spotify_id: "pl-cat-idx2-fusion")
 
@@ -269,10 +272,12 @@ RSpec.describe "Tracks", type: :request do
       expect(response.parsed_body["suggestions"]).to eq(['genre:"RSpec Jazz"'])
     end
 
-    it "schlägt nur Playlists der aktiven Kategorie vor (Intent 55)" do
-      users(:one).update!(active_playlist_category: "fusion")
+    it "schlägt nur Playlists der aktiven Bibliothek vor (Intent 55/57)" do
+      fusion = Library.create!(name: "Fusion", keyword: "fusion")
+      users(:one).update!(active_library: fusion)
       Playlist.create!(name: "RSpec Zzyzu Blues Runde", spotify_id: "pl-qs-cat-blues")
-      Playlist.create!(name: "RSpec Zzyzu Fusion Runde", spotify_id: "pl-qs-cat-fusion")
+      fusion_playlist = Playlist.create!(name: "RSpec Zzyzu Fusion Runde", spotify_id: "pl-qs-cat-fusion")
+      fusion_playlist.libraries << fusion
 
       get query_suggestions_tracks_path(term: "playlist:zzyzu")
 

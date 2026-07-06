@@ -7,20 +7,13 @@ class User < ApplicationRecord
          :recoverable, :rememberable, :validatable,
          :omniauthable, omniauth_providers: %i[spotify]
 
-  # Reiner Anzeige-Filter (Intent 54) - schraenkt ein, was auf Tracks/Playlists/Artists und in
-  # der Suche sichtbar ist. Bewusst getrennt von SpotifyPlaylistsGateway#owned_library_playlist?,
-  # das weiterhin unveraendert bestimmt, was ueberhaupt von Spotify importiert wird - ein
-  # Kategorie-Wechsel hier aendert nichts an der lokalen DB oder am naechsten Sync.
-  ACTIVE_PLAYLIST_CATEGORIES = %w[all blues fusion].freeze
-  CATEGORY_NAME_SUBSTRINGS = { "blues" => "blues", "fusion" => "fusion" }.freeze
-
-  validates :active_playlist_category, inclusion: { in: ACTIVE_PLAYLIST_CATEGORIES }
-
-  # nil bedeutet "kein Filter" fuer die Track/Playlist/Artist-Scopes - gilt fuer "all" und,
-  # als Soft-Failure, auch fuer einen unerwarteten/leeren Wert.
-  def active_category_substring
-    CATEGORY_NAME_SUBSTRINGS[active_playlist_category]
-  end
+  # Reiner Anzeige-Filter (Intent 57, ersetzt den festen Enum aus Intent 54) - schraenkt ein, was
+  # auf Tracks/Playlists/Artists und in der Suche sichtbar ist. Bewusst getrennt von
+  # SpotifyPlaylistsGateway#owned_library_playlist?, das weiterhin unveraendert bestimmt, was
+  # ueberhaupt von Spotify importiert wird - ein Bibliotheks-Wechsel hier aendert nichts an der
+  # lokalen DB oder am naechsten Sync. nil bedeutet "Alle" (kein Filter).
+  belongs_to :active_library, class_name: "Library", optional: true
+  validate :active_library_must_exist_if_present
 
   # spotify_user_data wird bei jedem Login aktualisiert, nicht nur bei der Erstellung -
   # sonst bleiben z.B. Avatar-URLs auf dem Stand des allerersten Logins und laufen ab.
@@ -44,5 +37,15 @@ class User < ApplicationRecord
     JSON.parse(spotify_user_data).fetch("images", []).first&.fetch("url", nil)
   rescue JSON::ParserError, TypeError
     nil
+  end
+
+  private
+
+  # belongs_to allein prueft nur, ob active_library_id gesetzt ist - nicht, ob es ueberhaupt eine
+  # bestehende Library referenziert (nil bleibt weiterhin gueltig, bedeutet "Alle").
+  def active_library_must_exist_if_present
+    return if active_library_id.blank?
+
+    errors.add(:active_library, "muss eine bestehende Bibliothek sein") unless Library.exists?(active_library_id)
   end
 end

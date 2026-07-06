@@ -1,5 +1,7 @@
 class SettingsController < ApplicationController
-  def edit; end
+  def edit
+    @libraries = Library.order(:name)
+  end
 
   def update
     if current_user.update(settings_params)
@@ -12,6 +14,6 @@ class SettingsController < ApplicationController
   private
 
   def settings_params
-    params.require(:user).permit(:active_playlist_category)
+    params.require(:user).permit(:active_library_id)
   end
 end

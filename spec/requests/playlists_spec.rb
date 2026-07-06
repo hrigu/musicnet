@@ -48,10 +48,12 @@ RSpec.describe "Playlists", type: :request do
       expect(nav.text).to_not include("Fetch all Playlists!")
     end
 
-    it "zeigt nur Playlists der aktiven Kategorie, wenn eine gesetzt ist (Intent 54)" do
-      users(:one).update!(active_playlist_category: "blues")
-      Playlist.create!(spotify_id: "pl-cat-idx-blues", name: "RSpec Blues Session Idx")
+    it "zeigt nur Playlists der aktiven Bibliothek, wenn eine gesetzt ist (Intent 57)" do
+      blues = Library.create!(name: "Blues", keyword: "blues")
+      users(:one).update!(active_library: blues)
+      blues_playlist = Playlist.create!(spotify_id: "pl-cat-idx-blues", name: "RSpec Blues Session Idx")
       Playlist.create!(spotify_id: "pl-cat-idx-fusion", name: "RSpec Fusion Abende Idx")
+      blues_playlist.libraries << blues
 
       get playlists_path
 

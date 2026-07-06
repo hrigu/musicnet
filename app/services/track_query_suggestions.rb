@@ -5,13 +5,13 @@ class TrackQuerySuggestions
   MAX_SUGGESTIONS = 10
   VALUE_SOURCE_FIELDS = %w[genre artist album playlist].freeze
 
-  def self.for(term, category_substring = nil)
-    new(term, category_substring).suggestions
+  def self.for(term, library_id = nil)
+    new(term, library_id).suggestions
   end
 
-  def initialize(term, category_substring = nil)
+  def initialize(term, library_id = nil)
     @term = term.to_s
-    @category_substring = category_substring
+    @library_id = library_id
   end
 
   def suggestions
@@ -45,12 +45,12 @@ class TrackQuerySuggestions
   end
 
   def genre_values(prefix)
-    Track.in_active_category(@category_substring).distinct.where.not(genre: [nil, ""])
+    Track.in_active_library(@library_id).distinct.where.not(genre: [nil, ""])
          .where("LOWER(genre) LIKE ?", "%#{prefix}%").order(:genre).limit(MAX_SUGGESTIONS).pluck(:genre)
   end
 
   def artist_values(prefix)
-    Artist.in_active_category(@category_substring).where("LOWER(name) LIKE ?", "%#{prefix}%")
+    Artist.in_active_library(@library_id).where("LOWER(name) LIKE ?", "%#{prefix}%")
           .order(:name).limit(MAX_SUGGESTIONS).pluck(:name)
   end
 
@@ -59,7 +59,7 @@ class TrackQuerySuggestions
   end
 
   def playlist_values(prefix)
-    Playlist.in_active_category(@category_substring).where("LOWER(name) LIKE ?", "%#{prefix}%")
+    Playlist.in_active_library(@library_id).where("LOWER(name) LIKE ?", "%#{prefix}%")
             .order(:name).limit(MAX_SUGGESTIONS).pluck(:name)
   end
 

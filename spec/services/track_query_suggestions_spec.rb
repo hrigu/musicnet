@@ -63,11 +63,13 @@ RSpec.describe TrackQuerySuggestions do
       expect(suggestions).to eq(['artist:aaa,"RSpec Zzyzx Hubert"'])
     end
 
-    it "schlägt nur Playlists der aktiven Kategorie vor, wenn ein Filter gesetzt ist (Intent 55)" do
+    it "schlägt nur Playlists der aktiven Bibliothek vor, wenn ein Filter gesetzt ist (Intent 55/57)" do
+      fusion = Library.create!(name: "Fusion", keyword: "fusion")
       Playlist.create!(name: "RSpec Zzyzx Blues Abend", spotify_id: "pl-sugg-cat-blues")
-      Playlist.create!(name: "RSpec Zzyzx Fusion Abend", spotify_id: "pl-sugg-cat-fusion")
+      fusion_playlist = Playlist.create!(name: "RSpec Zzyzx Fusion Abend", spotify_id: "pl-sugg-cat-fusion")
+      fusion_playlist.libraries << fusion
 
-      suggestions = described_class.for("playlist:zzyzx", "fusion")
+      suggestions = described_class.for("playlist:zzyzx", fusion.id)
 
       expect(suggestions).to eq(['playlist:"RSpec Zzyzx Fusion Abend"'])
     end
@@ -83,7 +85,8 @@ RSpec.describe TrackQuerySuggestions do
       )
     end
 
-    it "schlägt nur Artists der aktiven Kategorie vor, wenn ein Filter gesetzt ist (Intent 55)" do
+    it "schlägt nur Artists der aktiven Bibliothek vor, wenn ein Filter gesetzt ist (Intent 55/57)" do
+      fusion = Library.create!(name: "Fusion", keyword: "fusion")
       album = Album.create!(name: "Album", spotify_id: "alb-sugg-cat-art")
       blues_artist = Artist.create!(name: "RSpec Zzyzw Blues Artist", spotify_id: "art-sugg-cat-blues")
       fusion_artist = Artist.create!(name: "RSpec Zzyzw Fusion Artist", spotify_id: "art-sugg-cat-fusion")
@@ -93,15 +96,17 @@ RSpec.describe TrackQuerySuggestions do
                                    artists: [fusion_artist], duration_ms: 200_000)
       blues_playlist = Playlist.create!(name: "RSpec Blues Session", spotify_id: "pl-sugg-cat-art-blues")
       fusion_playlist = Playlist.create!(name: "RSpec Fusion Session", spotify_id: "pl-sugg-cat-art-fusion")
+      fusion_playlist.libraries << fusion
       PlaylistTrack.create!(playlist: blues_playlist, track: blues_track, added_at: Time.current)
       PlaylistTrack.create!(playlist: fusion_playlist, track: fusion_track, added_at: Time.current)
 
-      suggestions = described_class.for("artist:zzyzw", "fusion")
+      suggestions = described_class.for("artist:zzyzw", fusion.id)
 
       expect(suggestions).to eq(['artist:"RSpec Zzyzw Fusion Artist"'])
     end
 
-    it "schlägt nur Genres der aktiven Kategorie vor, wenn ein Filter gesetzt ist (Intent 55)" do
+    it "schlägt nur Genres der aktiven Bibliothek vor, wenn ein Filter gesetzt ist (Intent 55/57)" do
+      fusion = Library.create!(name: "Fusion", keyword: "fusion")
       album = Album.create!(name: "Album", spotify_id: "alb-sugg-cat-genre")
       blues_track = Track.create!(name: "A", spotify_id: "trk-sugg-cat-genre-blues", album: album,
                                   genre: "RSpec Zzyzv Delta Blues")
@@ -109,10 +114,11 @@ RSpec.describe TrackQuerySuggestions do
                                    genre: "RSpec Zzyzv Jazz Fusion")
       blues_playlist = Playlist.create!(name: "RSpec Blues Genre Session", spotify_id: "pl-sugg-cat-genre-blues")
       fusion_playlist = Playlist.create!(name: "RSpec Fusion Genre Session", spotify_id: "pl-sugg-cat-genre-fusion")
+      fusion_playlist.libraries << fusion
       PlaylistTrack.create!(playlist: blues_playlist, track: blues_track, added_at: Time.current)
       PlaylistTrack.create!(playlist: fusion_playlist, track: fusion_track, added_at: Time.current)
 
-      suggestions = described_class.for("genre:zzyzv", "fusion")
+      suggestions = described_class.for("genre:zzyzv", fusion.id)
 
       expect(suggestions).to eq(['genre:"RSpec Zzyzv Jazz Fusion"'])
     end

@@ -11,13 +11,13 @@ class TracksController < ApplicationController
 
   def index
     tracks = Track.for_index.search_query(params[:q])
-                  .in_active_category(current_user.active_category_substring)
+                  .in_active_library(current_user.active_library_id)
                   .sorted(params[:sort], params[:direction])
     @pagy, @tracks = paginate_for_index(tracks)
   end
 
   def query_suggestions
-    suggestions = TrackQuerySuggestions.for(params[:term], current_user.active_category_substring)
+    suggestions = TrackQuerySuggestions.for(params[:term], current_user.active_library_id)
     render json: { suggestions: suggestions }
   end
 

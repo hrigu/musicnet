@@ -64,18 +64,21 @@ RSpec.describe Playlist, type: :model do
     end
   end
 
-  describe ".in_active_category (Intent 54)" do
-    it "liefert die unveraenderte Relation, wenn kein Substring uebergeben wird" do
+  describe ".in_active_library (Intent 57)" do
+    it "liefert die unveraenderte Relation, wenn keine Library-Id uebergeben wird" do
       Playlist.create!(spotify_id: "pl-cat-all", name: "RSpec Cat All")
 
-      expect(described_class.in_active_category(nil).count).to eq(described_class.count)
+      expect(described_class.in_active_library(nil).count).to eq(described_class.count)
     end
 
-    it "findet nur Playlists, deren Name den Substring enthaelt" do
+    it "findet nur Playlists, die der gegebenen Library zugeordnet sind" do
+      blues = Library.create!(name: "Blues", keyword: "blues")
+      Library.create!(name: "Fusion", keyword: "fusion")
       match = Playlist.create!(spotify_id: "pl-cat-blues", name: "RSpec Blues Session Cat")
       Playlist.create!(spotify_id: "pl-cat-fusion", name: "RSpec Fusion Abende Cat")
+      match.libraries << blues
 
-      expect(described_class.in_active_category("blues").to_a).to eq([match])
+      expect(described_class.in_active_library(blues.id).to_a).to eq([match])
     end
   end
 

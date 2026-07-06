@@ -67,14 +67,16 @@ RSpec.describe Artist, type: :model do
     end
   end
 
-  describe ".in_active_category (Intent 54)" do
-    it "liefert die unveraenderte Relation, wenn kein Substring uebergeben wird" do
+  describe ".in_active_library (Intent 57)" do
+    it "liefert die unveraenderte Relation, wenn keine Library-Id uebergeben wird" do
       Artist.create!(name: "RSpec Cat All", spotify_id: "art-cat-all")
 
-      expect(described_class.in_active_category(nil).count).to eq(described_class.count)
+      expect(described_class.in_active_library(nil).count).to eq(described_class.count)
     end
 
-    it "findet nur Artists mit mindestens einem Track in einer passenden Playlist" do
+    it "findet nur Artists mit mindestens einem Track in einer Playlist der gegebenen Library" do
+      blues = Library.create!(name: "Blues", keyword: "blues")
+      Library.create!(name: "Fusion", keyword: "fusion")
       album = Album.create!(name: "Album", spotify_id: "alb-cat")
       blues_artist = Artist.create!(name: "RSpec Blues Artist", spotify_id: "art-cat-blues")
       fusion_artist = Artist.create!(name: "RSpec Fusion Artist", spotify_id: "art-cat-fusion")
@@ -82,10 +84,11 @@ RSpec.describe Artist, type: :model do
       fusion_track = Track.create!(name: "B", spotify_id: "trk-cat-fusion", album: album, artists: [fusion_artist])
       blues_playlist = Playlist.create!(name: "RSpec Blues Session Cat", spotify_id: "pl-cat-art-blues")
       fusion_playlist = Playlist.create!(name: "RSpec Fusion Abende Cat", spotify_id: "pl-cat-art-fusion")
+      blues_playlist.libraries << blues
       PlaylistTrack.create!(playlist: blues_playlist, track: blues_track, added_at: Time.current)
       PlaylistTrack.create!(playlist: fusion_playlist, track: fusion_track, added_at: Time.current)
 
-      expect(described_class.in_active_category("blues").to_a).to eq([blues_artist])
+      expect(described_class.in_active_library(blues.id).to_a).to eq([blues_artist])
     end
   end
 end

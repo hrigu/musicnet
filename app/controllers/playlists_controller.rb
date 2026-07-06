@@ -12,7 +12,7 @@ class PlaylistsController < ApplicationController
   end
 
   def index
-    @playlists = Playlist.for_index.in_active_category(current_user.active_category_substring)
+    @playlists = Playlist.for_index.in_active_library(current_user.active_library_id)
   end
 
   def show
