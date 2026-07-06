@@ -208,6 +208,22 @@ RSpec.describe "Dauerhafte Track-Wiedergabe (Intent 40)", type: :system do
     expect(page).to have_selector("[data-audio-player-target='deviceName']", text: "RSpec Externe Box")
   end
 
+  it "blendet Play-Button und Titel-Link erst nach dem ersten Abspielen ein und danach dauerhaft (Intent 69)" do
+    track = create_playable_track("RSpec Empty State Main", spotify_id: "empty-state-main")
+
+    visit tracks_path
+    expect(page).to_not have_selector("[data-audio-player-target='toggleButton']")
+    expect(page).to_not have_selector("[data-audio-player-target='name']")
+
+    play_button_for(track.name).click
+    sleep 0.3
+
+    aggregate_failures do
+      expect(page).to have_selector("[data-audio-player-target='toggleButton']")
+      expect(page).to have_selector("[data-audio-player-target='name']", text: track.name)
+    end
+  end
+
   it "zeigt kein Ausgabegeraet-Label, wenn noch nie eines gewaehlt wurde (Intent 68)" do
     visit tracks_path
 

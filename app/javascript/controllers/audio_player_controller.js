@@ -15,7 +15,7 @@ const SINK_ID_STORAGE_KEY = "musicnet:mainPlayerSinkId"
 export default class extends Controller {
   static targets = [
     "audio", "icon", "name", "progress", "currentTime", "duration", "deviceSelect", "chooseButton",
-    "toggleButton", "deviceName",
+    "toggleButton", "deviceName", "queueList",
   ]
 
   connect() {
@@ -57,6 +57,15 @@ export default class extends Controller {
     )
 
     restoreOutputDevice(this.audioTarget, SINK_ID_STORAGE_KEY, this.deviceNameTarget)
+
+    // Play-Button/Titel-Link bleiben ausgeblendet, solange nichts geladen ist UND die Queue leer
+    // ist (Intent 69) - der Button behaelt aber seine Doppelrolle als Queue-Direktstart (Intent 42),
+    // daher hier ueber einen MutationObserver auf die (per Turbo-Stream server-gerenderte)
+    // Queue-Liste reagieren, statt nur auf eigene Play-Events.
+    this.updatePlaceholderVisibility = this.updatePlaceholderVisibility.bind(this)
+    this.queueObserver = new MutationObserver(this.updatePlaceholderVisibility)
+    this.queueObserver.observe(this.queueListTarget, { childList: true, subtree: true })
+    this.updatePlaceholderVisibility()
   }
 
   disconnect() {
@@ -74,6 +83,15 @@ export default class extends Controller {
     )
     this.audioTarget.removeEventListener("timeupdate", this.handleTimeUpdate)
     this.audioTarget.removeEventListener("loadedmetadata", this.handleLoadedMetadata)
+    this.queueObserver.disconnect()
+  }
+
+  // Sichtbar, sobald etwas geladen wurde (bleibt danach dauerhaft sichtbar, auch wenn die Queue
+  // wieder leer wird) oder solange die Queue Eintraege hat (Queue-Direktstart, Intent 42).
+  updatePlaceholderVisibility() {
+    const visible = !!this.audioTarget.src || this.queueListTarget.children.length > 0
+    this.toggleButtonTarget.classList.toggle("d-none", !visible)
+    this.nameTarget.classList.toggle("d-none", !visible)
   }
 
   // Intent 56: Diagnose fuer einen sporadischen, bisher nicht reproduzierbaren Audio-Aussetzer.
@@ -124,6 +142,7 @@ export default class extends Controller {
     this.audioTarget.src = url
     this.nameTarget.textContent = artist ? `${name} – ${artist}` : name
     this.nameTarget.href = trackId ? `/tracks/${trackId}` : "#"
+    this.updatePlaceholderVisibility()
     this.audioTarget.play()
   }
 

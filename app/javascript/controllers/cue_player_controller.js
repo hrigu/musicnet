@@ -75,6 +75,10 @@ export default class extends Controller {
     this.audioTarget.src = url
     this.nameTarget.textContent = artist ? `${name} – ${artist}` : name
     this.nameTarget.href = trackId ? `/tracks/${trackId}` : "#"
+    // Play-Button/Titel-Link bleiben ausgeblendet, bis einmal vorgehoert wurde (Intent 69) - danach
+    // dauerhaft sichtbar, kein Queue-Bezug wie beim Hauptkanal noetig.
+    this.toggleButtonTarget.classList.remove("d-none")
+    this.nameTarget.classList.remove("d-none")
     this.audioTarget.play()
   }
 

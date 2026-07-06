@@ -11,17 +11,19 @@
 <%= turbo_stream_from "queue" %>
 <div id="global-audio-player" data-turbo-permanent data-controller="audio-player" class="fixed-bottom bg-light border-top">
   <div id="audio-player-queue" class="px-3 small text-muted">
-    <div id="audio-player-queue-list">
+    <div id="audio-player-queue-list" data-audio-player-target="queueList">
       <%= render "queue_entries/queue_list" %>
     </div>
   </div>
   <div class="d-flex align-items-center gap-2 px-3 py-2">
     <span title="Hauptkanal">🔊</span>
-    <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle" title="Play/Pause"
-            data-audio-player-target="toggleButton" data-action="audio-player#toggle">
+    <button type="button"
+            class="btn btn-sm btn-outline-secondary rounded-circle <%= 'd-none' unless queued_track_ids.any? %>"
+            title="Play/Pause" data-audio-player-target="toggleButton" data-action="audio-player#toggle">
       <span data-audio-player-target="icon">▶</span>
     </button>
-    <a data-audio-player-target="name" href="#" class="text-truncate flex-grow-1">–</a>
+    <a data-audio-player-target="name" href="#"
+       class="text-truncate flex-grow-1 <%= 'd-none' unless queued_track_ids.any? %>">–</a>
     <span data-audio-player-target="currentTime" class="small text-muted">0:00</span>
     <input type="range" value="0" class="form-range" style="max-width: 150px;"
            data-audio-player-target="progress" data-action="input->audio-player#seek">
@@ -39,11 +41,11 @@
       Queue-Wiedergabe oben nicht. Bewusst minimal (kein Seek-Balken) fuer eine erste Version. %>
   <div class="d-flex align-items-center gap-2 px-3 py-1 border-top small" data-controller="cue-player">
     <span title="Vorhörkanal">🎧</span>
-    <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle" title="Play/Pause (Vorhören)"
-            data-cue-player-target="toggleButton" data-action="cue-player#toggle">
+    <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle d-none"
+            title="Play/Pause (Vorhören)" data-cue-player-target="toggleButton" data-action="cue-player#toggle">
       <span data-cue-player-target="icon">▶</span>
     </button>
-    <a data-cue-player-target="name" href="#" class="text-truncate flex-grow-1">–</a>
+    <a data-cue-player-target="name" href="#" class="text-truncate flex-grow-1 d-none">–</a>
     <button type="button" class="btn btn-sm btn-link ms-auto" data-action="cue-player#chooseOutputDevice"
             data-cue-player-target="chooseButton">
       Ausgabegerät (Vorhören)

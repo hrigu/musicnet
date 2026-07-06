@@ -77,6 +77,21 @@ RSpec.describe "Cue-/Vorhörkanal (Intent 51)", type: :system do
     expect(page).to have_selector("[data-cue-player-target='deviceName']", text: "RSpec Kopfhoerer")
   end
 
+  it "blendet Play-Button und Titel-Link erst nach dem ersten Vorhoeren ein und danach dauerhaft (Intent 69)" do
+    track = create_playable_track("RSpec Empty State Cue", spotify_id: "empty-state-cue")
+
+    visit tracks_path
+    expect(page).to_not have_selector("[data-cue-player-target='toggleButton']")
+    expect(page).to_not have_selector("[data-cue-player-target='name']")
+
+    cue_button_for(track.name).click
+
+    aggregate_failures do
+      expect(page).to have_selector("[data-cue-player-target='toggleButton']")
+      expect(page).to have_selector("[data-cue-player-target='name']", text: track.name)
+    end
+  end
+
   it "zeigt Titel mit Hauptkuenstler und verlinkt auf die Track-Detailseite (Intent 67 Nachtrag)" do
     track = create_playable_track("RSpec Cue Title", spotify_id: "cue-title", artist_name: "RSpec Cue Hauptkuenstler")
 
@@ -91,7 +106,13 @@ RSpec.describe "Cue-/Vorhörkanal (Intent 51)", type: :system do
   end
 
   it "positioniert den Ausgabegeraet-Link rechts, wie beim Hauptkanal (Intent 67 Nachtrag)" do
+    track = create_track_with_real_audio("RSpec Alignment Track", spotify_id: "alignment-track")
+
     visit tracks_path
+    play_button_for(track.name).click
+    sleep 0.3
+    cue_button_for(track.name).click
+    sleep 0.3
 
     main_right = page.evaluate_script(
       "document.querySelector('[data-audio-player-target=chooseButton]').getBoundingClientRect().right"
