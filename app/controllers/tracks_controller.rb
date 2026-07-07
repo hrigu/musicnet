@@ -35,6 +35,14 @@ class TracksController < ApplicationController
 
   def show
     @track = Track.for_show.find(params[:id])
+    # Ids aus dem bereits preload-eten playlist_tracks ableiten statt @track.playlist_ids zu
+    # nutzen - :playlists ist eine eigene Assoziation, die Track.for_show nie preload-et, ein
+    # Zugriff wuerde also sowohl eine zusaetzliche Query als auch einen strict_loading-Fehler
+    # ausloesen.
+    # .to_a laedt sofort - ohne das wuerden @addable_playlists.any? (Vorhanden-Check) und .map
+    # (Options-Aufbau) in der View je eine eigene Query ausloesen, statt sich eine geladene
+    # Ergebnisliste zu teilen.
+    @addable_playlists = Playlist.where.not(id: @track.playlist_tracks.map(&:playlist_id)).order(:name).to_a
   end
 
   # send_file allein unterstuetzt keine HTTP-Range-Requests (nur ueber X-Sendfile/einen

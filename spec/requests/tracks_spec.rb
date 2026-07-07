@@ -356,7 +356,12 @@ RSpec.describe "Tracks", type: :request do
         expect(queries.count { |sql| sql.include?('FROM "albums"') }).to eq(1)
         expect(queries.count { |sql| sql.include?('FROM "artists"') }).to eq(1)
         expect(queries.count { |sql| sql.include?('FROM "playlist_tracks"') }).to eq(1)
-        expect(queries.count { |sql| sql.include?('FROM "playlists"') }).to eq(1)
+        # 2 statt 1: der Preload der Playlists ueber playlist_tracks, plus die Liste der
+        # Playlists, denen der Track noch nicht angehoert (Hinzufuegen-Formular, Intent 75) -
+        # letztere leitet die auszuschliessenden Ids aus dem bereits geladenen playlist_tracks
+        # ab, statt @track.playlist_ids zu nutzen (waere eine dritte Query und ein
+        # strict_loading-Verstoss, da :playlists eine eigene, nie preload-ete Assoziation ist).
+        expect(queries.count { |sql| sql.include?('FROM "playlists"') }).to eq(2)
       end
     end
 
@@ -398,6 +403,48 @@ RSpec.describe "Tracks", type: :request do
       expect(response).to have_http_status(:success)
       badges = Nokogiri::HTML(response.body).css(".badge").map(&:text)
       expect(badges).to include("F_KeinDatum")
+    end
+
+    it "zeigt einen Entfernen-Button pro Playlist, der auf die PlaylistTrack-Zeile zeigt (Intent 75)" do
+      track = create_track
+      playlist = Playlist.create!(spotify_id: "pl-remove", name: "Fusion Entfernen")
+      playlist_track = PlaylistTrack.create!(playlist: playlist, track: track, added_at: Time.current)
+
+      get track_path(track)
+
+      html = Nokogiri::HTML(response.body)
+      form = html.at_css("form[action='#{playlist_track_path(playlist_track)}']")
+      aggregate_failures do
+        expect(form).to be_present
+        expect(form.at_css("input[name='_method'][value='delete']")).to be_present
+      end
+    end
+
+    it "zeigt ein Formular, um den Track zu einer weiteren Playlist hinzuzufuegen (Intent 75)" do
+      track = create_track
+      schon_drin = Playlist.create!(spotify_id: "pl-schon-drin", name: "Schon Drin")
+      PlaylistTrack.create!(playlist: schon_drin, track: track, added_at: Time.current)
+      Playlist.create!(spotify_id: "pl-noch-nicht", name: "Noch Nicht Drin")
+
+      get track_path(track)
+
+      select = Nokogiri::HTML(response.body).at_css("select[name='playlist_id']")
+      aggregate_failures do
+        expect(select).to be_present
+        expect(select.css("option").map(&:text)).to include("Noch Nicht Drin")
+        expect(select.css("option").map(&:text)).to_not include("Schon Drin")
+      end
+    end
+
+    it "zeigt kein Hinzufuegen-Formular, wenn der Track bereits in jeder Playlist ist (Intent 75)" do
+      track = create_track
+      Playlist.destroy_all
+      einzige = Playlist.create!(spotify_id: "pl-einzige", name: "Einzige Playlist")
+      PlaylistTrack.create!(playlist: einzige, track: track, added_at: Time.current)
+
+      get track_path(track)
+
+      expect(Nokogiri::HTML(response.body).at_css("select[name='playlist_id']")).to be_nil
     end
 
     it "zeigt Künstler nur mit Namen als Elemente statt als Tabelle (Intent 64)" do

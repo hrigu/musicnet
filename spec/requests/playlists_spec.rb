@@ -186,6 +186,56 @@ RSpec.describe "Playlists", type: :request do
       expect(playlist.reload.color).to be_blank
     end
 
+    it "PATCH /playlists/:id pusht eine Umbenennung ueber den PlaylistSpotifyWriteService (Intent 75)" do
+      playlist = playlists(:dark)
+      service = instance_double(PlaylistSpotifyWriteService, rename!: nil)
+      allow(PlaylistSpotifyWriteService).to receive(:new).and_return(service)
+
+      patch playlist_path(playlist), params: { playlist: { name: "Fusion Sonntag", color: "" } }
+
+      expect(service).to have_received(:rename!).with(playlist, "Fusion Sonntag")
+      expect(response).to redirect_to(playlists_path)
+    end
+
+    it "PATCH /playlists/:id ruft den Service nicht auf, wenn sich der Name nicht aendert (Intent 75)" do
+      playlist = playlists(:dark)
+      service = instance_double(PlaylistSpotifyWriteService, rename!: nil)
+      allow(PlaylistSpotifyWriteService).to receive(:new).and_return(service)
+
+      patch playlist_path(playlist), params: { playlist: { name: playlist.name, color: "#3366cc" } }
+
+      expect(service).to_not have_received(:rename!)
+      expect(playlist.reload.color).to eq("#3366cc")
+    end
+
+    it "PATCH /playlists/:id zeigt einen Fehler und aendert nichts, wenn der Spotify-Push fehlschlaegt (Intent 75)" do
+      playlist = playlists(:dark)
+      service = instance_double(PlaylistSpotifyWriteService)
+      allow(service).to receive(:rename!).and_raise(SpotifyPlaylistsGateway::SpotifyWriteError, "Spotify nicht erreichbar")
+      allow(PlaylistSpotifyWriteService).to receive(:new).and_return(service)
+
+      patch playlist_path(playlist), params: { playlist: { name: "Fusion Sonntag", color: "" } }
+
+      aggregate_failures do
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include("Spotify nicht erreichbar")
+        expect(playlist.reload.name).to eq("Fusion Dark")
+      end
+    end
+
+    it "PATCH /playlists/:id zeigt einen Fehler, wenn gerade ein Sync laeuft (Intent 75)" do
+      playlist = playlists(:dark)
+      service = instance_double(PlaylistSpotifyWriteService)
+      allow(service).to receive(:rename!)
+        .and_raise(BuildMusicNetService::SyncAlreadyRunningError, "Es läuft bereits ein Sync - bitte warten, bis er fertig ist")
+      allow(PlaylistSpotifyWriteService).to receive(:new).and_return(service)
+
+      patch playlist_path(playlist), params: { playlist: { name: "Fusion Sonntag", color: "" } }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("läuft bereits ein Sync")
+    end
+
     it "GET /playlists/:id bleibt für einen anderen eingeloggten User sichtbar" do
       sign_out users(:one)
       sign_in users(:two)

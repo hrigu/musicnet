@@ -44,8 +44,12 @@ class PlaylistsController < ApplicationController
 
   def update
     @playlist = Playlist.find(params[:id])
-    @playlist.update!(playlist_params)
+    push_rename if renaming?
+    update_color
     redirect_to playlists_path
+  rescue SpotifyPlaylistsGateway::SpotifyWriteError, BuildMusicNetService::SyncAlreadyRunningError => e
+    flash.now[:alert] = e.message
+    render :edit, status: :unprocessable_content
   end
 
   # Lädt fehlende Tracks der Playlist runter; das Ergebnis (heruntergeladen/fehlgeschlagen)
@@ -65,6 +69,22 @@ class PlaylistsController < ApplicationController
   # kein Sonderfall noetig (Intent 71).
   def playlist_params
     params.require(:playlist).permit(:name, :color)
+  end
+
+  def renaming?
+    new_name.present? && new_name != @playlist.name
+  end
+
+  def new_name
+    playlist_params[:name]
+  end
+
+  def push_rename
+    PlaylistSpotifyWriteService.new(current_user).rename!(@playlist, new_name)
+  end
+
+  def update_color
+    @playlist.update!(color: playlist_params[:color]) if playlist_params.key?(:color)
   end
 
   RESOURCE_LABELS = { playlists: "Playlists", tracks: "Tracks", artists: "Artists", albums: "Alben" }.freeze
