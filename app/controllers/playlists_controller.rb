@@ -18,7 +18,9 @@ class PlaylistsController < ApplicationController
   def index
     @playlists = Playlist.for_index.in_active_library(current_user.active_library_id)
                          .includes(:libraries, :tracks)
-    Track.preload_track_paths(@playlists.flat_map(&:tracks))
+    tracks = @playlists.flat_map(&:tracks)
+    ActiveRecord::Associations::Preloader.new(records: tracks, associations: :artists).call
+    Track.preload_track_paths(tracks)
   end
 
   def show
