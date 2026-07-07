@@ -38,6 +38,21 @@ and again in `config/initializers/devise.rb` (to configure the omniauth `:spotif
 Edit with `EDITOR="vi" bin/rails credentials:edit` (and `--environment development` for dev-specific creds).
 Never commit `config/master.key`.
 
+## Planung: zurückgestellte Ideen aus Plan-Mode-Sitzungen
+
+Claude Codes Plan-Mode-Pläne landen standardmässig unter `~/.claude/plans/` — ausserhalb des Repos,
+mit zufälligem Dateinamen, nicht versioniert, wird von keiner künftigen Sitzung mehr gelesen. Der
+Teil eines Plans, der zu einer konkreten, sofort umgesetzten Änderung führt, braucht dort keine
+Dauerhaftigkeit — er ist im Git-Commit dokumentiert.
+
+Enthält ein Plan aber Diskussion zu einer **nicht umgesetzten** Alternative oder einer grösseren,
+eigenständigen Idee, die bewusst zurückgestellt wird (z. B. weil Priorität oder Ursache noch nicht
+geklärt ist), MUSS dieser Teil zusätzlich als eigener Eintrag in `.intents/Ideen.md` festgehalten
+werden — im selben Format wie die dortigen Einträge (H2-Titel, optional mit `(Intent NN)`-Bezug,
+danach Fliesstext mit fettgedruckten Labels wie **Kontext:**/**Vorschlag:**/**Trade-off:**/
+**Status:**). Nicht die komplette Plan-Datei dorthin kopieren — nur den zurückgestellten Teil, sonst
+verliert die Datei ihren Zweck als kuratierte Ideensammlung.
+
 ## Architecture
 
 ### Data model
