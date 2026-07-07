@@ -135,6 +135,18 @@ RSpec.describe BuildMusicNetService do
           expect(playlist_record.libraries.map(&:name)).to eq(["Blues"])
         end
       end
+
+      it "meldet die Umbenennung im ServiceInfo, auch wenn sonst nichts an Tracks geändert hat" do
+        stub_spotify_playlists([playlist])
+        BuildMusicNetService.new(user).build
+        renamed_playlist = spotify_playlist(id: "pl1", name: "Blues Favorites", owner_id: spotify_user_id,
+                                            tracks: [track], snapshot_id: "snap-neu")
+        stub_spotify_playlists([renamed_playlist])
+
+        info = BuildMusicNetService.new(user).build
+
+        expect(info.hash.dig(:playlists, :renamed)).to eq([["Fusion Favorites", "Blues Favorites"]])
+      end
     end
 
     context "wenn eine zuvor synchronisierte Playlist auf Spotify nicht mehr existiert" do

@@ -97,10 +97,14 @@ class PlaylistsController < ApplicationController
   # Limit sprengen (CookieOverflow, siehe Intent 38). ServiceInfo#add haengt bei Einzel-Aufrufen
   # (add_new_created_*) flache Namens-Arrays an, bei den Loesch-Pfaden dagegen ein verschachteltes
   # Array (die ganze Namensliste als ein Element) - .flatten.size liefert in beiden Faellen die
-  # richtige Anzahl, ohne ServiceInfo selbst anzufassen.
+  # richtige Anzahl, ohne ServiceInfo selbst anzufassen. Umbenennungen (:renamed) brauchen dagegen
+  # die konkreten alten/neuen Namen statt einer blossen Anzahl (siehe renamed_summary) - Playlist-
+  # Umbenennungen sind selten genug, dass das Cookie-Limit hier keine Rolle spielt.
   def fetch_all_summary(info)
     parts = info.hash.flat_map do |resource, actions|
       actions.filter_map do |action, entries|
+        next renamed_summary(entries) if action == :renamed
+
         count = entries.flatten.size
         next if count.zero?
 
@@ -110,6 +114,12 @@ class PlaylistsController < ApplicationController
     return "Sync abgeschlossen: keine Änderungen." if parts.empty?
 
     "Sync abgeschlossen: #{parts.join(', ')}."
+  end
+
+  def renamed_summary(entries)
+    return if entries.empty?
+
+    entries.map { |old_name, new_name| "Playlist \"#{old_name}\" auf \"#{new_name}\" geändert" }.join(', ')
   end
 
   def set_refresh_flash(info)

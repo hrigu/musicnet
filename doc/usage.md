@@ -8,10 +8,13 @@ Spotify".
 
 ## Playlists holen
 
-Auf der Playlists-Seite holt "Fetch all Playlists!" alle eigenen Spotify-Playlists, deren Name
+Auf der Playlists-Seite holt "Synchronisiere Playlists" alle eigenen Spotify-Playlists, deren Name
 "fusion" oder "blues" enthält, und spiegelt sie (inkl. Tracks, Alben, Künstler) in die lokale
 Datenbank. Ein späterer Aufruf synchronisiert nur, was sich auf Spotify geändert hat — unveränderte
-Playlists werden übersprungen. Auf der Detailseite einer einzelnen Playlist gleicht "Playlist
+Playlists werden übersprungen. Die Erfolgsmeldung listet dabei nicht nur neu angelegte/gelöschte
+Playlists/Tracks/Artists/Alben auf, sondern auch jede umbenannte Playlist einzeln mit altem und
+neuem Namen ("Playlist "Alter Name" auf "Neuer Name" geändert") — auch dann, wenn sich sonst nichts
+an ihren Tracks geändert hat. Auf der Detailseite einer einzelnen Playlist gleicht "Playlist
 aktualisieren" nur diese eine Playlist ab, immer vollständig, auch ohne Änderung.
 
 ## Anzeige-Filter (Kategorie)

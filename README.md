@@ -7,7 +7,7 @@
 * Musicnet: Code ok?
 * Musicnet starten (in RubyMine)http://127.0.0.1:3001
  * Bei Spotify einloggen
- * Alle Playlists holen (Menüpunkt 'Fetch all Playlists!')
+ * Alle Playlists holen (Button 'Synchronisiere Playlists')
  * Alle Music Files (noch nicht vorhandenen) bei Youtube herunterladen:
    * Tracks -> Download Files (Geht lange wenn viele neue Songs)
      * Zielordner: mucinet/downloads/tracks

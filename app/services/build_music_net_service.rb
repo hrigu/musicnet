@@ -76,6 +76,7 @@ class BuildMusicNetService
         build_track(playlist, t, added_at: added_at_by_track_id[t.id], prefetched: prefetched)
       end
 
+      @info.add_renamed_playlist(playlist.name, spot_playlist.name) if playlist.name != spot_playlist.name
       playlist.update!(name: spot_playlist.name, snapshot_id: spot_playlist.snapshot_id)
       assign_libraries(playlist)
       RefreshInfo.new(new_spot_tracks.map(&:name), removed_names)
@@ -273,6 +274,10 @@ class BuildMusicNetService
 
     def add_new_created_artist(name)
       add(artists: {created: name})
+    end
+
+    def add_renamed_playlist(old_name, new_name)
+      add(playlists: {renamed: [old_name, new_name]})
     end
 
 
