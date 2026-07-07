@@ -40,6 +40,36 @@ RSpec.describe TrackFileLocator do
         expect(described_class.resolve_track_path(track)).to eq(downloads_dir.join(fallback_file_name).to_s)
       end
     end
+
+    it "waehlt bei mehreren passenden Dateien diejenige, die einen Artist-Namen des Tracks enthaelt" do
+      album = Album.create!(name: "RSpec Album", spotify_id: "rspec-album-artist-match")
+      artist = Artist.create!(name: "RSpec Artist B", spotify_id: "rspec-artist-b")
+      track = Track.create!(name: "RSpec Ambiguous Song", spotify_id: "rspec-trk-ambiguous-1",
+                            album: album, artists: [artist], duration_ms: 200_000)
+      file_a = "RSpec Artist A - RSpec Ambiguous Song.m4a"
+      file_b = "RSpec Artist B - RSpec Ambiguous Song.m4a"
+
+      with_download_file(file_a) do
+        with_download_file(file_b) do
+          expect(described_class.resolve_track_path(track)).to eq(downloads_dir.join(file_b).to_s)
+        end
+      end
+    end
+
+    it "faellt bei mehreren passenden Dateien ohne Artist-Treffer auf den ersten sortierten Treffer zurueck" do
+      album = Album.create!(name: "RSpec Album", spotify_id: "rspec-album-no-match")
+      artist = Artist.create!(name: "RSpec Unbeteiligter Artist", spotify_id: "rspec-artist-unrelated")
+      track = Track.create!(name: "RSpec Ambiguous Song Zwei", spotify_id: "rspec-trk-ambiguous-2",
+                            album: album, artists: [artist], duration_ms: 200_000)
+      file_a = "AAA Artist - RSpec Ambiguous Song Zwei.m4a"
+      file_b = "ZZZ Artist - RSpec Ambiguous Song Zwei.m4a"
+
+      with_download_file(file_a) do
+        with_download_file(file_b) do
+          expect(described_class.resolve_track_path(track)).to eq(downloads_dir.join(file_a).to_s)
+        end
+      end
+    end
   end
 
   describe ".preload_track_paths" do

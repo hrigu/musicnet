@@ -34,11 +34,29 @@ class TrackFileLocator
   end
 
   def self.resolve_from_name_match(track, file_entries)
+    candidates = matching_candidates(track, file_entries)
+    entry = disambiguate_by_artist(candidates, track) || candidates.first
+    entry && downloads_dir.join(entry.first).to_s
+  end
+
+  def self.matching_candidates(track, file_entries)
     search = track.name.gsub(Regexp.union(FILE_NAME_REPLACEMENTS.keys), FILE_NAME_REPLACEMENTS)
     suffix = "#{search}.m4a".downcase
-    entry = file_entries.find { |_original, downcased| file_name_matches?(downcased, suffix) }
-    Rails.logger.info("!!File nicht gefunden: #{search}") unless entry
-    entry && downloads_dir.join(entry.first).to_s
+    candidates = file_entries.select { |_original, downcased| file_name_matches?(downcased, suffix) }
+    Rails.logger.info("!!File nicht gefunden: #{search}") if candidates.empty?
+    candidates
+  end
+
+  # Bei mehreren gleichnamigen Tracks (unterschiedlicher Artist) findet der reine Namens-Suffix
+  # mehrere Dateien - der erste Kandidat, dessen Dateiname einen Artist-Namen des Tracks enthaelt,
+  # loest die Mehrdeutigkeit auf. Ohne Treffer bleibt es beim bisherigen "erster Treffer"-Verhalten.
+  def self.disambiguate_by_artist(candidates, track)
+    return if candidates.size <= 1
+
+    artist_names = track.artists.map { |artist| artist.name.downcase }
+    return if artist_names.empty?
+
+    candidates.find { |_original, downcased| artist_names.any? { |name| downcased.include?(name) } }
   end
 
   def self.file_name_matches?(file_name, suffix)
