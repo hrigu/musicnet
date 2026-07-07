@@ -27,6 +27,9 @@ Rails.application.routes.draw do
   end
   resources :artists, only: [:index, :show]
   resources :libraries, except: [:show]
+  resources :categories, except: [:show] do
+    resources :tags, except: %i[index show], controller: "tags", shallow: true
+  end
 
   get "help/:page", to: "help#show", as: :help
 

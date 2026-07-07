@@ -90,19 +90,21 @@ body {
 .table-tracks-detailed {
   th:nth-child(1)  { width: 19%; } // Name
   th:nth-child(2)  { width: 5%; }  // Dauer
-  th:nth-child(3)  { width: 7%; }  // hinzugefügt
-  th:nth-child(4)  { width: 6%; }  // Genre
-  th:nth-child(5)  { width: 7%; }  // Bekanntheit
-  th:nth-child(6)  { width: 6%; }  // Energie
+  th:nth-child(3)  { width: 6%; }  // hinzugefügt
+  th:nth-child(4)  { width: 5%; }  // Genre
+  th:nth-child(5)  { width: 6%; }  // Bekanntheit
+  th:nth-child(6)  { width: 5%; }  // Energie
   th:nth-child(7)  { width: 4%; }  // Tempo
-  th:nth-child(8)  { width: 11%; } // Künstler
-  th:nth-child(9)  { width: 9%; }  // Album Name
-  th:nth-child(10) { width: 7%; }  // Veröffentlichung
-  th:nth-child(11) { width: 10%; } // Playlists
+  th:nth-child(8)  { width: 10%; } // Künstler
+  th:nth-child(9)  { width: 8%; }  // Album Name
+  th:nth-child(10) { width: 6%; }  // Veröffentlichung
+  th:nth-child(11) { width: 9%; }  // Playlists
+  th:nth-child(12) { width: 8%; }  // Tags
   // 9% statt 6% (Intent 51 Nachtrag): mit dem Vorhoer-Button (🎧) passen jetzt drei
   // Buttons statt zwei rein - bei 6% lief der dritte Button aus der Zelle heraus, ohne
   // dass ein Test das gemerkt haette (DOM-Vorhandensein != sichtbar innerhalb der Zelle).
-  th:nth-child(12) { width: 9%; }  // Datei
+  // Beim Hinzufuegen der Tags-Spalte (Intent 77) bewusst NICHT verkleinert.
+  th:nth-child(13) { width: 9%; }  // Datei
 }
 
 // Buttons in der Datei-Spalte duerfen bei zu wenig Platz umbrechen statt abgeschnitten zu

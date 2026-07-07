@@ -61,6 +61,17 @@ RSpec.describe "Tracks", type: :request do
       end
     end
 
+    it "zeigt Tag-Badges mit Name und Stärke" do
+      track = create_track
+      category = Category.create!(name: "RSpec Emotion")
+      tag = category.tags.create!(name: "RSpec Traurig", aliases: "sad")
+      TrackTag.create!(track: track, tag: tag, strength: 7)
+
+      get tracks_path
+
+      expect(response.body).to include("RSpec Traurig · 7")
+    end
+
     it "zeigt die Playlist-Badges ohne eine Query pro Track" do
       playlist = Playlist.create!(spotify_id: "pl-q1", name: "Fusion Badge")
       other_playlist = Playlist.create!(spotify_id: "pl-q2", name: "Blues Badge")
@@ -315,6 +326,50 @@ RSpec.describe "Tracks", type: :request do
       expect(response).to have_http_status(:success)
     end
 
+    it "zeigt Tags gruppiert nach Kategorie, mehrere Tags derselben Kategorie gebündelt" do
+      track = create_track
+      emotion = Category.create!(name: "RSpec Emotion Show")
+      traurig = emotion.tags.create!(name: "RSpec Traurig Show", aliases: "x")
+      happy = emotion.tags.create!(name: "RSpec Happy Show", aliases: "y")
+      qualitaet = Category.create!(name: "RSpec Qualität Show")
+      tanzbar = qualitaet.tags.create!(name: "RSpec Tanzbar Show", aliases: "z")
+      TrackTag.create!(track: track, tag: traurig, strength: 5)
+      TrackTag.create!(track: track, tag: happy, strength: 8)
+      TrackTag.create!(track: track, tag: tanzbar, strength: 5)
+
+      get track_path(track)
+
+      html = Nokogiri::HTML(response.body)
+      groups = html.css(".d-flex.flex-column.gap-1 > div").map(&:text)
+      aggregate_failures do
+        expect(groups.find { |g| g.include?("RSpec Emotion Show") }).to include("RSpec Traurig Show · 5", "RSpec Happy Show · 8")
+        expect(groups.find { |g| g.include?("RSpec Qualität Show") }).to include("RSpec Tanzbar Show · 5")
+      end
+    end
+
+    it "verlinkt einen Tag auf die gefilterte Tracks-Seite" do
+      track = create_track
+      category = Category.create!(name: "RSpec Emotion Link")
+      tag = category.tags.create!(name: "RSpec Traurig Link", aliases: "x")
+      TrackTag.create!(track: track, tag: tag, strength: 5)
+
+      get track_path(track)
+
+      link = Nokogiri::HTML(response.body).css("a").find { |a| a.text.include?("RSpec Traurig Link") }
+      expect(link[:href]).to eq(tracks_path(q: 'tag:"RSpec Traurig Link"'))
+    end
+
+    it "zeigt das Datum, an dem der Tag mit dem Track verknüpft wurde" do
+      track = create_track
+      category = Category.create!(name: "RSpec Emotion Datum")
+      tag = category.tags.create!(name: "RSpec Traurig Datum", aliases: "x")
+      track_tag = TrackTag.create!(track: track, tag: tag, strength: 5)
+
+      get track_path(track)
+
+      expect(response.body).to include(I18n.l(track_tag.created_at.to_date))
+    end
+
     it "zeigt Album-Name und Release-Datum gelabelt (Intent 64 Nachtrag)" do
       album = Album.create!(name: "RSpec Album Show", spotify_id: "alb-label-1", release_date: Date.new(2020, 5, 1))
       track = Track.create!(name: "Track", spotify_id: "trk-label-1", album: album, duration_ms: 200_000)
@@ -333,6 +388,17 @@ RSpec.describe "Tracks", type: :request do
 
       expect(response.body).to include("Album: RSpec Album Ohne Datum")
       expect(response.body).to_not include(" von ")
+    end
+
+    it "zeigt den vollen Playlist-Namen zusätzlich zum abgekürzten Badge (Nachvollziehbarkeit der Tags)" do
+      album = Album.create!(name: "Album Show 2", spotify_id: "alb-show-2")
+      playlist = Playlist.create!(spotify_id: "pl-show-2", name: "Blues for dancing")
+      track = Track.create!(name: "Track Show 2", spotify_id: "trk-show-2", album: album, duration_ms: 200_000)
+      PlaylistTrack.create!(playlist: playlist, track: track, added_at: Time.current)
+
+      get track_path(track)
+
+      expect(response.body).to include("Blues for dancing")
     end
 
     it "lädt Album, Artists und Playlists für die Show ohne Lazy Loading" do
@@ -365,7 +431,7 @@ RSpec.describe "Tracks", type: :request do
       end
     end
 
-    it "zeigt eine Playlist als Element mit Badge und Hinzugefügt-Datum (Intent 64)" do
+    it "zeigt eine Playlist mit vollem Namen und Hinzugefügt-Datum (Intent 64)" do
       track = create_track
       playlist = Playlist.create!(spotify_id: "pl-t1", name: "Fusion Badge")
       PlaylistTrack.create!(playlist: playlist, track: track, added_at: Date.new(2026, 1, 15))
@@ -376,20 +442,19 @@ RSpec.describe "Tracks", type: :request do
       aggregate_failures do
         expect(response).to have_http_status(:success)
         expect(html.css("table")).to be_empty
-        badges = html.css(".badge").map(&:text)
-        expect(badges).to include("F_Badge")
+        expect(response.body).to include("Fusion Badge")
         expect(response.body).to include(I18n.l(Date.new(2026, 1, 15)))
       end
     end
 
-    it "umrahmt Playlist-Badge und Hinzugefügt-Datum als eine Einheit (Intent 64 Nachtrag)" do
+    it "umrahmt Playlist-Name und Hinzugefügt-Datum als eine Einheit (Intent 64 Nachtrag)" do
       track = create_track
       playlist = Playlist.create!(spotify_id: "pl-frame-1", name: "Fusion Frame")
       PlaylistTrack.create!(playlist: playlist, track: track, added_at: Date.new(2026, 1, 15))
 
       get track_path(track)
 
-      frame = Nokogiri::HTML(response.body).css(".border").find { |el| el.text.include?("F_Frame") }
+      frame = Nokogiri::HTML(response.body).css(".border").find { |el| el.text.include?("Fusion Frame") }
       expect(frame).to be_present
     end
 
@@ -401,8 +466,7 @@ RSpec.describe "Tracks", type: :request do
       get track_path(track)
 
       expect(response).to have_http_status(:success)
-      badges = Nokogiri::HTML(response.body).css(".badge").map(&:text)
-      expect(badges).to include("F_KeinDatum")
+      expect(response.body).to include("Fusion Kein Datum")
     end
 
     it "zeigt einen Entfernen-Button pro Playlist, der auf die PlaylistTrack-Zeile zeigt (Intent 75)" do

@@ -437,6 +437,43 @@ RSpec.describe Track, type: :model do
     end
   end
 
+  describe ".by_tag" do
+    def create_track(name:, spotify_id:)
+      album = Album.create!(name: "Album", spotify_id: "alb-#{spotify_id}")
+      Track.create!(name: name, spotify_id: spotify_id, album: album)
+    end
+
+    def add_tag(track, tag_name:)
+      category = Category.find_or_create_by!(name: "RSpec Tag-Kategorie")
+      tag = category.tags.find_or_create_by!(name: tag_name) { |t| t.aliases = tag_name }
+      TrackTag.create!(track: track, tag: tag, strength: 5)
+    end
+
+    it "findet Tracks über einen Contains-Wert auf dem Tag-Namen" do
+      match = create_track(name: "A", spotify_id: "by-tag-a")
+      add_tag(match, tag_name: "RSpec Traurig")
+      miss = create_track(name: "B", spotify_id: "by-tag-b")
+      add_tag(miss, tag_name: "RSpec Happy")
+
+      result = described_class.by_tag(type: :contains, value: "traurig")
+
+      expect(result.to_a).to eq([match])
+    end
+
+    it "liefert bei zweifacher Anwendung die Schnittmenge (Tag-UND)" do
+      both = create_track(name: "A", spotify_id: "by-tag-and-a")
+      add_tag(both, tag_name: "RSpec Traurig Und")
+      add_tag(both, tag_name: "RSpec Tanzbar Und")
+      only_one = create_track(name: "B", spotify_id: "by-tag-and-b")
+      add_tag(only_one, tag_name: "RSpec Traurig Und")
+
+      result = described_class.by_tag(type: :contains, value: "traurig und")
+                              .by_tag(type: :contains, value: "tanzbar und")
+
+      expect(result.to_a).to eq([both])
+    end
+  end
+
   describe ".in_active_library (Intent 57)" do
     def create_track(name:, spotify_id:)
       album = Album.create!(name: "Album", spotify_id: "alb-#{spotify_id}")

@@ -7,12 +7,14 @@ class Track < ApplicationRecord
   has_and_belongs_to_many :artists
   has_many :playlist_tracks
   has_many :queue_entries, dependent: :destroy
+  has_many :track_tags, dependent: :destroy
+  has_many :tags, through: :track_tags
 
   # Die Playlist die diesen Track enthlten
   has_many :playlists, through: :playlist_tracks
 
   def self.for_index
-    preload(:artists, { playlist_tracks: :playlist }, :album).strict_loading
+    preload(:artists, { playlist_tracks: :playlist }, :album, track_tags: { tag: :category }).strict_loading
   end
 
   # Whitelist erlaubter Sortier-Spalten fuer den Tracks-Index (Intent 34) — verhindert, dass
@@ -76,10 +78,11 @@ class Track < ApplicationRecord
     "energy" => :by_energy,
     "popularity" => :by_popularity,
     "year" => :by_release_year,
-    "release" => :by_release_year
+    "release" => :by_release_year,
+    "tag" => :by_tag
   }.freeze
   NUMERIC_FIELDS = %w[bpm tempo energy popularity year release].freeze
-  TEXT_FIELDS = %w[artist album genre playlist].freeze
+  TEXT_FIELDS = %w[artist album genre playlist tag].freeze
   NUMERIC_VALUE = /\A-?\d+(\.\d+)?\z/
 
   # Übersetzt einen DSL-Suchstring (TrackQueryParser) in eine Track-Relation. Jeder
@@ -193,6 +196,13 @@ class Track < ApplicationRecord
     where(id: joins(:playlists).where(text_match_condition("playlists.name", match)).select(:id))
   end
 
+  # Gleiches Subquery-Pattern wie by_playlist - ermöglicht per Wiederholung (tag:sad
+  # tag:tanzbar) eine echte Schnittmenge statt einer Vereinigung, da ein Track mehrere Tags
+  # gleichzeitig haben kann.
+  def self.by_tag(match)
+    where(id: joins(:tags).where(text_match_condition("tags.name", match)).select(:id))
+  end
+
   # Reiner Anzeige-Filter (Intent 57, ersetzt in_active_category aus Intent 54), getrennt vom
   # Spotify-Sync - blank/nil bedeutet "Alle" (kein Filter). Gleiches Subquery-Pattern wie
   # by_playlist, aus demselben Grund (Join-Fanout/Kombinierbarkeit mit anderen Bedingungen der
@@ -262,7 +272,7 @@ class Track < ApplicationRecord
   private_class_method :numeric_range_condition
 
   def self.for_show
-    preload({ artists: :tracks }, { playlist_tracks: :playlist }, :album).strict_loading
+    preload({ artists: :tracks }, { playlist_tracks: :playlist }, :album, track_tags: { tag: :category }).strict_loading
   end
 
   def self.for_download

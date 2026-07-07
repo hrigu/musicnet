@@ -1,0 +1,34 @@
+<%= form_with model: category, local: true do |f| %>
+  <% if category.errors.any? %>
+    <div class="alert alert-danger">
+      <%= category.errors.full_messages.to_sentence %>
+    </div>
+  <% end %>
+
+  <div class="mb-3">
+    <%= f.label :name, class: "form-label" %>
+    <%= f.text_field :name, class: "form-control" %>
+  </div>
+
+  <% if category.persisted? %>
+    <%# Nur beim Bearbeiten, nicht beim Anlegen: ein natives <input type="color"> kann nicht leer
+        sein, wuerde also einer neuen Kategorie ungefragt eine Farbe aufzwingen, wo vorher keine
+        gewaehlt wurde. Nach dem Anlegen kann die Farbe hier gezielt gesetzt werden. %>
+    <div class="mb-3">
+      <%= f.label :color, "Farbe", class: "form-label" %>
+      <%= f.color_field :color, value: category_preview_color(category), class: "form-control form-control-color" %>
+      <div class="form-text">
+        Optional. Bestimmt nur den Farbton (Hue) dieser Kategorie - jeder Tag bekommt daraus
+        automatisch eine eigene, zarte Helligkeitsvariante, damit alle Tags einer Kategorie als
+        Familie zusammengehören, sich aber trotzdem unterscheiden lassen.
+      </div>
+    </div>
+  <% end %>
+
+  <%= f.submit "Speichern", class: "btn btn-outline-secondary" %>
+<% end %>
+
+<% if category.persisted? && category.color.present? %>
+  <%= button_to "Farbe entfernen (neutrale Badges)", category_path(category), method: :patch,
+                params: { category: { color: "" } }, class: "btn btn-outline-secondary btn-sm mt-2" %>
+<% end %>

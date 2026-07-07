@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_07_051228) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_07_200000) do
   create_table "albums", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name"
@@ -34,6 +34,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_07_051228) do
     t.integer "track_id", null: false
     t.index ["artist_id"], name: "index_artists_tracks_on_artist_id"
     t.index ["track_id"], name: "index_artists_tracks_on_track_id"
+  end
+
+  create_table "categories", force: :cascade do |t|
+    t.string "color"
+    t.datetime "created_at", null: false
+    t.boolean "is_event", default: false, null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_categories_on_name", unique: true
   end
 
   create_table "libraries", force: :cascade do |t|
@@ -83,6 +92,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_07_051228) do
     t.index ["track_id"], name: "index_queue_entries_on_track_id"
   end
 
+  create_table "tags", force: :cascade do |t|
+    t.text "aliases", null: false
+    t.integer "category_id", null: false
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["category_id", "name"], name: "index_tags_on_category_id_and_name", unique: true
+    t.index ["category_id"], name: "index_tags_on_category_id"
+  end
+
+  create_table "track_tags", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "strength", null: false
+    t.integer "tag_id", null: false
+    t.integer "track_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["tag_id"], name: "index_track_tags_on_tag_id"
+    t.index ["track_id", "tag_id"], name: "index_track_tags_on_track_id_and_tag_id", unique: true
+    t.index ["track_id"], name: "index_track_tags_on_track_id"
+  end
+
   create_table "tracks", force: :cascade do |t|
     t.integer "album_id", null: false
     t.json "audio_features"
@@ -120,6 +150,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_07_051228) do
   add_foreign_key "playlist_tracks", "playlists", on_delete: :cascade
   add_foreign_key "playlist_tracks", "tracks", on_delete: :cascade
   add_foreign_key "queue_entries", "tracks"
+  add_foreign_key "tags", "categories"
+  add_foreign_key "track_tags", "tags"
+  add_foreign_key "track_tags", "tracks"
   add_foreign_key "tracks", "albums", on_delete: :cascade
   add_foreign_key "users", "libraries", column: "active_library_id"
 end

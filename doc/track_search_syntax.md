@@ -38,6 +38,18 @@ verknüpfen" unten), z.B. `genre:blues OR genre:shuffle`.
 | `energy:` | `energy:50..80` |
 | `popularity:` | `popularity:>50` |
 | `year:` / `release:` | `year:2015` |
+| `tag:` | `tag:traurig` |
+
+## Tags
+
+`tag:` sucht Tracks, denen ein Tag mit diesem Namen zugeordnet ist (z.B.
+`tag:traurig`), genau wie `playlist:` bei Playlist-Namen. Mehrfaches Vorkommen
+(`tag:traurig tag:tanzbar`) verlangt wie bei `playlist:`/`artist:` beide Tags
+gleichzeitig (Schnittmenge), da ein Track mehrere Tags gleichzeitig haben kann.
+
+Es gibt aktuell **keine** Möglichkeit, nach der Tag-*Stärke* (1-10) zu filtern
+oder zu sortieren — nur danach, ob ein Tag überhaupt zugeordnet ist. Die Stärke
+wird nur in der Tags-Spalte der Trackliste angezeigt.
 
 ## Mehrere Werte (ODER)
 
@@ -104,7 +116,7 @@ playlist:"Fusion Abende" playlist:"Blues Session"
 ```
 
 Das funktioniert so nur bei Feldern, bei denen ein Track mehrere Werte gleichzeitig
-haben kann (`artist`, `playlist`). Bei einwertigen Feldern (`genre`, `bpm`/`tempo`,
+haben kann (`artist`, `playlist`, `tag`). Bei einwertigen Feldern (`genre`, `bpm`/`tempo`,
 `energy`, `popularity`, `year`/`release`, `album`) ergibt eine Wiederholung keinen
 Sinn — ein Track hat z.B. nur ein Genre, `genre:jazz genre:blues` liefert darum
 korrekterweise keine Treffer (kein Track kann beides gleichzeitig sein).
@@ -158,7 +170,7 @@ Freitext behandelt. Ein ungültiger Wert für ein bekanntes Zahlen-Feld (z.B.
   beendet den Token, `James` wird zum eigenständigen Feld-Wert und `Otis` zu einem
   separaten Freitext-Wort. Ein UND über mehrere Werte desselben Feldes geht nur
   durch Wiederholen des ganzen Feldes (siehe "Mehrfaches Vorkommen" oben), und
-  auch nur bei mehrwertigen Feldern (`artist`, `playlist`).
+  auch nur bei mehrwertigen Feldern (`artist`, `playlist`, `tag`).
 * **Klammerung/Gruppierung.** Es gibt keine Möglichkeit, Kriterien zu gruppieren
   (z.B. "(A oder B) und C") — die Sprache kennt nur die flache Verknüpfung aus
   Leerzeichen-UND, Komma-ODER innerhalb eines Feldes und `OR` zwischen Kriterien,

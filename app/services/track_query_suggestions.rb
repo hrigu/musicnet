@@ -3,7 +3,7 @@
 # Feldname-Präfix (kein Doppelpunkt) oder feld:teilwert.
 class TrackQuerySuggestions
   MAX_SUGGESTIONS = 10
-  VALUE_SOURCE_FIELDS = %w[genre artist album playlist].freeze
+  VALUE_SOURCE_FIELDS = %w[genre artist album playlist tag].freeze
 
   def self.for(term, library_id = nil)
     new(term, library_id).suggestions
@@ -61,6 +61,10 @@ class TrackQuerySuggestions
   def playlist_values(prefix)
     Playlist.in_active_library(@library_id).where("LOWER(name) LIKE ?", "%#{prefix}%")
             .order(:name).limit(MAX_SUGGESTIONS).pluck(:name)
+  end
+
+  def tag_values(prefix)
+    Tag.where("LOWER(name) LIKE ?", "%#{prefix}%").order(:name).limit(MAX_SUGGESTIONS).pluck(:name)
   end
 
   # Nur das letzte, gerade getippte Komma-Item wird fuers Matching verwendet - vorherige Items

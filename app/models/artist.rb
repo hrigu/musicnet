@@ -12,7 +12,7 @@ class Artist < ApplicationRecord
   end
 
   def self.for_show(artist)
-    artist.tracks.preload(:artists, :album, playlist_tracks: :playlist).strict_loading
+    artist.tracks.preload(:artists, :album, playlist_tracks: :playlist, track_tags: { tag: :category }).strict_loading
   end
 
   def self.albums_for_show(artist)

@@ -25,11 +25,14 @@ module PlaylistsHelper
   # <span class="badge ...">-Zeile. DJ-Gig-Playlists (Name beginnt mit einer Jahreszahl) bekommen
   # einheitlich Grau (Nachtrag - vorher Schwarz), alles andere entweder die eigene Farbe
   # (playlist.color, falls gesetzt) oder die automatisch berechnete HSL-Farbe.
-  def playlist_badge(playlist)
+  # label ist per Default die Kurzform, kann aber ueberschrieben werden (z.B. der volle Name auf
+  # der Track-Detailseite, wo Platz fuer Nachvollziehbarkeit wichtiger ist als Kompaktheit) - die
+  # Farblogik bleibt in beiden Faellen dieselbe.
+  def playlist_badge(playlist, label: playlist_short_name(playlist))
     if !playlist.color.present? && dj_playlist?(playlist.name)
-      content_tag(:span, playlist_short_name(playlist), class: "badge text-bg-secondary")
+      content_tag(:span, label, class: "badge text-bg-secondary")
     else
-      content_tag(:span, playlist_short_name(playlist), class: "badge", style: playlist_badge_style(playlist))
+      content_tag(:span, label, class: "badge", style: playlist_badge_style(playlist))
     end
   end
 

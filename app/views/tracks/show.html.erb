@@ -68,11 +68,32 @@
 </div>
 
 <div class="mb-3">
+  <div class="text-muted small mb-1">Tags</div>
+  <% if @track.track_tags.empty? %>
+    <span class="text-muted">–</span>
+  <% else %>
+    <div class="d-flex flex-column gap-1">
+      <% track_tags_by_category(@track).each do |category, track_tags| %>
+        <div class="d-flex align-items-center flex-wrap gap-2">
+          <span class="text-muted small" style="min-width: 9rem"><%= category.name %></span>
+          <% track_tags.each do |tt| %>
+            <span class="d-inline-flex align-items-center gap-1">
+              <%= link_to track_tag_badge(tt), tracks_path(q: %(tag:"#{tt.tag.name}")) %>
+              <span class="text-muted small"><%= l(tt.created_at.to_date) %></span>
+            </span>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</div>
+
+<div class="mb-3">
   <div class="text-muted small mb-1">Playlists die diesen Track enthalten</div>
   <div class="d-flex flex-wrap gap-3">
     <% @track.playlist_tracks.each do |pt| %>
       <div class="d-flex align-items-center gap-2 border rounded-pill px-2 py-1">
-        <%= link_to playlist_badge(pt.playlist), playlist_path(pt.playlist.id) %>
+        <%= link_to playlist_badge(pt.playlist, label: pt.playlist.name), playlist_path(pt.playlist.id) %>
         <% if pt.added_at %>
           <span class="text-muted small"><%= l(pt.added_at.to_date) %></span>
         <% end %>
