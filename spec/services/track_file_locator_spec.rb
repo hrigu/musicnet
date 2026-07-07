@@ -56,6 +56,21 @@ RSpec.describe TrackFileLocator do
       end
     end
 
+    it "normalisiert Anfuehrungszeichen im Artist-Namen genauso wie beim Songnamen (Intent 74 Nachtrag)" do
+      album = Album.create!(name: "RSpec Album", spotify_id: "rspec-album-quote-artist")
+      artist = Artist.create!(name: 'RSpec Jimmy "Duck" Holmes', spotify_id: "rspec-artist-quote")
+      track = Track.create!(name: "RSpec Quote Song", spotify_id: "rspec-trk-quote-artist",
+                            album: album, artists: [artist], duration_ms: 200_000)
+      file_wrong = "AAA Other Artist - RSpec Quote Song.m4a"
+      file_correct = "RSpec Jimmy 'Duck' Holmes - RSpec Quote Song.m4a"
+
+      with_download_file(file_wrong) do
+        with_download_file(file_correct) do
+          expect(described_class.resolve_track_path(track)).to eq(downloads_dir.join(file_correct).to_s)
+        end
+      end
+    end
+
     it "faellt bei mehreren passenden Dateien ohne Artist-Treffer auf den ersten sortierten Treffer zurueck" do
       album = Album.create!(name: "RSpec Album", spotify_id: "rspec-album-no-match")
       artist = Artist.create!(name: "RSpec Unbeteiligter Artist", spotify_id: "rspec-artist-unrelated")
