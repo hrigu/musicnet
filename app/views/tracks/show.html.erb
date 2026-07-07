@@ -65,7 +65,18 @@
         <% if pt.added_at %>
           <span class="text-muted small"><%= l(pt.added_at.to_date) %></span>
         <% end %>
+        <%= button_to "×", playlist_track_path(pt), method: :delete, class: "btn btn-sm btn-link p-0",
+                      data: { turbo_confirm: "Track aus \"#{pt.playlist.name}\" entfernen?" } %>
       </div>
     <% end %>
   </div>
+
+  <% if @addable_playlists.any? %>
+    <%= form_with url: playlist_tracks_path(track_id: @track.id), local: true,
+                  class: "d-flex align-items-center gap-2 mt-2" do %>
+      <%= select_tag :playlist_id, options_for_select(@addable_playlists.map { |p| [p.name, p.id] }),
+                     class: "form-select form-select-sm w-auto" %>
+      <%= submit_tag "Zu Playlist hinzufügen", class: "btn btn-sm btn-outline-secondary" %>
+    <% end %>
+  <% end %>
 </div>

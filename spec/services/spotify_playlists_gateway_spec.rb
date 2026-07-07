@@ -180,4 +180,67 @@ RSpec.describe SpotifyPlaylistsGateway do
       expect(added_at_by_track_id.keys).to contain_exactly("trk-1", "trk-2")
     end
   end
+
+  describe "#rename_playlist" do
+    it "aendert den Namen auf Spotify und liefert die neue snapshot_id" do
+      playlist = Playlist.create!(spotify_id: "pl-1", name: "Alt")
+      spot_playlist = spotify_playlist(id: "pl-1", name: "Alt", owner_id: "spotify-user-1")
+      renamed = spotify_playlist(id: "pl-1", name: "Neu", owner_id: "spotify-user-1", snapshot_id: "snap-neu")
+      allow(RSpotify::Playlist).to receive(:find).with("spotify-user-1", "pl-1").and_return(spot_playlist, renamed)
+      allow(spot_playlist).to receive(:change_details!).with(name: "Neu")
+
+      expect(gateway.rename_playlist(playlist, "Neu")).to eq("snap-neu")
+      expect(spot_playlist).to have_received(:change_details!).with(name: "Neu")
+    end
+
+    it "wandelt einen Spotify-Fehler in SpotifyWriteError" do
+      playlist = Playlist.create!(spotify_id: "pl-1", name: "Alt")
+      allow(RSpotify::Playlist).to receive(:find).and_raise(RestClient::BadRequest)
+
+      expect { gateway.rename_playlist(playlist, "Neu") }.to raise_error(SpotifyPlaylistsGateway::SpotifyWriteError)
+    end
+  end
+
+  describe "#add_track" do
+    it "fuegt den Track ueber seine Spotify-Uri hinzu und liefert die neue snapshot_id" do
+      playlist = Playlist.create!(spotify_id: "pl-1", name: "Playlist")
+      track = Track.create!(spotify_id: "trk-1", name: "Track", album: Album.create!(spotify_id: "alb-1", name: "Album"))
+      spot_playlist = spotify_playlist(id: "pl-1", name: "Playlist", owner_id: "spotify-user-1", snapshot_id: "snap-add")
+      allow(RSpotify::Playlist).to receive(:find).with("spotify-user-1", "pl-1").and_return(spot_playlist)
+      allow(spot_playlist).to receive(:add_tracks!)
+
+      expect(gateway.add_track(playlist, track)).to eq("snap-add")
+      expect(spot_playlist).to have_received(:add_tracks!).with(["spotify:track:trk-1"])
+    end
+
+    it "wandelt einen Spotify-Fehler in SpotifyWriteError" do
+      playlist = Playlist.create!(spotify_id: "pl-1", name: "Playlist")
+      track = Track.create!(spotify_id: "trk-1", name: "Track", album: Album.create!(spotify_id: "alb-1", name: "Album"))
+      allow(RSpotify::Playlist).to receive(:find).and_raise(RestClient::BadRequest)
+
+      expect { gateway.add_track(playlist, track) }.to raise_error(SpotifyPlaylistsGateway::SpotifyWriteError)
+    end
+  end
+
+  describe "#remove_track" do
+    it "entfernt den Track und liefert die neue snapshot_id" do
+      playlist = Playlist.create!(spotify_id: "pl-1", name: "Playlist")
+      track = Track.create!(spotify_id: "trk-1", name: "Track", album: Album.create!(spotify_id: "alb-1", name: "Album"))
+      spot_playlist = spotify_playlist(id: "pl-1", name: "Playlist", owner_id: "spotify-user-1", snapshot_id: "snap-remove")
+      allow(RSpotify::Playlist).to receive(:find).with("spotify-user-1", "pl-1").and_return(spot_playlist)
+      captured_tracks = nil
+      allow(spot_playlist).to receive(:remove_tracks!) { |tracks| captured_tracks = tracks }
+
+      expect(gateway.remove_track(playlist, track)).to eq("snap-remove")
+      expect(captured_tracks.map(&:uri)).to eq(["spotify:track:trk-1"])
+    end
+
+    it "wandelt einen Spotify-Fehler in SpotifyWriteError" do
+      playlist = Playlist.create!(spotify_id: "pl-1", name: "Playlist")
+      track = Track.create!(spotify_id: "trk-1", name: "Track", album: Album.create!(spotify_id: "alb-1", name: "Album"))
+      allow(RSpotify::Playlist).to receive(:find).and_raise(RestClient::BadRequest)
+
+      expect { gateway.remove_track(playlist, track) }.to raise_error(SpotifyPlaylistsGateway::SpotifyWriteError)
+    end
+  end
 end

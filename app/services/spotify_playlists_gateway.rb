@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
 class SpotifyPlaylistsGateway
+  # Wird geworfen, wenn ein Schreib-Aufruf (Rename, Track hinzufuegen/entfernen) an Spotify
+  # fehlschlaegt - der Aufrufer soll die lokale Aenderung dann nicht uebernehmen.
+  SpotifyWriteError = Class.new(StandardError)
+
   def initialize(current_user)
     @spotify_user = current_user.spotify_user
   end
@@ -47,7 +51,46 @@ class SpotifyPlaylistsGateway
     [tracks, added_at_by_track_id]
   end
 
+  # change_details! liefert keine neue snapshot_id zurueck (RSpotify setzt sie lokal auf nil) -
+  # ein erneuter spot_playlist-Fetch danach liefert den echten, aktuellen Stand.
+  def rename_playlist(playlist, name)
+    with_write_error_handling do
+      spot_playlist(playlist).change_details!(name: name)
+      spot_playlist(playlist).snapshot_id
+    end
+  end
+
+  def add_track(playlist, track)
+    with_write_error_handling do
+      target = spot_playlist(playlist)
+      target.add_tracks!(["spotify:track:#{track.spotify_id}"])
+      target.snapshot_id
+    end
+  end
+
+  # remove_tracks! akzeptiert (anders als add_tracks!) keine rohen Uri-Strings, nur
+  # RSpotify::Track-Instanzen - id+uri reichen, RSpotify vervollstaendigt nicht automatisch
+  # nach, solange die abgefragten Attribute bereits gesetzt sind (RSpotify::Base#method_missing).
+  def remove_track(playlist, track)
+    with_write_error_handling do
+      target = spot_playlist(playlist)
+      spot_track = RSpotify::Track.new("id" => track.spotify_id, "uri" => "spotify:track:#{track.spotify_id}")
+      target.remove_tracks!([spot_track])
+      target.snapshot_id
+    end
+  end
+
   private
+
+  def spot_playlist(playlist)
+    RSpotify::Playlist.find(@spotify_user.id, playlist.spotify_id)
+  end
+
+  def with_write_error_handling
+    yield
+  rescue RestClient::Exception => e
+    raise SpotifyWriteError, e.message
+  end
 
   # Anzahl Retries bei 429 (Rate Limit), bevor eine Slice endgültig aufgegeben wird
   MAX_RATE_LIMIT_RETRIES = 3
