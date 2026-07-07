@@ -77,14 +77,14 @@ RSpec.describe DownloadResultParser do
 
     it "zaehlt eine Datei als Erfolg, auch wenn spotdl download_url nicht gesetzt hat " \
        "(Duplicate-Skip: Datei existierte schon, spotdl unterscheidet das nicht von einem echten Fehlschlag)" do
-      track = Track.create!(spotify_id: "trk-drp-10", name: "Lost In The Lows",
+      track = Track.create!(spotify_id: "trk-drp-10", name: "RSpec Duplicate Skip Song",
                             album: Album.create!(spotify_id: "alb-drp-10", name: "Album"), duration_ms: 200_000)
       create_downloaded_file(track)
       write_save_file([{ "song_id" => track.spotify_id, "download_url" => nil }])
 
       result = described_class.new([track], save_file_path: save_file_path, errors_file_path: errors_file_path).parse
 
-      expect(result.downloaded).to eq([{ name: "Lost In The Lows", provider: "unbekannt" }])
+      expect(result.downloaded).to eq([{ name: "RSpec Duplicate Skip Song", provider: "unbekannt" }])
       expect(result.failed).to eq([])
     end
   end

@@ -35,7 +35,7 @@ class TrackFileLocator
 
   def self.resolve_from_name_match(track, file_entries)
     candidates = matching_candidates(track, file_entries)
-    entry = disambiguate_by_artist(candidates, track) || candidates.first
+    entry = candidates.size <= 1 ? candidates.first : disambiguate_by_artist(candidates, track)
     entry && downloads_dir.join(entry.first).to_s
   end
 
@@ -49,12 +49,11 @@ class TrackFileLocator
 
   # Bei mehreren gleichnamigen Tracks (unterschiedlicher Artist) findet der reine Namens-Suffix
   # mehrere Dateien - der erste Kandidat, dessen Dateiname einen Artist-Namen des Tracks enthaelt,
-  # loest die Mehrdeutigkeit auf. Ohne Treffer bleibt es beim bisherigen "erster Treffer"-Verhalten.
+  # loest die Mehrdeutigkeit auf. Ohne Treffer nil (Intent 75) statt eines Rateergebnisses - der
+  # Aufrufer (resolve_from_name_match) ruft dies nur bei mehr als einem Kandidaten auf.
   # Der Artist-Name wird genauso sanitisiert wie der Songname, da spotdl dieselben Ersetzungen
   # (z.B. " -> ') auch auf den Artist-Teil des Dateinamens anwendet.
   def self.disambiguate_by_artist(candidates, track)
-    return if candidates.size <= 1
-
     artist_names = track.artists.map { |artist| sanitize_for_file_name(artist.name).downcase }
     return if artist_names.empty?
 

@@ -71,7 +71,7 @@ RSpec.describe TrackFileLocator do
       end
     end
 
-    it "faellt bei mehreren passenden Dateien ohne Artist-Treffer auf den ersten sortierten Treffer zurueck" do
+    it "liefert nil bei mehreren passenden Dateien ohne Artist-Treffer, statt zu raten (Intent 75)" do
       album = Album.create!(name: "RSpec Album", spotify_id: "rspec-album-no-match")
       artist = Artist.create!(name: "RSpec Unbeteiligter Artist", spotify_id: "rspec-artist-unrelated")
       track = Track.create!(name: "RSpec Ambiguous Song Zwei", spotify_id: "rspec-trk-ambiguous-2",
@@ -81,7 +81,7 @@ RSpec.describe TrackFileLocator do
 
       with_download_file(file_a) do
         with_download_file(file_b) do
-          expect(described_class.resolve_track_path(track)).to eq(downloads_dir.join(file_a).to_s)
+          expect(described_class.resolve_track_path(track)).to be_nil
         end
       end
     end
