@@ -326,6 +326,17 @@ RSpec.describe "Tracks", type: :request do
       expect(response).to have_http_status(:success)
     end
 
+    it "zeigt das Widget zum manuellen Zuweisen eines Tags (Intent 79)" do
+      track = create_track
+      Category.create!(name: "RSpec Kategorie Widget")
+
+      get track_path(track)
+
+      expect(response.body).to include("+ Tag hinzufügen")
+      expect(response.body).to include('data-controller="tag-assign"')
+      expect(response.body).to include(%(action="/track_tags"))
+    end
+
     it "zeigt Tags gruppiert nach Kategorie, mehrere Tags derselben Kategorie gebündelt" do
       track = create_track
       emotion = Category.create!(name: "RSpec Emotion Show")

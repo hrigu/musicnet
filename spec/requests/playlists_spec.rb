@@ -392,6 +392,15 @@ RSpec.describe "Playlists", type: :request do
       expect(response.body).to include(I18n.l(playlist.updated_at))
     end
 
+    it "GET /playlists/:id blendet eine vom User ausgeblendete Spalte aus (Intent 80)" do
+      playlist = playlists(:dark)
+      users(:one).update!(hidden_track_columns: ["genre"])
+
+      get playlist_path(playlist)
+
+      expect(response.body).to_not include(">Genre<")
+    end
+
     it "POST /playlists/:id/refresh ruft refresh_playlist auf, redirected und zeigt die Änderungen" do
       info = BuildMusicNetService::RefreshInfo.new(["Green Tea"], ["Hottentot"])
       service = instance_double(BuildMusicNetService, refresh_playlist: info)

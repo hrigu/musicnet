@@ -30,6 +30,8 @@ Rails.application.routes.draw do
   resources :categories, except: [:show] do
     resources :tags, except: %i[index show], controller: "tags", shallow: true
   end
+  get "tags/search", to: "tags#search", as: :search_tags
+  resources :track_tags, only: [:create, :destroy]
 
   get "help/:page", to: "help#show", as: :help
 

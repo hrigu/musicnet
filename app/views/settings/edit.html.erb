@@ -17,5 +17,20 @@
       </div>
     <% end %>
   </div>
+
+  <div class="mb-3">
+    <label class="form-label d-block">Spalten in Tracks-/Playlist-Tabellen</label>
+    <%# Leerer Hidden-Wert zuerst, damit "keine Checkbox angehakt" im Request als leeres Array
+        statt als fehlender Parameter ankommt (SettingsController#user_update_params). %>
+    <%= hidden_field_tag "user[visible_track_columns][]", "" %>
+    <% Track::OPTIONAL_COLUMNS.each do |key, label| %>
+      <div class="form-check">
+        <%= check_box_tag "user[visible_track_columns][]", key, current_user.column_visible?(key),
+              class: "form-check-input", id: "visible_column_#{key}" %>
+        <%= label_tag "visible_column_#{key}", label, class: "form-check-label" %>
+      </div>
+    <% end %>
+  </div>
+
   <%= f.submit "Speichern", class: "btn btn-outline-secondary" %>
 <% end %>

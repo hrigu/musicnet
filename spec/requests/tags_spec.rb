@@ -62,4 +62,23 @@ RSpec.describe "Tags", type: :request do
       expect(Tag.find_by(id: tag.id)).to be_nil
     end
   end
+
+  describe "GET /tags/search" do
+    it "liefert passende Tags inkl. Kategorie als JSON" do
+      category = Category.create!(name: "RSpec Emotion Suche")
+      tag = category.tags.create!(name: "RSpec Traurig Suche", aliases: "x")
+      category.tags.create!(name: "RSpec Happy Suche", aliases: "y")
+
+      get search_tags_path(term: "traurig")
+
+      json = JSON.parse(response.body)
+      expect(json).to eq([{ "id" => tag.id, "name" => tag.name, "category" => category.name }])
+    end
+
+    it "liefert eine leere Liste bei leerem Suchbegriff" do
+      get search_tags_path(term: "")
+
+      expect(JSON.parse(response.body)).to eq([])
+    end
+  end
 end

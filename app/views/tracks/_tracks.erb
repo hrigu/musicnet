@@ -2,19 +2,43 @@
   <table class="table table-hover align-middle mb-0 table-tracks table-tracks-detailed">
     <thead class="table-light">
     <tr>
-      <th scope="col"><%= sort_link("name", "Name") %></th>
-      <th scope="col" class="text-end"><%= sort_link("duration_ms", "Dauer") %></th>
-      <th scope="col"><%= sort_link("added_at", "hinzugefügt") %></th>
-      <th scope="col"><%= sort_link("genre", "Genre") %></th>
-      <th scope="col"><%= sort_link("popularity", "Bekanntheit") %></th>
-      <th scope="col"><%= sort_link("energy", "Energie") %></th>
-      <th scope="col" class="text-end"><%= sort_link("tempo", "Tempo") %></th>
-      <th scope="col"><%= sort_link("artist", "Künstler") %></th>
-      <th scope="col">Album Name</th>
-      <th scope="col"><%= sort_link("release_date", "Veröffentlichung") %></th>
-      <th scope="col">Playlists</th>
-      <th scope="col">Tags</th>
-      <th scope="col">Datei</th>
+      <th scope="col" class="col-name"><%= sort_link("name", "Name") %></th>
+      <% if column_visible?("duration") %>
+        <th scope="col" class="text-end col-duration"><%= sort_link("duration_ms", "Dauer") %></th>
+      <% end %>
+      <% if column_visible?("added_at") %>
+        <th scope="col" class="col-added_at"><%= sort_link("added_at", "hinzugefügt") %></th>
+      <% end %>
+      <% if column_visible?("genre") %>
+        <th scope="col" class="col-genre"><%= sort_link("genre", "Genre") %></th>
+      <% end %>
+      <% if column_visible?("popularity") %>
+        <th scope="col" class="col-popularity"><%= sort_link("popularity", "Bekanntheit") %></th>
+      <% end %>
+      <% if column_visible?("energy") %>
+        <th scope="col" class="col-energy"><%= sort_link("energy", "Energie") %></th>
+      <% end %>
+      <% if column_visible?("tempo") %>
+        <th scope="col" class="text-end col-tempo"><%= sort_link("tempo", "Tempo") %></th>
+      <% end %>
+      <% if column_visible?("artist") %>
+        <th scope="col" class="col-artist"><%= sort_link("artist", "Künstler") %></th>
+      <% end %>
+      <% if column_visible?("album") %>
+        <th scope="col" class="col-album">Album Name</th>
+      <% end %>
+      <% if column_visible?("release_date") %>
+        <th scope="col" class="col-release_date"><%= sort_link("release_date", "Veröffentlichung") %></th>
+      <% end %>
+      <% if column_visible?("playlists") %>
+        <th scope="col" class="col-playlists">Playlists</th>
+      <% end %>
+      <% if column_visible?("tags") %>
+        <th scope="col" class="col-tags">Tags</th>
+      <% end %>
+      <% if column_visible?("file") %>
+        <th scope="col" class="col-file">Datei</th>
+      <% end %>
     </tr>
     </thead>
     <tbody>

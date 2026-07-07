@@ -9,6 +9,13 @@ module TracksHelper
   TAG_AUTO_SATURATION = 35
   TAG_AUTO_LIGHTNESS_RANGE = (55..80)
 
+  # Delegiert an User#column_visible? (Intent 80) - eigene Helper-Methode, damit Views nicht
+  # direkt current_user.column_visible?(...) aufrufen muessen und ein spaeterer Wechsel der
+  # Persistenz (z.B. weg vom User-Model) nur hier angepasst werden muesste.
+  def column_visible?(key)
+    current_user.column_visible?(key)
+  end
+
   def sort_link(column, label)
     active = active_sort_column == column
     next_direction = active && active_sort_direction == "asc" ? "desc" : "asc"

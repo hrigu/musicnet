@@ -2,42 +2,66 @@
 <% track = playlist_track.track %>
 <tr>
   <th scope="row"><%= link_to(track.name, track_path(track.id)) %></th>
-  <td class="text-end text-muted font-monospace"><%= track.dauer %></td>
-  <td class="text-muted"><%= l(playlist_track.added_at.to_date) %></td>
-  <td><%= genre_badge(track.genre) %></td>
-  <td><%= track_meter(track.popularity, variant: "info") %></td>
-  <td><%= track_meter(engergie_to_view(track.energy), variant: "warning") %></td>
-  <td class="text-end text-muted">
-    <% if track.tempo %>
-      <%= tempo_to_view(track.tempo) %> <span class="small">BPM</span>
-    <% else %>
-      –
-    <% end %>
-  </td>
-  <td>
-    <% track.artists.each do |a| %>
-      <%= link_to a.name, artist_path(a.id), class: "d-inline-block me-2" %>
-    <% end %>
-  </td>
-  <td><%= track.album.name %></td>
-  <td class="text-muted"><%= l(track.album.release_date) if track.album.release_date %></td>
-  <td>
-    <div class="d-flex flex-wrap gap-1">
-      <% track.playlist_tracks.each do |pt| %>
-        <% unless pt.id == playlist_track.id %>
-          <%= link_to playlist_badge(pt.playlist), playlist_path(pt.playlist.id) %>
+  <% if column_visible?("duration") %>
+    <td class="text-end text-muted font-monospace"><%= track.dauer %></td>
+  <% end %>
+  <% if column_visible?("added_at") %>
+    <td class="text-muted"><%= l(playlist_track.added_at.to_date) %></td>
+  <% end %>
+  <% if column_visible?("genre") %>
+    <td><%= genre_badge(track.genre) %></td>
+  <% end %>
+  <% if column_visible?("popularity") %>
+    <td><%= track_meter(track.popularity, variant: "info") %></td>
+  <% end %>
+  <% if column_visible?("energy") %>
+    <td><%= track_meter(engergie_to_view(track.energy), variant: "warning") %></td>
+  <% end %>
+  <% if column_visible?("tempo") %>
+    <td class="text-end text-muted">
+      <% if track.tempo %>
+        <%= tempo_to_view(track.tempo) %> <span class="small">BPM</span>
+      <% else %>
+        –
+      <% end %>
+    </td>
+  <% end %>
+  <% if column_visible?("artist") %>
+    <td>
+      <% track.artists.each do |a| %>
+        <%= link_to a.name, artist_path(a.id), class: "d-inline-block me-2" %>
+      <% end %>
+    </td>
+  <% end %>
+  <% if column_visible?("album") %>
+    <td><%= track.album.name %></td>
+  <% end %>
+  <% if column_visible?("release_date") %>
+    <td class="text-muted"><%= l(track.album.release_date) if track.album.release_date %></td>
+  <% end %>
+  <% if column_visible?("playlists") %>
+    <td>
+      <div class="d-flex flex-wrap gap-1">
+        <% track.playlist_tracks.each do |pt| %>
+          <% unless pt.id == playlist_track.id %>
+            <%= link_to playlist_badge(pt.playlist), playlist_path(pt.playlist.id) %>
+          <% end %>
         <% end %>
-      <% end %>
-    </div>
-  </td>
-  <td>
-    <div class="d-flex flex-wrap gap-1">
-      <% track.track_tags.each do |tt| %>
-        <%= track_tag_badge(tt) %>
-      <% end %>
-    </div>
-  </td>
-  <td>
-    <%= render partial: 'components/audio_file', locals: {track: track} %>
-  </td>
+      </div>
+    </td>
+  <% end %>
+  <% if column_visible?("tags") %>
+    <td>
+      <div class="d-flex flex-wrap gap-1">
+        <% track.track_tags.each do |tt| %>
+          <%= track_tag_badge(tt) %>
+        <% end %>
+      </div>
+    </td>
+  <% end %>
+  <% if column_visible?("file") %>
+    <td>
+      <%= render partial: 'components/audio_file', locals: {track: track} %>
+    </td>
+  <% end %>
 </tr>

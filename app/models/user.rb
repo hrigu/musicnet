@@ -31,6 +31,14 @@ class User < ApplicationRecord
     @spotify_user ||= RSpotify::User.new(JSON.parse(spotify_user_data))
   end
 
+  # Optional ausblendbare Spalten der Tracks-/Playlist-Tabelle (Intent 80, siehe
+  # Track::OPTIONAL_COLUMNS) - hidden_track_columns speichert nur die ausgeblendeten Keys, nicht
+  # die sichtbaren, damit ein User ohne diese Einstellung (leeres Array, Migrations-Default)
+  # weiterhin alle Spalten sieht wie vor Einfuehrung dieser Funktion.
+  def column_visible?(key)
+    hidden_track_columns.exclude?(key)
+  end
+
   def spotify_avatar_url
     return if spotify_user_data.blank?
 

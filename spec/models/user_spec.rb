@@ -84,4 +84,19 @@ RSpec.describe User, type: :model do
       expect(user.active_library).to eq(library)
     end
   end
+
+  describe "#column_visible?" do
+    it "ist standardmässig für jede Spalte sichtbar (leeres hidden_track_columns)" do
+      user = User.new
+
+      expect(user.column_visible?("playlists")).to be true
+    end
+
+    it "ist false für eine ausgeblendete Spalte" do
+      user = User.new(hidden_track_columns: ["playlists"])
+
+      expect(user.column_visible?("playlists")).to be false
+      expect(user.column_visible?("genre")).to be true
+    end
+  end
 end

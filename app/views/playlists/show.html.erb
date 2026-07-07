@@ -70,19 +70,43 @@
   <table class="table table-hover align-middle mb-0 table-tracks table-tracks-detailed">
     <thead class="table-light">
     <tr>
-      <th scope="col">Name</th>
-      <th scope="col" class="text-end">Dauer</th>
-      <th scope="col">hinzugefügt</th>
-      <th scope="col">Genre</th>
-      <th scope="col">Bekanntheit</th>
-      <th scope="col">Energie</th>
-      <th scope="col" class="text-end">Tempo</th>
-      <th scope="col">Künstler</th>
-      <th scope="col">Album Name</th>
-      <th scope="col">Veröffentlichung</th>
-      <th scope="col">Playlists</th>
-      <th scope="col">Tags</th>
-      <th scope="col">Datei</th>
+      <th scope="col" class="col-name">Name</th>
+      <% if column_visible?("duration") %>
+        <th scope="col" class="text-end col-duration">Dauer</th>
+      <% end %>
+      <% if column_visible?("added_at") %>
+        <th scope="col" class="col-added_at">hinzugefügt</th>
+      <% end %>
+      <% if column_visible?("genre") %>
+        <th scope="col" class="col-genre">Genre</th>
+      <% end %>
+      <% if column_visible?("popularity") %>
+        <th scope="col" class="col-popularity">Bekanntheit</th>
+      <% end %>
+      <% if column_visible?("energy") %>
+        <th scope="col" class="col-energy">Energie</th>
+      <% end %>
+      <% if column_visible?("tempo") %>
+        <th scope="col" class="text-end col-tempo">Tempo</th>
+      <% end %>
+      <% if column_visible?("artist") %>
+        <th scope="col" class="col-artist">Künstler</th>
+      <% end %>
+      <% if column_visible?("album") %>
+        <th scope="col" class="col-album">Album Name</th>
+      <% end %>
+      <% if column_visible?("release_date") %>
+        <th scope="col" class="col-release_date">Veröffentlichung</th>
+      <% end %>
+      <% if column_visible?("playlists") %>
+        <th scope="col" class="col-playlists">Playlists</th>
+      <% end %>
+      <% if column_visible?("tags") %>
+        <th scope="col" class="col-tags">Tags</th>
+      <% end %>
+      <% if column_visible?("file") %>
+        <th scope="col" class="col-file">Datei</th>
+      <% end %>
       <%# p.album.genres.join(", ") Teuer!!%>
     </tr>
     </thead>

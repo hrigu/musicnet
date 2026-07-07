@@ -13,6 +13,25 @@ class Track < ApplicationRecord
   # Die Playlist die diesen Track enthlten
   has_many :playlists, through: :playlist_tracks
 
+  # Optional ausblendbare Spalten der Tracks-/Playlist-Detailtabelle (Intent 80) - "Name" fehlt
+  # bewusst, da sie den Zeilenlink traegt und nie ausgeblendet werden kann. Reihenfolge hier
+  # bestimmt sowohl die Anzeigereihenfolge in der Tabelle als auch in der Einstellungen-Checkbox-
+  # liste (siehe User#hidden_track_columns/#column_visible?).
+  OPTIONAL_COLUMNS = {
+    "duration" => "Dauer",
+    "added_at" => "Hinzugefügt",
+    "genre" => "Genre",
+    "popularity" => "Bekanntheit",
+    "energy" => "Energie",
+    "tempo" => "Tempo",
+    "artist" => "Künstler",
+    "album" => "Album Name",
+    "release_date" => "Veröffentlichung",
+    "playlists" => "Playlists",
+    "tags" => "Tags",
+    "file" => "Datei"
+  }.freeze
+
   def self.for_index
     preload(:artists, { playlist_tracks: :playlist }, :album, track_tags: { tag: :category }).strict_loading
   end

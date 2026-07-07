@@ -80,12 +80,75 @@
             <span class="d-inline-flex align-items-center gap-1">
               <%= link_to track_tag_badge(tt), tracks_path(q: %(tag:"#{tt.tag.name}")) %>
               <span class="text-muted small"><%= l(tt.created_at.to_date) %></span>
+              <%= button_to "×", track_tag_path(tt), method: :delete, class: "btn btn-sm btn-link p-0",
+                    data: { turbo_confirm: "Tag \"#{tt.tag.name}\" von diesem Track entfernen?" } %>
             </span>
           <% end %>
         </div>
       <% end %>
     </div>
   <% end %>
+
+  <div class="mt-2" data-controller="tag-assign">
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-action="tag-assign#open"
+            data-tag-assign-target="openButton">
+      + Tag hinzufügen
+    </button>
+
+    <%= form_with url: track_tags_path, method: :post, local: true,
+          class: "border rounded p-3 mt-2 d-none", data: { tag_assign_target: "panel" } do %>
+      <%= hidden_field_tag :track_id, @track.id %>
+      <%= hidden_field_tag :tag_id, "", data: { tag_assign_target: "tagIdField" } %>
+      <%= hidden_field_tag :tag_name, "", data: { tag_assign_target: "tagNameField" } %>
+      <%= hidden_field_tag :category_id, "", data: { tag_assign_target: "categoryIdField" } %>
+
+      <div data-tag-assign-target="stepSearch">
+        <label class="form-label small">Tag-Name</label>
+        <div class="position-relative">
+          <%= text_field_tag :tag_search, nil, autocomplete: "off", placeholder: "z.B. traurig",
+                class: "form-control form-control-sm",
+                data: { tag_assign_target: "searchInput",
+                        action: "input->tag-assign#onInput keydown->tag-assign#onSearchKeydown" } %>
+          <div class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 10;"
+               data-tag-assign-target="results"></div>
+        </div>
+      </div>
+
+      <div data-tag-assign-target="stepCategory" class="d-none mt-2">
+        <label class="form-label small">
+          Kategorie für den neuen Tag „<span data-tag-assign-target="newTagLabel"></span>“
+        </label>
+        <select class="form-select form-select-sm" data-tag-assign-target="categorySelect"
+                data-action="keydown.enter->tag-assign#confirmCategory">
+          <% Category.order(:name).each do |category| %>
+            <option value="<%= category.id %>"><%= category.name %></option>
+          <% end %>
+        </select>
+        <div class="d-flex gap-2 mt-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-action="tag-assign#confirmCategory">
+            Weiter
+          </button>
+          <button type="button" class="btn btn-sm btn-link text-muted" data-action="tag-assign#backToSearch">
+            Zurück
+          </button>
+        </div>
+      </div>
+
+      <div data-tag-assign-target="stepStrength" class="d-none mt-2">
+        <label class="form-label small">
+          Stärke für <strong data-tag-assign-target="chosenTagLabel"></strong> (1–10)
+        </label>
+        <%= number_field_tag :strength, 5, min: 1, max: 10, class: "form-control form-control-sm", style: "max-width: 6rem;",
+              data: { tag_assign_target: "strengthInput" } %>
+        <div class="d-flex gap-2 mt-2">
+          <button type="submit" class="btn btn-sm btn-outline-secondary">Hinzufügen</button>
+          <button type="button" class="btn btn-sm btn-link text-muted" data-action="tag-assign#backToSearch">
+            Zurück, anderes Tag wählen
+          </button>
+        </div>
+      </div>
+    <% end %>
+  </div>
 </div>
 
 <div class="mb-3">
