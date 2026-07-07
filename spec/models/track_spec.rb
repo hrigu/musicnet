@@ -687,6 +687,45 @@ RSpec.describe Track, type: :model do
     end
   end
 
+  describe "#displayed_file_name" do
+    it "liefert file_name aus der DB, wenn gesetzt" do
+      track = Track.new(name: "RSpec Displayed Song", file_name: "RSpec DB Name.m4a")
+
+      expect(track.displayed_file_name).to eq("RSpec DB Name.m4a")
+    end
+
+    it "faellt auf den Dateinamen aus track_path zurueck, wenn file_name in der DB fehlt" do
+      track = Track.new(name: "RSpec Displayed Fallback")
+      file_name = "RSpec Artist - RSpec Displayed Fallback.m4a"
+
+      with_download_file(file_name) do
+        expect(track.displayed_file_name).to eq(file_name)
+      end
+    end
+
+    it "liefert nil, wenn weder file_name noch track_path vorhanden sind" do
+      track = Track.new(name: "RSpec Displayed Nichts")
+
+      expect(track.displayed_file_name).to be_nil
+    end
+  end
+
+  describe "#file_name_from_db?" do
+    it "ist wahr, wenn file_name gesetzt ist" do
+      track = Track.new(name: "RSpec DB Flag", file_name: "RSpec DB Name.m4a")
+
+      expect(track.file_name_from_db?).to be(true)
+    end
+
+    it "ist falsch, wenn file_name fehlt, auch wenn track_path per Fallback gefunden wird" do
+      track = Track.new(name: "RSpec DB Flag Fallback")
+
+      with_download_file("RSpec Artist - RSpec DB Flag Fallback.m4a") do
+        expect(track.file_name_from_db?).to be(false)
+      end
+    end
+  end
+
   describe "#genre" do
     def create_persisted_track(name:, genre: nil)
       album = Album.create!(name: "RSpec Album", spotify_id: "rspec-alb-genre")

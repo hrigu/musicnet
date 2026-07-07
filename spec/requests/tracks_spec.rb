@@ -451,6 +451,30 @@ RSpec.describe "Tracks", type: :request do
       expect(labels).to_not include("Datei")
     end
 
+    it "zeigt den ueber track_path gefundenen Dateinamen mit Hinweis, wenn file_name fehlt " \
+       "(Intent 73 Nachtrag)" do
+      track = create_track
+      with_download_file("RSpec Artist - #{track.name}.m4a") do
+        get track_path(track)
+      end
+
+      labels = Nokogiri::HTML(response.body).css(".text-muted.small").map(&:text)
+      aggregate_failures do
+        expect(labels).to include("Datei")
+        expect(response.body).to include("RSpec Artist - #{track.name}.m4a")
+        expect(response.body).to include("nicht in DB gespeichert")
+      end
+    end
+
+    it "zeigt keinen 'nicht in DB gespeichert'-Hinweis, wenn file_name gesetzt ist (Intent 73 Nachtrag)" do
+      track = create_track
+      track.update_column(:file_name, "RSpec Artist - RSpec Song.m4a")
+
+      get track_path(track)
+
+      expect(response.body).to_not include("nicht in DB gespeichert")
+    end
+
     it "labelt Dauer, Genre, Energie und Tempo (Intent 64 Nachtrag)" do
       track = create_track
       track.update!(audio_features: { "tempo" => 128.4, "energy" => 0.734 })

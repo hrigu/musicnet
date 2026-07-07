@@ -341,6 +341,16 @@ class Track < ApplicationRecord
     @track_path = TrackFileLocator.resolve_track_path(self)
   end
 
+  # Zeigt file_name (DB) an, wenn vorhanden, sonst best-effort ueber track_path - fuer Tracks, die
+  # vor Intent 72 heruntergeladen und noch nicht per backfill_track_file_names nachgezogen wurden.
+  def displayed_file_name
+    file_name.presence || (track_path && File.basename(track_path))
+  end
+
+  def file_name_from_db?
+    file_name.present?
+  end
+
   private
 
   def read_genre_from_file
