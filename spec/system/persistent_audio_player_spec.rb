@@ -247,4 +247,27 @@ RSpec.describe "Dauerhafte Track-Wiedergabe (Intent 40)", type: :system do
     current_time = page.evaluate_script("document.querySelector('#global-audio-player audio').currentTime")
     expect(current_time).to be >= 2.9
   end
+
+  it "laesst die Hauptwiedergabe unberuehrt, wenn der Spotify-Link eines Tracks ohne Datei geklickt wird" do
+    playing_track = create_track_with_real_audio("RSpec Stability Guard", spotify_id: "stability-guard")
+    album = Album.find_or_create_by!(spotify_id: "alb-no-file") { |a| a.name = "No File Album" }
+    track_without_file = Track.create!(
+      name: "RSpec Kein Download", spotify_id: "no-file-track", album: album, duration_ms: 200_000,
+      url: "https://open.spotify.com/track/no-file-track"
+    )
+
+    visit tracks_path
+    play_button_for(playing_track.name).click
+    sleep 0.3
+    expect(page).to have_selector("#global-audio-player", text: playing_track.name)
+
+    click_link track_without_file.name
+    expect(page).to have_content(track_without_file.name)
+
+    new_window = window_opened_by { click_link "Track in Spotify hören" }
+    new_window.close
+
+    still_playing = page.evaluate_script("!document.querySelector('#global-audio-player audio').paused")
+    expect(still_playing).to be(true)
+  end
 end

@@ -15,7 +15,7 @@
   <%# Solange keine lokale Datei existiert, bleibt Spotify die einzige Anhoer-Moeglichkeit
       (Intent 64) - sobald heruntergeladen, uebernimmt der Play-Button oben. %>
   <div class="my-3">
-    <div class="mb-2"><%= link_to "Track in Spotify hören", @track.url %></div>
+    <div class="mb-2"><%= link_to "Track in Spotify hören", @track.url, target: "_blank", rel: "noopener" %></div>
     <%= render partial: 'components/spotify_player', locals: { track: @track } %>
   </div>
 <% end %>
