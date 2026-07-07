@@ -45,6 +45,12 @@
       <span><%= tempo_to_view(@track.tempo) %> <span class="small text-muted">BPM</span></span>
     </div>
   <% end %>
+  <% if @track.file_name.present? %>
+    <div>
+      <div class="text-muted small mb-1">Datei</div>
+      <span><%= @track.file_name %></span>
+    </div>
+  <% end %>
 </div>
 
 <div class="mb-3">

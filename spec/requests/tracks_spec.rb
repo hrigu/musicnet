@@ -429,6 +429,28 @@ RSpec.describe "Tracks", type: :request do
       end
     end
 
+    it "zeigt den Dateinamen, wenn file_name gesetzt ist (Intent 73)" do
+      track = create_track
+      track.update_column(:file_name, "RSpec Artist - RSpec Song.m4a")
+
+      get track_path(track)
+
+      labels = Nokogiri::HTML(response.body).css(".text-muted.small").map(&:text)
+      aggregate_failures do
+        expect(labels).to include("Datei")
+        expect(response.body).to include("RSpec Artist - RSpec Song.m4a")
+      end
+    end
+
+    it "zeigt kein Dateiname-Feld, wenn file_name leer ist (Intent 73)" do
+      track = create_track
+
+      get track_path(track)
+
+      labels = Nokogiri::HTML(response.body).css(".text-muted.small").map(&:text)
+      expect(labels).to_not include("Datei")
+    end
+
     it "labelt Dauer, Genre, Energie und Tempo (Intent 64 Nachtrag)" do
       track = create_track
       track.update!(audio_features: { "tempo" => 128.4, "energy" => 0.734 })
