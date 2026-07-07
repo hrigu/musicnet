@@ -1,4 +1,49 @@
 # Diary
+## 2026-07-08
+* Feature (Intent 79): Tags lassen sich jetzt auch manuell auf der Track-Detailseite zuweisen -
+  Livesuche nach einem bestehenden Tag (inkl. Kategorie), oder bei einem neuen Namen die Kategorie
+  wählen, danach die Stärke - und wieder entfernen. Auf Wunsch komplett per Tastatur bedienbar
+  (Pfeiltasten/Enter statt Klick in der Vorschlagsliste), inkl. "Zurück"-Möglichkeit, falls man
+  beim zweiten Schritt merkt, das falsche Tag erwischt zu haben.
+* Feature (Intent 80): Tabellenspalten auf `/tracks` und der Playlist-Detailseite sind jetzt pro
+  User konfigurierbar (Einstellungen-Seite), statt fest. Auslöser war die Frage, ob die
+  Playlists-Spalte nach Einführung der Tags (Intent 77) überhaupt noch nötig ist - Antwort war
+  "ja, andere Funktion" (exakte Zugehörigkeit vs. verlustbehaftete Verdichtung), also gleich alle
+  Spalten konfigurierbar statt nur diese eine.
+* Zweimal am selben Tag einem Spring-Preloader-Fehlalarm hinterhergejagt: einmal ein
+  OAuth-Login-Fehler nach einem Server-Neustart mitten im Login-Flow, dann eine Einstellung, die
+  laut Erfolgsmeldung gespeichert wurde, aber sichtbar nichts bewirkte. Beide Male lag es an einem
+  seit 35 Stunden laufenden Spring-Prozess, der den Code-Stand des laufenden `bin/rails server`
+  eingefroren hatte - kein Bug in der App. Lehre fürs nächste Mal: bei unerklärlichem Verhalten
+  zuerst `ps aux | grep spring` auf verdächtig alte Prozesse prüfen, bevor man in der App-Logik
+  sucht.
+
+## 2026-07-07
+* Bug: `Album#release_date` (eine `date`-Spalte) verschluckte unvollständige Spotify-Angaben wie
+  "1970" (nur Jahr, je nach `release_date_precision`) stillschweigend zu `nil` - ActiveRecord
+  castet einen nicht vollständig parsbaren Datums-String ohne Fehler. Betraf sowohl den
+  Backfill-Task als auch den regulären Sync. Fix: `Album.normalize_release_date` ergänzt fehlenden
+  Monat/Tag (`"1970"` → `"1970-01-01"`).
+* Die "Veröffentlichung"-Spalte auf dem Tracks-Index und der Playlist-Ansicht war seit dem
+  Tabellen-Redesign verschwunden, obwohl das Backend (Sortierung, DSL-Suchfeld `year:`/`release:`)
+  sie längst unterstützte - UI-seitig wieder ergänzt, sortierbar.
+* Grosses Feature (Intent 77): Playlist-Namen wie "Blues mit Violine" oder "Fusion sad" stecken
+  mehr Information als nur Genre - eine Analyse aller 247 Playlist-Namen ergab eine Taxonomie aus
+  12 Kategorien mit ca. 142 Tags (Emotion, Instrumentierung, Musikstil, Geografie, Widmung, ...).
+  Neues Datenmodell `Category` → `Tag` → `TrackTag` (mit `strength` 1-10, häufigkeitsbasiert), per
+  Rake-Task `assign_track_tags` automatisch aus den Playlist-Namen befüllt (idempotent,
+  wiederholbar nach Taxonomie-Änderungen), plus Verwaltungs-UI (`/categories`), `tag:`-Suchfeld und
+  nach Kategorie gruppierte Anzeige.
+* Reale Falle beim Bauen der Alias-Erkennung: reines Teilstring-Matching (wie bei `Library`) hätte
+  den Alias "sad" fälschlich auch in "Salsadancers" gefunden - `Tag#matches_normalized_name?`
+  braucht darum Wortgrenzen (`\b...\b`) statt `include?`, plus eine Normalisierung, die Bindestriche
+  /Unterstriche zu Leerzeichen macht statt sie zu entfernen (sonst verschmilzt z.B. "rock'n'roll"
+  zu einem Wort und verliert seine Wortgrenze).
+* Nachtrag (Intent 78): ein im Playlist-Namen enthaltenes Auftrittsdatum (z.B.
+  "2023-12-01_Salsadancers") wird jetzt ebenfalls als Tag erkannt, unter einer eigenen Kategorie
+  "Auftrittsdatum" - bewusst nicht über das generische Alias-Matching, da ein kurzes Jahres-Tag
+  ("2026") sonst fälschlich auch in einem präziseren Datum ("2026-01-05...") mitgematcht hätte.
+
 ## 2026-07-06
 * Grosses Feature: Intent 57 - konfigurierbare "Bibliotheken" (`Library`-Model, Name + Stichwort)
   ersetzen die bisher hardcoded Blues/Fusion-Unterscheidung, sowohl für den Spotify-Import-Filter

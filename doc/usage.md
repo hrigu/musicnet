@@ -26,7 +26,31 @@ immer weiterhin beide Kategorien.
 ## Tracks-Suche
 
 Das Suchfeld auf `/tracks` versteht eine kleine Abfragesprache (Freitext, `feld:wert`, Bereiche,
-ODER-Verknüpfung, Negation) — siehe den Hilfeartikel [Suche](/help/suche-syntax).
+ODER-Verknüpfung, Negation, inkl. `tag:` für Tags) — siehe den Hilfeartikel
+[Suche](/help/suche-syntax).
+
+## Tags
+
+Playlist-Namen wie "Blues mit Violine" oder "2023-12-01_Salsadancers" stecken oft mehr Information
+als nur Genre — Instrumentierung, Emotion, Widmung, sogar ein Auftrittsdatum. Der Rake-Task
+`assign_track_tags` liest das automatisch aus allen Playlist-Namen heraus und ordnet Tracks
+entsprechende Tags mit einer Stärke (1–10, wie stark der Tag zutrifft) zu; je öfter ein Track in
+passenden Playlists vorkommt, desto höher die Stärke. Tags werden nach Kategorie gruppiert auf
+`/tracks`, der Playlist- und der Track-Detailseite angezeigt und sind über `tag:` durchsuchbar.
+
+Auf der Track-Detailseite lässt sich ein Tag auch manuell zuweisen ("+ Tag hinzufügen"): Livesuche
+nach einem bestehenden Tag (inkl. Kategorie), oder bei einem neuen Namen die passende Kategorie
+wählen, danach die Stärke — der ganze Ablauf funktioniert auch rein über die Tastatur
+(Pfeiltasten/Enter). Ein "×" neben einem Tag entfernt die Zuordnung wieder, nach Bestätigung.
+
+Kategorien und ihre Tags lassen sich unter "Kategorien" in der Navigation verwalten (Name, Alias-
+Stichwörter fürs automatische Erkennen, optional eine Farbe — die Tags einer Kategorie bekommen
+daraus automatisch zarte, individuelle Farbvarianten).
+
+## Tabellenspalten anpassen
+
+Unter "Einstellungen" lässt sich für die Tracks-/Playlist-Tabellen jede Spalte (Dauer, Genre,
+Playlists, Tags, …) einzeln ein- oder ausblenden — nur die Name-Spalte ist immer sichtbar.
 
 ## Song-Queue
 
