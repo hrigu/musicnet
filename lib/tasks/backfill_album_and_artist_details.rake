@@ -16,7 +16,7 @@ task backfill_album_and_artist_details: [:environment] do
     full_album = full_albums[album.spotify_id]
     next unless full_album
 
-    album.update!(release_date: full_album.release_date, popularity: full_album.popularity)
+    album.update!(release_date: Album.normalize_release_date(full_album.release_date), popularity: full_album.popularity)
   end
 
   artists = Artist.where(popularity: nil)

@@ -189,7 +189,7 @@ class BuildMusicNetService
     Album.find_or_create_by!(spotify_id: spot_album.id) do |a|
       @info.add_new_created_album(spot_album.name)
       a.name = spot_album.name
-      a.release_date = full_album&.release_date
+      a.release_date = Album.normalize_release_date(full_album&.release_date)
       a.popularity = full_album&.popularity
       a.url = spot_album.external_urls["spotify"]
     end
