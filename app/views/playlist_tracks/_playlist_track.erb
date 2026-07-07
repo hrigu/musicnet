@@ -20,6 +20,7 @@
     <% end %>
   </td>
   <td><%= track.album.name %></td>
+  <td class="text-muted"><%= l(track.album.release_date) if track.album.release_date %></td>
   <td>
     <div class="d-flex flex-wrap gap-1">
       <% track.playlist_tracks.each do |pt| %>
