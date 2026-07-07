@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_06_214107) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_07_051228) do
   create_table "albums", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name"
@@ -88,6 +88,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_06_214107) do
     t.json "audio_features"
     t.datetime "created_at", null: false
     t.integer "duration_ms"
+    t.string "file_name"
     t.string "genre"
     t.string "name"
     t.integer "popularity"

@@ -23,6 +23,17 @@ class TrackFileLocator
   end
 
   def self.resolve_track_path(track, file_entries = download_file_entries)
+    resolve_from_file_name(track) || resolve_from_name_match(track, file_entries)
+  end
+
+  def self.resolve_from_file_name(track)
+    return unless track.file_name.present?
+
+    path = downloads_dir.join(track.file_name)
+    path.to_s if File.exist?(path)
+  end
+
+  def self.resolve_from_name_match(track, file_entries)
     search = track.name.gsub(Regexp.union(FILE_NAME_REPLACEMENTS.keys), FILE_NAME_REPLACEMENTS)
     suffix = "#{search}.m4a".downcase
     entry = file_entries.find { |_original, downcased| file_name_matches?(downcased, suffix) }

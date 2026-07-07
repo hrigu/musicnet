@@ -22,6 +22,24 @@ RSpec.describe TrackFileLocator do
         expect(described_class.resolve_track_path(track)).to eq(downloads_dir.join(file_name).to_s)
       end
     end
+
+    it "nutzt eine gesetzte file_name direkt, ohne Namens-Matching gegen den Track-Namen" do
+      file_name = "RSpec Artist - Komplett anderer Dateiname.m4a"
+      track = Track.new(name: "RSpec Song ohne jede Übereinstimmung", file_name: file_name)
+
+      with_download_file(file_name) do
+        expect(described_class.resolve_track_path(track)).to eq(downloads_dir.join(file_name).to_s)
+      end
+    end
+
+    it "faellt aufs Namens-Matching zurueck, wenn die per file_name referenzierte Datei fehlt" do
+      fallback_file_name = "RSpec Artist - RSpec Song- Live.m4a"
+      track = Track.new(name: "RSpec Song: Live", file_name: "nicht-mehr-vorhanden.m4a")
+
+      with_download_file(fallback_file_name) do
+        expect(described_class.resolve_track_path(track)).to eq(downloads_dir.join(fallback_file_name).to_s)
+      end
+    end
   end
 
   describe ".preload_track_paths" do
