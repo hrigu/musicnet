@@ -89,6 +89,29 @@ RSpec.describe DownloadResultParser do
     end
   end
 
+  describe "file_name persistieren" do
+    it "speichert den tatsaechlichen Dateinamen fuer erfolgreich heruntergeladene Tracks" do
+      track = Track.create!(spotify_id: "trk-drp-11", name: "Some New Song",
+                            album: Album.create!(spotify_id: "alb-drp-11", name: "Album"), duration_ms: 200_000)
+      create_downloaded_file(track)
+      write_save_file([{ "song_id" => track.spotify_id, "download_url" => "https://www.youtube.com/watch?v=xyz" }])
+
+      described_class.new([track], save_file_path: save_file_path, errors_file_path: errors_file_path).parse
+
+      expect(track.reload.file_name).to eq("RSpec Artist - Some New Song.m4a")
+    end
+
+    it "laesst file_name leer fuer fehlgeschlagene Tracks" do
+      track = Track.create!(spotify_id: "trk-drp-12", name: "Missing Song",
+                            album: Album.create!(spotify_id: "alb-drp-12", name: "Album"), duration_ms: 200_000)
+      write_save_file([{ "song_id" => track.spotify_id, "download_url" => nil }])
+
+      described_class.new([track], save_file_path: save_file_path, errors_file_path: errors_file_path).parse
+
+      expect(track.reload.file_name).to be_nil
+    end
+  end
+
   describe "lange Fehlermeldungen" do
     it "kuerzt den Grund, damit er nicht unbegrenzt lang werden kann (landet im Session-Flash)" do
       track = Track.create!(spotify_id: "trk-drp-9", name: "Minor Swing",

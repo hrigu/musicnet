@@ -59,10 +59,16 @@ class DownloadResultParser
     @tracks.filter_map do |track|
       next unless track.track_path
 
+      persist_file_name(track)
       song = songs_by_spotify_id[track.spotify_id]
       provider = song && song["download_url"].present? ? provider_name(song["download_url"]) : UNKNOWN_PROVIDER
       { name: truncated_name(track), provider: provider }
     end
+  end
+
+  def persist_file_name(track)
+    file_name = File.basename(track.track_path)
+    track.update_column(:file_name, file_name) if track.file_name != file_name
   end
 
   def failed_entries(error_lines)
