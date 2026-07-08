@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "rails_helper"
 
 RSpec.describe "Verwandte Tracks auf der Track-Detailseite (Intent 84, Stufe 1)", type: :system do
@@ -20,7 +22,7 @@ RSpec.describe "Verwandte Tracks auf der Track-Detailseite (Intent 84, Stufe 1)"
 
     visit track_path(track)
 
-    within("#" + ActionView::RecordIdentifier.dom_id(track, :related_tracks)) do
+    within("##{ActionView::RecordIdentifier.dom_id(track, :related_tracks)}") do
       expect(page).to have_content("RSpec RT System In Category")
       expect(page).to have_content("RSpec RT System Outside")
 
@@ -43,7 +45,7 @@ RSpec.describe "Verwandte Tracks auf der Track-Detailseite (Intent 84, Stufe 1)"
 
     visit track_path(track)
 
-    within("#" + ActionView::RecordIdentifier.dom_id(track, :related_tracks)) do
+    within("##{ActionView::RecordIdentifier.dom_id(track, :related_tracks)}") do
       within("tr", text: "RSpec RT System Related") do
         expect(page).to have_button("🎧")
       end

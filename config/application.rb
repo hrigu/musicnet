@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "boot"
 
 require "rails/all"
@@ -8,7 +10,6 @@ Bundler.require(*Rails.groups)
 
 module Musicnet
   class Application < Rails::Application
-
     def authenticate_to_spotify
       # Die App als "spoty" authentisieren
       client_id = Rails.application.credentials.dig(:spotify, :client_id)
@@ -30,6 +31,5 @@ module Musicnet
     config.time_zone = "Bern"
 
     # config.eager_load_paths << Rails.root.join("extras")
-
   end
 end

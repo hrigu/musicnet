@@ -4,7 +4,7 @@
 # Nutzt denselben Namens-Matching-Weg wie bisher (TrackFileLocator) - bei historischen
 # Namenskollisionen (zwei exakt gleichnamige Tracks) kann das weiterhin beiden Tracks
 # dieselbe Datei zuweisen, das laesst sich nur manuell pruefen und korrigieren.
-desc 'befuellt file_name rueckwirkend fuer bereits heruntergeladene Tracks'
+desc "befuellt file_name rueckwirkend fuer bereits heruntergeladene Tracks"
 task backfill_track_file_names: [:environment] do
   tracks = Track.where(file_name: nil).to_a
   puts "Tracks ohne file_name: #{tracks.size}"

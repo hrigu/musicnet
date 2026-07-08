@@ -353,7 +353,9 @@ RSpec.describe "Tracks", type: :request do
       html = Nokogiri::HTML(response.body)
       groups = html.css(".d-flex.flex-column.gap-1 > div").map(&:text)
       aggregate_failures do
-        expect(groups.find { |g| g.include?("RSpec Emotion Show") }).to include("RSpec Traurig Show · 5", "RSpec Happy Show · 8")
+        expect(groups.find do |g|
+          g.include?("RSpec Emotion Show")
+        end).to include("RSpec Traurig Show · 5", "RSpec Happy Show · 8")
         expect(groups.find { |g| g.include?("RSpec Qualität Show") }).to include("RSpec Tanzbar Show · 5")
       end
     end
@@ -794,7 +796,8 @@ RSpec.describe "Tracks", type: :request do
       TrackTag.create!(track: track, tag: tag, strength: 5)
       12.times do |i|
         album = Album.create!(name: "Album RT 11 #{i}", spotify_id: "alb-rt-11-#{i}")
-        match = Track.create!(name: "RSpec RT Match 11 #{i}", spotify_id: "trk-rt-11-#{i}", album: album, duration_ms: 200_000)
+        match = Track.create!(name: "RSpec RT Match 11 #{i}", spotify_id: "trk-rt-11-#{i}", album: album,
+                              duration_ms: 200_000)
         TrackTag.create!(track: match, tag: tag, strength: 5)
       end
 
@@ -820,9 +823,9 @@ RSpec.describe "Tracks", type: :request do
       album = Album.create!(name: "Album RT Genre", spotify_id: "alb-rt-genre-1")
       other_album = Album.create!(name: "Album RT Genre 2", spotify_id: "alb-rt-genre-2")
       track = Track.create!(name: "RSpec RT Genre Origin", spotify_id: "trk-rt-genre-1", album: album,
-                             duration_ms: 200_000, genre: "Jazz")
-      match = Track.create!(name: "RSpec RT Genre Match", spotify_id: "trk-rt-genre-2", album: other_album,
-                             duration_ms: 200_000, genre: "Jazz")
+                            duration_ms: 200_000, genre: "Jazz")
+      Track.create!(name: "RSpec RT Genre Match", spotify_id: "trk-rt-genre-2", album: other_album,
+                    duration_ms: 200_000, genre: "Jazz")
 
       get track_path(track, related_attribute_ids: ["genre"])
 
@@ -833,7 +836,7 @@ RSpec.describe "Tracks", type: :request do
       album = Album.create!(name: "Album RT Genre Off", spotify_id: "alb-rt-genre-off-1")
       other_album = Album.create!(name: "Album RT Genre Off 2", spotify_id: "alb-rt-genre-off-2")
       track = Track.create!(name: "RSpec RT Genre Off Origin", spotify_id: "trk-rt-genre-off-1", album: album,
-                             duration_ms: 200_000, genre: "Jazz")
+                            duration_ms: 200_000, genre: "Jazz")
       Track.create!(name: "RSpec RT Genre Off Match", spotify_id: "trk-rt-genre-off-2", album: other_album,
                     duration_ms: 200_000, genre: "Jazz")
 
@@ -846,7 +849,7 @@ RSpec.describe "Tracks", type: :request do
       album = Album.create!(name: "Album RT Weight", spotify_id: "alb-rt-weight-1")
       other_album = Album.create!(name: "Album RT Weight 2", spotify_id: "alb-rt-weight-2")
       track = Track.create!(name: "RSpec RT Weight Origin", spotify_id: "trk-rt-weight-1", album: album,
-                             duration_ms: 200_000, genre: "Jazz")
+                            duration_ms: 200_000, genre: "Jazz")
       Track.create!(name: "RSpec RT Weight Match", spotify_id: "trk-rt-weight-2", album: other_album,
                     duration_ms: 200_000, genre: "Jazz")
 
@@ -865,9 +868,9 @@ RSpec.describe "Tracks", type: :request do
       album = Album.create!(name: "Album RT Library Strict", spotify_id: "alb-rt-lib-strict-1")
       other_album = Album.create!(name: "Album RT Library Strict 2", spotify_id: "alb-rt-lib-strict-2")
       track = Track.create!(name: "RSpec RT Library Strict Origin", spotify_id: "trk-rt-lib-strict-1",
-                             album: album, duration_ms: 200_000)
+                            album: album, duration_ms: 200_000)
       match = Track.create!(name: "RSpec RT Library Strict Match", spotify_id: "trk-rt-lib-strict-2",
-                             album: other_album, duration_ms: 200_000)
+                            album: other_album, duration_ms: 200_000)
       library = Library.create!(name: "RSpec Bibliothek RT Strict", keyword: "rt-lib-strict")
       playlist_a = Playlist.create!(spotify_id: "pl-rt-lib-strict-a", name: "Playlist A")
       playlist_b = Playlist.create!(spotify_id: "pl-rt-lib-strict-b", name: "Playlist B")

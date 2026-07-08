@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class Category < ApplicationRecord
   has_many :tags, dependent: :destroy
 
@@ -12,6 +14,6 @@ class Category < ApplicationRecord
   # ein ungueltiger Wert wuerde dort sonst zu einem Rendering-Fehler statt einer Validierungs-
   # meldung fuehren.
   validates :color, format: { with: /\A#?[0-9a-fA-F]{3}\z|\A#?[0-9a-fA-F]{6}\z/,
-                               message: "muss ein gültiger Hex-Farbcode sein (z.B. #4a90d9 oder #4ad)" },
-                     allow_blank: true
+                              message: "muss ein gültiger Hex-Farbcode sein (z.B. #4a90d9 oder #4ad)" },
+                    allow_blank: true
 end

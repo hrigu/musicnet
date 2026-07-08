@@ -316,7 +316,7 @@ class Track < ApplicationRecord
   end
 
   def dauer
-    Time.at(duration_ms / 1000).utc.strftime('%M:%S')
+    Time.at(duration_ms / 1000).utc.strftime("%M:%S")
   end
 
   # Frühestes Datum, an dem dieser Track zu einer seiner Playlists hinzugefügt wurde.

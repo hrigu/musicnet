@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "rails_helper"
 
 RSpec.describe "Track-Zeilen-Buttons Layout (Intent 51 Nachtrag)", type: :system do

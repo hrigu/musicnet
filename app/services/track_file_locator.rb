@@ -14,8 +14,8 @@ class TrackFileLocator
     return [] unless Dir.exist?(downloads_dir)
 
     Dir.children(downloads_dir).sort
-      .reject { |file_name| file_name.start_with?(".") }
-      .map { |file_name| [file_name, file_name.downcase] }
+       .reject { |file_name| file_name.start_with?(".") }
+       .map { |file_name| [file_name, file_name.downcase] }
   end
 
   def self.downloads_dir

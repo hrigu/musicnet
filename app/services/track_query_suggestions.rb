@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Liefert Autocomplete-Vorschläge für die DSL-Suche (Intent 43). Der übergebene Term ist der
 # zuletzt/aktuell getippte Token (vom JS bereits am Leerzeichen abgeschnitten) — entweder ein
 # Feldname-Präfix (kein Doppelpunkt) oder feld:teilwert.

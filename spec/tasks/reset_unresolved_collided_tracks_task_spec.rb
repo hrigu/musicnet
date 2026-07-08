@@ -38,7 +38,7 @@ RSpec.describe "reset_unresolved_collided_tracks rake task" do
                                      file_name: file_first, genre: "RSpec Falsches Genre",
                                      audio_features: { "tempo" => 1.0, "energy" => 1.0 })
     Track.create!(name: "RSpec Reset Song", spotify_id: "rspec-reset-trk-b", album: album,
-                 artists: [artist_b], duration_ms: 200_000, file_name: file_first)
+                  artists: [artist_b], duration_ms: 200_000, file_name: file_first)
 
     Rake::Task["reset_unresolved_collided_tracks"].invoke
 

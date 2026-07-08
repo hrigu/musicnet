@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AddHiddenTrackColumnsToUsers < ActiveRecord::Migration[8.1]
   def change
     # Liste der Spalten-Keys (siehe Track::OPTIONAL_COLUMNS), die der User in der Tracks-/

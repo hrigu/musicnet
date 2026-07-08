@@ -1,4 +1,6 @@
-require 'rspotify'
+# frozen_string_literal: true
+
+require "rspotify"
 
 def test_rspotify
   # Siehe Rails.application.credentials.dig(:spotify, :client_id)
@@ -8,9 +10,9 @@ def test_rspotify
     client_secret: "xxx"
   }
 
-  RSpotify.authenticate(credentials.dig(:client_id), credentials.dig(:client_secret))
+  RSpotify.authenticate(credentials[:client_id], credentials[:client_secret])
 
-  me = RSpotify::User.find('hrigu')
+  me = RSpotify::User.find("hrigu")
 
   # Alle öffentliche und auf das User Profil hinzugefügte Playlists.
   me.playlists.each do |playlist|
@@ -18,4 +20,4 @@ def test_rspotify
   end
 end
 
-#test_rspotify
+# test_rspotify

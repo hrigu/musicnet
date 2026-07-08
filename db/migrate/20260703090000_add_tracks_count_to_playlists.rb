@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AddTracksCountToPlaylists < ActiveRecord::Migration[8.1]
   def up
     add_column :playlists, :tracks_count, :integer, null: false, default: 0

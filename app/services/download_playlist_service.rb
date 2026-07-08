@@ -1,5 +1,7 @@
+# frozen_string_literal: true
+
 class DownloadPlaylistService
-  TRACKS_DIR = 'downloads/tracks'
+  TRACKS_DIR = "downloads/tracks"
 
   # Wird geworfen, wenn bereits ein spotdl-Download läuft (parallele Prozesse
   # provozieren Spotify-Rate-Limits und YouTube-Blocks)
@@ -8,7 +10,7 @@ class DownloadPlaylistService
   # Prozessweiter Lock über alle spotdl-Downloads (Playlist-Download und Track-Nachladen)
   DOWNLOAD_LOCK = Mutex.new
 
-  def initialize playlist
+  def initialize(playlist)
     @playlist = playlist
   end
 
@@ -53,5 +55,4 @@ class DownloadPlaylistService
       DOWNLOAD_LOCK.unlock
     end
   end
-
 end

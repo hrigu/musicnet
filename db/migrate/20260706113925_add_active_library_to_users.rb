@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Ersetzt den festen Enum active_playlist_category (Intent 54) durch eine Referenz auf eine
 # echte Library (Intent 57) - nil bedeutet weiterhin "Alle" (kein Filter). Uebernimmt bestehende
 # Werte 1:1 ("blues"/"fusion" -> die per Task 1.3 geseedete gleichnamige Library, alles andere ->

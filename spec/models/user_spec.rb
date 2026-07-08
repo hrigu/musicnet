@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-require 'rails_helper'
+require "rails_helper"
 
 RSpec.describe User, type: :model do
   fixtures :users
   subject { users(:one) }
-  it 'hat eine Email' do
-    expect(subject.email).to eql('one@musicnet.org')
+  it "hat eine Email" do
+    expect(subject.email).to eql("one@musicnet.org")
   end
 
   describe ".from_omniauth" do
@@ -20,9 +20,9 @@ RSpec.describe User, type: :model do
 
     it "findet den bestehenden User anhand provider+uid, statt ein Duplikat zu erstellen" do
       existing = User.create!(email: "bestehend@musicnet.org", password: "geheim123",
-                               provider: "spotify", uid: "bestehende-uid")
+                              provider: "spotify", uid: "bestehende-uid")
       auth = OmniAuth::AuthHash.new(provider: "spotify", uid: "bestehende-uid",
-                                     info: { email: "irrelevant@musicnet.org" })
+                                    info: { email: "irrelevant@musicnet.org" })
 
       result = nil
       expect do
@@ -33,10 +33,10 @@ RSpec.describe User, type: :model do
 
     it "aktualisiert spotify_user_data bei jedem Login, nicht nur beim Erstellen" do
       existing = User.create!(email: "bestehend@musicnet.org", password: "geheim123",
-                               provider: "spotify", uid: "bestehende-uid",
-                               spotify_user_data: '{"images": []}')
+                              provider: "spotify", uid: "bestehende-uid",
+                              spotify_user_data: '{"images": []}')
       auth = OmniAuth::AuthHash.new(provider: "spotify", uid: "bestehende-uid",
-                                     info: { email: "irrelevant@musicnet.org" })
+                                    info: { email: "irrelevant@musicnet.org" })
 
       User.from_omniauth(auth, '{"images": [{"url": "https://example.com/neu.jpg"}]}')
 
@@ -56,9 +56,9 @@ RSpec.describe User, type: :model do
   describe "#spotify_avatar_url" do
     it "gibt die erste Avatar-URL zurück, wenn eine vorhanden ist" do
       user = User.new(spotify_user_data: {
-                        id: "spotify-id-1",
-                        images: [{ "url" => "https://example.com/avatar.png" }]
-                      }.to_json)
+        id: "spotify-id-1",
+        images: [{ "url" => "https://example.com/avatar.png" }]
+      }.to_json)
 
       expect(user.spotify_avatar_url).to eq("https://example.com/avatar.png")
     end

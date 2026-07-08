@@ -5,7 +5,7 @@
 # Rate-Limiting (429) fehlschlug (find_or_create_by! aktualisiert bestehende Zeilen sonst
 # nie). Voraussetzung: SpotifyPlaylistsGateway#fetch_in_slices retryt 429 inzwischen mit
 # Backoff, sonst würde dieser Task dieselben Fehler nur wiederholen.
-desc 'lädt fehlende release_date/popularity für bestehende Alben und Artists nach'
+desc "lädt fehlende release_date/popularity für bestehende Alben und Artists nach"
 task backfill_album_and_artist_details: [:environment] do
   gateway = SpotifyPlaylistsGateway.new(User.first)
 
@@ -16,7 +16,8 @@ task backfill_album_and_artist_details: [:environment] do
     full_album = full_albums[album.spotify_id]
     next unless full_album
 
-    album.update!(release_date: Album.normalize_release_date(full_album.release_date), popularity: full_album.popularity)
+    album.update!(release_date: Album.normalize_release_date(full_album.release_date),
+                  popularity: full_album.popularity)
   end
 
   artists = Artist.where(popularity: nil)

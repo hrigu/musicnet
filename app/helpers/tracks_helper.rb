@@ -88,7 +88,8 @@ module TracksHelper
       .join(", ")
   end
 
-  RELATED_ATTRIBUTE_LABELS = { "genre" => "Genre", "library" => "Bibliothek", "energy" => "Energie", "tempo" => "Tempo" }.freeze
+  RELATED_ATTRIBUTE_LABELS = { "genre" => "Genre", "library" => "Bibliothek", "energy" => "Energie",
+                               "tempo" => "Tempo" }.freeze
 
   def related_attribute_keys
     RELATED_ATTRIBUTE_LABELS.keys

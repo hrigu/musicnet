@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Seedet die kuratierte Kategorien/Tag-Taxonomie (Intent 77), abgeleitet aus einer Analyse aller
 # Playlist-Namen. Lokale Modelle statt der App-Models, damit diese Migration auch nach spaeteren
 # Aenderungen an Category/Tag unveraendert lauffaehig bleibt (gleiches Muster wie

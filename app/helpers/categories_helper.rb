@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module CategoriesHelper
   # Der native <input type="color">-Farbwaehler akzeptiert nur einen vollen 6-stelligen Hex-Wert
   # mit # - ohne eigene Farbe zeigte er sonst immer Schwarz statt eines neutralen Startwerts, und

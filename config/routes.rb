@@ -1,13 +1,13 @@
+# frozen_string_literal: true
+
 Rails.application.routes.draw do
-
-
-  devise_for :users, controllers: { omniauth_callbacks: 'users' }
+  devise_for :users, controllers: { omniauth_callbacks: "users" }
 
   root "tracks#recently_played_index"
 
   resources :playlists do
     collection do
-      post 'fetch_all'
+      post "fetch_all"
     end
     member do
       post :download
@@ -15,7 +15,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :tracks, only: [:index, :show] do
+  resources :tracks, only: %i[index show] do
     collection do
       get :recently_played_index
       post :download
@@ -25,25 +25,24 @@ Rails.application.routes.draw do
       get :stream
     end
   end
-  resources :artists, only: [:index, :show]
+  resources :artists, only: %i[index show]
   resources :libraries, except: [:show]
   resources :categories, except: [:show] do
     resources :tags, except: %i[index show], controller: "tags", shallow: true
   end
   get "tags/search", to: "tags#search", as: :search_tags
-  resources :track_tags, only: [:create, :update, :destroy]
+  resources :track_tags, only: %i[create update destroy]
 
   get "help/:page", to: "help#show", as: :help
 
   resource :settings, only: %i[edit update]
 
-  resources :queue_entries, only: [:create, :destroy] do
+  resources :queue_entries, only: %i[create destroy] do
     collection do
       post :advance
       post :save_as_playlist
     end
   end
 
-  resources :playlist_tracks, only: [:create, :destroy]
-
+  resources :playlist_tracks, only: %i[create destroy]
 end

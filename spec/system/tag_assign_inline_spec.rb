@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "rails_helper"
 
 RSpec.describe "Bestehendes Tag inline in der Tracks-Liste zuweisen (Intent 83)", type: :system do
@@ -25,7 +27,7 @@ RSpec.describe "Bestehendes Tag inline in der Tracks-Liste zuweisen (Intent 83)"
   end
 
   it "bietet keine Möglichkeit, hier ein neues Tag anzulegen" do
-    track = create_playable_track("RSpec Inline Assign Track 2", spotify_id: "inline-assign-2")
+    create_playable_track("RSpec Inline Assign Track 2", spotify_id: "inline-assign-2")
     Category.create!(name: "RSpec Emotion Inline Assign Neu")
 
     visit tracks_path

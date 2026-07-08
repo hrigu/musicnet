@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-desc 'erstellt für alle Playlists die crates-Listen für mixxx'
+desc "erstellt für alle Playlists die crates-Listen für mixxx"
 task create_crates_lists: [:environment] do
   Playlist.all.each do |p|
     tracks = p.tracks

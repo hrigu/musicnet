@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class TagsController < ApplicationController
   MAX_SEARCH_RESULTS = 10
 
@@ -7,12 +9,16 @@ class TagsController < ApplicationController
   # ausgeschlossen, damit sie nicht nochmals vorgeschlagen werden.
   def search
     term = params[:term].to_s.strip
-    tags = term.blank? ? [] : Tag.includes(:category)
-                                  .joins(:category)
-                                  .merge(Category.visible_for_assignment)
-                                  .where("LOWER(tags.name) LIKE ?", "%#{term.downcase}%")
-                                  .order(:name)
-                                  .limit(MAX_SEARCH_RESULTS)
+    tags = if term.blank?
+             []
+           else
+             Tag.includes(:category)
+                .joins(:category)
+                .merge(Category.visible_for_assignment)
+                .where("LOWER(tags.name) LIKE ?", "%#{term.downcase}%")
+                .order(:name)
+                .limit(MAX_SEARCH_RESULTS)
+           end
     tags = tags.where.not(id: Track.find(params[:track_id]).tag_ids) if term.present? && params[:track_id].present?
 
     render json: tags.map { |tag| { id: tag.id, name: tag.name, category: tag.category.name } }

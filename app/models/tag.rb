@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class Tag < ApplicationRecord
   belongs_to :category
   has_many :track_tags, dependent: :destroy
@@ -34,6 +36,6 @@ class Tag < ApplicationRecord
   # Bindestriche/Unterstriche/Schraegstriche werden zu Leerzeichen (nicht entfernt!), sonst
   # wuerde z.B. "rock'n'roll" zu einem Wort verschmelzen und seine Wortgrenze verlieren.
   def self.normalize(text)
-    text.to_s.downcase.gsub(/['’_\-\/]/, " ").squeeze(" ").strip
+    text.to_s.downcase.gsub(%r{['’_\-/]}, " ").squeeze(" ").strip
   end
 end

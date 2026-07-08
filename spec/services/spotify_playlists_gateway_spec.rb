@@ -17,11 +17,11 @@ RSpec.describe SpotifyPlaylistsGateway do
       irrelevant = spotify_playlist(id: "pl-4", name: "Sommerhits", owner_id: "spotify-user-1")
 
       allow(spotify_user).to receive(:playlists).with(limit: 50, offset: 0)
-        .and_return([own_fusion, foreign, irrelevant])
+                                                .and_return([own_fusion, foreign, irrelevant])
       allow(spotify_user).to receive(:playlists).with(limit: 50, offset: 50)
-        .and_return([own_blues])
+                                                .and_return([own_blues])
       allow(spotify_user).to receive(:playlists).with(limit: 50, offset: 100)
-        .and_return([])
+                                                .and_return([])
 
       expect(gateway.all).to contain_exactly(own_fusion, own_blues)
     end
@@ -42,11 +42,12 @@ RSpec.describe SpotifyPlaylistsGateway do
       target = spotify_playlist(id: "pl-2", name: "Blues Favorites", owner_id: "spotify-user-1")
 
       allow(spotify_user).to receive(:playlists).with(limit: 50, offset: 0)
-        .and_return([spotify_playlist(id: "pl-1", name: "Fusion Favorites", owner_id: "spotify-user-1")])
+                                                .and_return([spotify_playlist(id: "pl-1", name: "Fusion Favorites",
+                                                                              owner_id: "spotify-user-1")])
       allow(spotify_user).to receive(:playlists).with(limit: 50, offset: 50)
-        .and_return([target])
+                                                .and_return([target])
       allow(spotify_user).to receive(:playlists).with(limit: 50, offset: 100)
-        .and_return([])
+                                                .and_return([])
 
       expect(gateway.find("pl-2")).to eq(target)
     end
@@ -87,7 +88,7 @@ RSpec.describe SpotifyPlaylistsGateway do
 
     it "überspringt Ids, für die die API kein Album liefert (nil-Einträge)" do
       allow(RSpotify::Album).to receive(:find).with(%w[alb-1 alb-2])
-        .and_return([double("RSpotify::Album", id: "alb-1"), nil])
+                                              .and_return([double("RSpotify::Album", id: "alb-1"), nil])
 
       expect(gateway.albums_by_id(%w[alb-1 alb-2]).keys).to eq(["alb-1"])
     end
@@ -168,7 +169,8 @@ RSpec.describe SpotifyPlaylistsGateway do
       artist = spotify_artist(id: "art-1", name: "John Scofield")
       first = spotify_track(id: "trk-1", name: "Hottentot", album: album, artists: [artist])
       second = spotify_track(id: "trk-2", name: "Green Tea", album: album, artists: [artist])
-      playlist = spotify_playlist(id: "pl-1", name: "Fusion Favorites", owner_id: "spotify-user-1", tracks: [first, second])
+      playlist = spotify_playlist(id: "pl-1", name: "Fusion Favorites", owner_id: "spotify-user-1",
+                                  tracks: [first, second])
 
       allow(playlist).to receive(:tracks).with(limit: 100, offset: 0).and_return([first])
       allow(playlist).to receive(:tracks).with(limit: 100, offset: 100).and_return([second])
@@ -204,8 +206,10 @@ RSpec.describe SpotifyPlaylistsGateway do
   describe "#add_track" do
     it "fuegt den Track ueber seine Spotify-Uri hinzu und liefert die neue snapshot_id" do
       playlist = Playlist.create!(spotify_id: "pl-1", name: "Playlist")
-      track = Track.create!(spotify_id: "trk-1", name: "Track", album: Album.create!(spotify_id: "alb-1", name: "Album"))
-      spot_playlist = spotify_playlist(id: "pl-1", name: "Playlist", owner_id: "spotify-user-1", snapshot_id: "snap-add")
+      track = Track.create!(spotify_id: "trk-1", name: "Track",
+                            album: Album.create!(spotify_id: "alb-1", name: "Album"))
+      spot_playlist = spotify_playlist(id: "pl-1", name: "Playlist", owner_id: "spotify-user-1",
+                                       snapshot_id: "snap-add")
       allow(RSpotify::Playlist).to receive(:find).with("spotify-user-1", "pl-1").and_return(spot_playlist)
       allow(spot_playlist).to receive(:add_tracks!)
 
@@ -215,7 +219,8 @@ RSpec.describe SpotifyPlaylistsGateway do
 
     it "wandelt einen Spotify-Fehler in SpotifyWriteError" do
       playlist = Playlist.create!(spotify_id: "pl-1", name: "Playlist")
-      track = Track.create!(spotify_id: "trk-1", name: "Track", album: Album.create!(spotify_id: "alb-1", name: "Album"))
+      track = Track.create!(spotify_id: "trk-1", name: "Track",
+                            album: Album.create!(spotify_id: "alb-1", name: "Album"))
       allow(RSpotify::Playlist).to receive(:find).and_raise(RestClient::BadRequest)
 
       expect { gateway.add_track(playlist, track) }.to raise_error(SpotifyPlaylistsGateway::SpotifyWriteError)
@@ -225,8 +230,10 @@ RSpec.describe SpotifyPlaylistsGateway do
   describe "#remove_track" do
     it "entfernt den Track und liefert die neue snapshot_id" do
       playlist = Playlist.create!(spotify_id: "pl-1", name: "Playlist")
-      track = Track.create!(spotify_id: "trk-1", name: "Track", album: Album.create!(spotify_id: "alb-1", name: "Album"))
-      spot_playlist = spotify_playlist(id: "pl-1", name: "Playlist", owner_id: "spotify-user-1", snapshot_id: "snap-remove")
+      track = Track.create!(spotify_id: "trk-1", name: "Track",
+                            album: Album.create!(spotify_id: "alb-1", name: "Album"))
+      spot_playlist = spotify_playlist(id: "pl-1", name: "Playlist", owner_id: "spotify-user-1",
+                                       snapshot_id: "snap-remove")
       allow(RSpotify::Playlist).to receive(:find).with("spotify-user-1", "pl-1").and_return(spot_playlist)
       captured_tracks = nil
       allow(spot_playlist).to receive(:remove_tracks!) { |tracks| captured_tracks = tracks }
@@ -237,7 +244,8 @@ RSpec.describe SpotifyPlaylistsGateway do
 
     it "wandelt einen Spotify-Fehler in SpotifyWriteError" do
       playlist = Playlist.create!(spotify_id: "pl-1", name: "Playlist")
-      track = Track.create!(spotify_id: "trk-1", name: "Track", album: Album.create!(spotify_id: "alb-1", name: "Album"))
+      track = Track.create!(spotify_id: "trk-1", name: "Track",
+                            album: Album.create!(spotify_id: "alb-1", name: "Album"))
       allow(RSpotify::Playlist).to receive(:find).and_raise(RestClient::BadRequest)
 
       expect { gateway.remove_track(playlist, track) }.to raise_error(SpotifyPlaylistsGateway::SpotifyWriteError)

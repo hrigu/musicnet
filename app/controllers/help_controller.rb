@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class HelpController < ApplicationController
   # Jeder Artikel rendert eine doc/*.md-Datei zur Laufzeit als HTML - sie bleibt die einzige
   # Quelle, keine zweite, separat zu pflegende Kopie (Intent 46). Die Whitelist verhindert, dass

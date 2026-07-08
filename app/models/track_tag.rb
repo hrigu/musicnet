@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class TrackTag < ApplicationRecord
   belongs_to :track
   belongs_to :tag

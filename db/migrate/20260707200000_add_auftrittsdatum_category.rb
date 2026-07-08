@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Legt die Kategorie "Auftrittsdatum" an (Intent 78) - anders als die übrigen Kategorien bekommt
 # sie keine fest kuratierten Tags: die Tags (ein Datum pro tatsächlichem DJ-Auftritt, z.B.
 # "2023-12-01") werden dynamisch vom Rake-Task assign_track_tags direkt aus dem Datums-Präfix im

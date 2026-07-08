@@ -69,7 +69,7 @@ task assign_track_tags: [:environment] do
       # Alias-Treffer (z.B. ein reiner Datums-Praefix "2021-02-Fusion") liefert schlicht keinen
       # Eintrag hier - es wird nie ein Tag erzwungen, wenn kein Alias matcht.
       matching_playlist_ids = playlists.select { |_id, normalized_name| tag.matches_normalized_name?(normalized_name) }
-                                        .map(&:first)
+                                       .map(&:first)
       sync_tag.call(tag, matching_playlist_ids)
     end
 

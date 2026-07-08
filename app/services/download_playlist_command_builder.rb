@@ -17,7 +17,7 @@ class DownloadPlaylistCommandBuilder
   # eine tote Instanz wirft eine unabgefangene JSONDecodeError, die - wie bei
   # youtube-music/soundcloud - die Suche fuer den Track sofort abbricht statt
   # zum naechsten Provider (bandcamp) zu wechseln.
-  AUDIO_PROVIDERS = 'youtube bandcamp'
+  AUDIO_PROVIDERS = "youtube bandcamp"
 
   # Ab wie vielen fehlenden Tracks weiterhin die ganze Playlist gesynct wird statt
   # gezielter Track-URLs. Einzelne Track-URLs loesen bei spotdl pro URL eigene
@@ -61,7 +61,7 @@ class DownloadPlaylistCommandBuilder
   # kein --user-auth noetig. Kein --sync-without-deleting, da hier explizit nur
   # die fehlenden Tracks angefragt werden, keine Lösch-Reconciliation stattfindet.
   def build_track_urls_command
-    urls = @missing_tracks.map { |track| track_url(track) }.join(' ')
+    urls = @missing_tracks.map { |track| track_url(track) }.join(" ")
     "spotdl download #{urls} --format m4a --audio #{AUDIO_PROVIDERS} " \
       "--save-file #{save_file_path} --save-errors #{errors_file_path} --simple-tui"
   end
@@ -86,7 +86,7 @@ class DownloadPlaylistCommandBuilder
   # Browser, kein Redirect noetig), daher nur bei privaten/unbekannten
   # Playlists anfordern.
   def user_auth_flag
-    @playlist.public? ? '' : ' --user-auth'
+    @playlist.public? ? "" : " --user-auth"
   end
 
   def playlist_url

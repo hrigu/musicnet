@@ -19,11 +19,12 @@ class Playlist < ApplicationRecord
   end
 
   def name_path_ready
-    name.delete(' ')
+    name.delete(" ")
   end
 
   def playlist_tracks_for_display
-    playlist_tracks.preload(track: [:artists, :album, { playlist_tracks: :playlist }, { track_tags: { tag: :category } }]).strict_loading.tap do |records|
+    playlist_tracks.preload(track: [:artists, :album, { playlist_tracks: :playlist },
+                                    { track_tags: { tag: :category } }]).strict_loading.tap do |records|
       Track.preload_track_paths(records.map(&:track))
     end
   end

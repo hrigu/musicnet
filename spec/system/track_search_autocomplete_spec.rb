@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "rails_helper"
 
 RSpec.describe "DSL-Suche Autocomplete (Intent 43)", type: :system do

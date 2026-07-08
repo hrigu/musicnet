@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class CreateTrackTags < ActiveRecord::Migration[8.1]
   def change
     create_table :track_tags do |t|

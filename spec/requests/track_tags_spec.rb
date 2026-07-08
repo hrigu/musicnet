@@ -29,7 +29,8 @@ RSpec.describe "TrackTags", type: :request do
       track = create_track(spotify_id: "trk-tt-2")
       category = Category.create!(name: "RSpec Emotion Neu")
 
-      post track_tags_path, params: { track_id: track.id, tag_name: "RSpec Brandneu", category_id: category.id, strength: 4 }
+      post track_tags_path,
+           params: { track_id: track.id, tag_name: "RSpec Brandneu", category_id: category.id, strength: 4 }
 
       tag = Tag.find_by(name: "RSpec Brandneu", category: category)
       expect(tag).to be_present
@@ -41,7 +42,8 @@ RSpec.describe "TrackTags", type: :request do
       category = Category.create!(name: "RSpec Emotion Dup")
       existing = category.tags.create!(name: "RSpec Schon Da", aliases: "x")
 
-      post track_tags_path, params: { track_id: track.id, tag_name: "RSpec Schon Da", category_id: category.id, strength: 5 }
+      post track_tags_path,
+           params: { track_id: track.id, tag_name: "RSpec Schon Da", category_id: category.id, strength: 5 }
 
       expect(Tag.where(name: "RSpec Schon Da", category: category).count).to eq(1)
       expect(TrackTag.find_by(track: track, tag: existing)).to be_present

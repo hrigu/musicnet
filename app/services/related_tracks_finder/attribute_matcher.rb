@@ -60,9 +60,9 @@ class RelatedTracksFinder
     # aufgetreten, Intent 84 Nachtrag 5 Bugfix).
     def origin_library_ids
       @origin_library_ids ||= Library.joins(playlists: :playlist_tracks)
-                                      .where(playlist_tracks: { track_id: @track.id })
-                                      .distinct
-                                      .pluck(:id)
+                                     .where(playlist_tracks: { track_id: @track.id })
+                                     .distinct
+                                     .pluck(:id)
     end
 
     def genre_candidate_ids

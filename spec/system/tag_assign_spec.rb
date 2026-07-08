@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "rails_helper"
 
 RSpec.describe "Manuelles Tag-Zuweisen auf der Track-Detailseite (Intent 79)", type: :system do
@@ -138,7 +140,7 @@ RSpec.describe "Manuelles Tag-Zuweisen auf der Track-Detailseite (Intent 79)", t
     click_button "+ Tag hinzufügen"
     search_field = find_field("tag_search")
     search_field.fill_in(with: "Tastaturtag")
-    expect(page).to have_button('Neuer Tag: „Tastaturtag“')
+    expect(page).to have_button("Neuer Tag: „Tastaturtag“")
     search_field.send_keys(:enter)
 
     category_select = find("[data-tag-assign-target='categorySelect']")

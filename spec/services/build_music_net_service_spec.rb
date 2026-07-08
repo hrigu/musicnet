@@ -86,7 +86,9 @@ RSpec.describe BuildMusicNetService do
     end
 
     context "wenn eine eigene Playlist weder 'fusion' noch 'blues' im Namen hat" do
-      let(:other_playlist) { spotify_playlist(id: "pl-other", name: "Sommerhits", owner_id: spotify_user_id, tracks: [track]) }
+      let(:other_playlist) do
+        spotify_playlist(id: "pl-other", name: "Sommerhits", owner_id: spotify_user_id, tracks: [track])
+      end
 
       it "importiert diese Playlist nicht" do
         stub_spotify_playlists([other_playlist])
@@ -215,9 +217,10 @@ RSpec.describe BuildMusicNetService do
       before do
         stub_spotify_playlists([playlist])
         allow(RSpotify::Album).to receive(:find).with(["alb1"])
-          .and_return([double("RSpotify::Album", id: "alb1", popularity: 44, release_date: "2019-05-01")])
+                                                .and_return([double("RSpotify::Album", id: "alb1", popularity: 44,
+                                                                                       release_date: "2019-05-01")])
         allow(RSpotify::Artist).to receive(:find).with(["art1"])
-          .and_return([double("RSpotify::Artist", id: "art1", popularity: 61)])
+                                                 .and_return([double("RSpotify::Artist", id: "art1", popularity: 61)])
       end
 
       it "speichert Album- und Artist-Details aus den Batch-Lookups" do

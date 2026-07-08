@@ -92,7 +92,7 @@ class TracksController < ApplicationController
     @categories = Category.where(id: own_category_ids).order(:name)
     @relevant_category_ids = selected_related_category_ids || own_category_ids
     finder = RelatedTracksFinder.new(@track, category_ids: params[:related_category_ids],
-                                              attribute_weights: selected_related_attribute_weights)
+                                             attribute_weights: selected_related_attribute_weights)
     @related_tracks = finder.call
     @related_active_comparison_count = finder.active_comparison_count
     @related_additional_tied_count = finder.additional_tied_count

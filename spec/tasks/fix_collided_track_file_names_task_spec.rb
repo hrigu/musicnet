@@ -71,7 +71,7 @@ RSpec.describe "fix_collided_track_file_names rake task" do
                                     album: album, artists: [artist_c], duration_ms: 200_000,
                                     file_name: file_first, genre: "RSpec Bestehendes Genre")
     Track.create!(name: "RSpec Ambiguous Fix Song", spotify_id: "rspec-fix-trk-d", album: album,
-                 artists: [artist_d], duration_ms: 200_000, file_name: file_first)
+                  artists: [artist_d], duration_ms: 200_000, file_name: file_first)
 
     Rake::Task["fix_collided_track_file_names"].invoke
 

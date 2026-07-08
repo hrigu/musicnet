@@ -119,7 +119,7 @@ class PlaylistsController < ApplicationController
   def renamed_summary(entries)
     return if entries.empty?
 
-    entries.map { |old_name, new_name| "Playlist \"#{old_name}\" auf \"#{new_name}\" geändert" }.join(', ')
+    entries.map { |old_name, new_name| "Playlist \"#{old_name}\" auf \"#{new_name}\" geändert" }.join(", ")
   end
 
   def set_refresh_flash(info)

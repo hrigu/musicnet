@@ -211,7 +211,8 @@ RSpec.describe "Playlists", type: :request do
     it "PATCH /playlists/:id zeigt einen Fehler und aendert nichts, wenn der Spotify-Push fehlschlaegt (Intent 75)" do
       playlist = playlists(:dark)
       service = instance_double(PlaylistSpotifyWriteService)
-      allow(service).to receive(:rename!).and_raise(SpotifyPlaylistsGateway::SpotifyWriteError, "Spotify nicht erreichbar")
+      allow(service).to receive(:rename!).and_raise(SpotifyPlaylistsGateway::SpotifyWriteError,
+                                                    "Spotify nicht erreichbar")
       allow(PlaylistSpotifyWriteService).to receive(:new).and_return(service)
 
       patch playlist_path(playlist), params: { playlist: { name: "Fusion Sonntag", color: "" } }

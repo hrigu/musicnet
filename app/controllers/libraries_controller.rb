@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class LibrariesController < ApplicationController
   def index
     @libraries = Library.order(:name)

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Seedet die zwei bisher hardcoded Kategorien als echte Library-Datensaetze und ordnet alle
 # schon lokal vorhandenen Playlists nach ihrem aktuellen Namen zu (Intent 57) - damit sich am
 # Ist-Zustand nach der Migration nichts aendert. Lokale Modelle statt der App-Models, damit diese

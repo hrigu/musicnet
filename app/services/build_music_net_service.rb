@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class BuildMusicNetService
   # Wird geworfen, wenn die Playlist auf Spotify nicht mehr existiert oder entfolgt wurde
   PlaylistNotFoundError = Class.new(StandardError)
@@ -9,7 +11,7 @@ class BuildMusicNetService
   # Prozessweiter Lock über alle Sync-Arten (voller Sync und Einzel-Refresh)
   SYNC_LOCK = Mutex.new
 
-  def initialize current_user
+  def initialize(current_user)
     @current_user = current_user
     @info = ServiceInfo.new
     @spotify_playlists_gateway = SpotifyPlaylistsGateway.new(current_user)
@@ -86,7 +88,10 @@ class BuildMusicNetService
   # Verhindert parallele Sync-Läufe. try_lock statt lock, damit der zweite Aufruf sofort
   # mit einer verständlichen Meldung scheitert, statt auf den SQLite-Write-Lock zu warten.
   def with_sync_lock
-    raise SyncAlreadyRunningError, "Es läuft bereits ein Sync - bitte warten, bis er fertig ist" unless SYNC_LOCK.try_lock
+    unless SYNC_LOCK.try_lock
+      raise SyncAlreadyRunningError,
+            "Es läuft bereits ein Sync - bitte warten, bis er fertig ist"
+    end
 
     begin
       yield
@@ -225,15 +230,15 @@ class BuildMusicNetService
   # Tracks ohne Playlist sowie Artists/Alben ohne Tracks löschen
   def cleanup_orphan_records
     tracks_to_delete = Track.select("tracks.id", "tracks.name").left_joins(:playlists).where(playlists: { id: nil })
-    @info.add tracks: { deleted: tracks_to_delete.map(&:name)} if tracks_to_delete.present?
+    @info.add tracks: { deleted: tracks_to_delete.map(&:name) } if tracks_to_delete.present?
     tracks_to_delete.destroy_all
 
     artists_to_delete = Artist.select("artists.id", "artists.name").left_joins(:tracks).where(tracks: { id: nil })
-    @info.add artists: { deleted: artists_to_delete.map(&:name)} if artists_to_delete.present?
+    @info.add artists: { deleted: artists_to_delete.map(&:name) } if artists_to_delete.present?
     artists_to_delete.destroy_all
 
     albums_to_delete = Album.select("albums.id", "albums.name").left_joins(:tracks).where(tracks: { id: nil })
-    @info.add albums: { deleted: albums_to_delete.map(&:name)} if albums_to_delete.present?
+    @info.add albums: { deleted: albums_to_delete.map(&:name) } if albums_to_delete.present?
     albums_to_delete.destroy_all
   end
 
@@ -241,12 +246,11 @@ class BuildMusicNetService
     result = nil
     begin
       result = object.send(attribute)
-    rescue => e
+    rescue StandardError => e
       Rails.logger.debug(e.message)
     end
     result
   end
-
 
   # Ergebnis eines Einzel-Playlist-Refreshs: Namen der hinzugekommenen und entfernten Tracks
   RefreshInfo = Struct.new(:added, :removed)
@@ -256,50 +260,42 @@ class BuildMusicNetService
 
   class ServiceInfo
     attr_reader :hash
+
     def initialize
       @hash = {}
     end
 
     def add_new_created_playlist(name)
-      add(playlists: {created: name})
+      add(playlists: { created: name })
     end
 
     def add_new_created_track(name)
-      add(tracks: {created: name})
+      add(tracks: { created: name })
     end
 
     def add_new_created_album(name)
-      add(albums: {created: name})
+      add(albums: { created: name })
     end
 
     def add_new_created_artist(name)
-      add(artists: {created: name})
+      add(artists: { created: name })
     end
 
     def add_renamed_playlist(old_name, new_name)
-      add(playlists: {renamed: [old_name, new_name]})
+      add(playlists: { renamed: [old_name, new_name] })
     end
 
-
-
     # what is a hash mit einem Eintrag {playlists: {created: "yz"})}
-    def add what
+    def add(what)
       key = what.keys.first
-      unless @hash.has_key? key
-        @hash[key] = {}
-      end
+      @hash[key] = {} unless @hash.key? key
       hash_value = @hash[key]
       value = what[key] # ist ein hash
 
       value.each do |k, v|
-        unless hash_value.has_key? k
-          hash_value[k] = []
-        end
+        hash_value[k] = [] unless hash_value.key? k
         hash_value[k] << v
       end
     end
-
   end
-
-
 end

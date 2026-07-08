@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class Library < ApplicationRecord
   has_many :library_playlists, dependent: :destroy
   has_many :playlists, through: :library_playlists

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "rails_helper"
 
 RSpec.describe "Inline-Editieren der Tag-Stärke auf der Tracks-Indexseite (Intent 81)", type: :system do
@@ -79,7 +81,7 @@ RSpec.describe "Inline-Editieren der Tag-Stärke auf der Tracks-Indexseite (Inte
     track = create_playable_track("RSpec Inline Track 5", spotify_id: "inline-5")
     category = Category.create!(name: "RSpec Emotion Inline Glow")
     tag = category.tags.create!(name: "RSpec Inline Glow", aliases: "x")
-    track_tag = TrackTag.create!(track: track, tag: tag, strength: 3)
+    TrackTag.create!(track: track, tag: tag, strength: 3)
 
     visit tracks_path
     find("[data-tag-strength-target='badge']", text: "RSpec Inline Glow · 3").click

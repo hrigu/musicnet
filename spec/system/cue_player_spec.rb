@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "rails_helper"
 
 RSpec.describe "Cue-/Vorhörkanal (Intent 51)", type: :system do

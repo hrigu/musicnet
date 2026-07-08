@@ -51,10 +51,10 @@ RSpec.describe AudioFeaturesExtractor do
       end
 
       expect(captured_args).to eq([
-        "docker", "run", "--rm", "-v", "#{downloads_dir}:/audio:ro",
-        "ghcr.io/mgoltzsche/essentia",
-        "essentia_streaming_extractor_music", "/audio/#{file_name}", "-", "/etc/essentia/profile.yaml"
-      ])
+                                    "docker", "run", "--rm", "-v", "#{downloads_dir}:/audio:ro",
+                                    "ghcr.io/mgoltzsche/essentia",
+                                    "essentia_streaming_extractor_music", "/audio/#{file_name}", "-", "/etc/essentia/profile.yaml"
+                                  ])
     end
 
     it "loggt genau eine Zeile mit dem Ergebnis, statt Essentias stderr-Ausgabe durchzulassen" do

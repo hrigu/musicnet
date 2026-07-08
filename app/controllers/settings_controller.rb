@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class SettingsController < ApplicationController
   def edit
     @libraries = Library.order(:name)

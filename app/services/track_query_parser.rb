@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class TrackQueryParser
   Token = Struct.new(:type, :field, :value, :negate, keyword_init: true)
 

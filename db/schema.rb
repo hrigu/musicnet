@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # This file is auto-generated from the current state of the database. Instead
 # of editing this file, please use the migrations feature of Active Record to
 # incrementally modify your database, and then regenerate this schema definition.
@@ -10,7 +12,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_08_083816) do
+ActiveRecord::Schema[8.1].define(version: 20_260_708_083_816) do
   create_table "albums", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name"
@@ -59,7 +61,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_08_083816) do
     t.integer "library_id", null: false
     t.integer "playlist_id", null: false
     t.datetime "updated_at", null: false
-    t.index ["library_id", "playlist_id"], name: "index_library_playlists_on_library_id_and_playlist_id", unique: true
+    t.index %w[library_id playlist_id], name: "index_library_playlists_on_library_id_and_playlist_id", unique: true
     t.index ["library_id"], name: "index_library_playlists_on_library_id"
     t.index ["playlist_id"], name: "index_library_playlists_on_playlist_id"
   end
@@ -99,7 +101,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_08_083816) do
     t.datetime "created_at", null: false
     t.string "name", null: false
     t.datetime "updated_at", null: false
-    t.index ["category_id", "name"], name: "index_tags_on_category_id_and_name", unique: true
+    t.index %w[category_id name], name: "index_tags_on_category_id_and_name", unique: true
     t.index ["category_id"], name: "index_tags_on_category_id"
   end
 
@@ -110,7 +112,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_08_083816) do
     t.integer "track_id", null: false
     t.datetime "updated_at", null: false
     t.index ["tag_id"], name: "index_track_tags_on_tag_id"
-    t.index ["track_id", "tag_id"], name: "index_track_tags_on_track_id_and_tag_id", unique: true
+    t.index %w[track_id tag_id], name: "index_track_tags_on_track_id_and_tag_id", unique: true
     t.index ["track_id"], name: "index_track_tags_on_track_id"
   end
 

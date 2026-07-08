@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class CreateTracks < ActiveRecord::Migration[6.1]
   def change
     create_table :tracks do |t|
@@ -8,7 +10,7 @@ class CreateTracks < ActiveRecord::Migration[6.1]
       t.integer :popularity
       t.json :audio_features
       # Track löschen wenn Albumg gelöscht wird
-      t.references :album, null: false, foreign_key: {on_delete: :cascade}
+      t.references :album, null: false, foreign_key: { on_delete: :cascade }
       t.timestamps
     end
   end

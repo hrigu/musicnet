@@ -32,7 +32,8 @@ RSpec.describe "PlaylistTracks", type: :request do
       playlist = Playlist.create!(spotify_id: "pl-1", name: "Ziel-Playlist")
       track = create_track(name: "Song", spotify_id: "pt-2")
       service = instance_double(PlaylistSpotifyWriteService)
-      allow(service).to receive(:add_track!).and_raise(SpotifyPlaylistsGateway::SpotifyWriteError, "Spotify nicht erreichbar")
+      allow(service).to receive(:add_track!).and_raise(SpotifyPlaylistsGateway::SpotifyWriteError,
+                                                       "Spotify nicht erreichbar")
       allow(PlaylistSpotifyWriteService).to receive(:new).and_return(service)
 
       post playlist_tracks_path(playlist_id: playlist.id, track_id: track.id)

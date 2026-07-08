@@ -142,7 +142,8 @@ RSpec.describe RelatedTracksFinder do
       playlist_b.libraries << library
       PlaylistTrack.create!(playlist: playlist_a, track: origin, added_at: Time.current)
       PlaylistTrack.create!(playlist: playlist_b, track: match, added_at: Time.current)
-      PlaylistTrack.create!(playlist: Playlist.create!(spotify_id: "pl-rtf-lib-c", name: "Playlist C"), track: other, added_at: Time.current)
+      PlaylistTrack.create!(playlist: Playlist.create!(spotify_id: "pl-rtf-lib-c", name: "Playlist C"), track: other,
+                            added_at: Time.current)
 
       results = RelatedTracksFinder.new(origin, attribute_weights: { "library" => 1.0 }).call
 

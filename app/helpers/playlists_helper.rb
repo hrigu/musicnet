@@ -14,11 +14,11 @@ module PlaylistsHelper
 
   def playlist_short_name(playlist)
     playlist.name.gsub(/\bfusion\b/i, "_F_")
-      .gsub(/\bblues\b/i, "_B_")
-      .gsub(/\s+/, "")
-      .gsub(/_+/, "_")
-      .gsub(/\A_+/, "")
-      .gsub(/_+\z/, "")
+            .gsub(/\bblues\b/i, "_B_")
+            .gsub(/\s+/, "")
+            .gsub(/_+/, "_")
+            .gsub(/\A_+/, "")
+            .gsub(/_+\z/, "")
   end
 
   # Zentrales Badge-Markup (Intent 71) - ersetzt die zuvor an fuenf Stellen duplizierte
