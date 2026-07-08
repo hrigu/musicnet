@@ -4,7 +4,8 @@ This document defines coding conventions for Musicnet. These apply to all Ruby, 
 
 ## 1. Ruby Style
 
-- Run `bundle exec rubocop` to verify style. No `.rubocop.yml` is checked in, so default cops apply — stay consistent with surrounding code rather than assuming project-specific overrides.
+- Run `bundle exec rubocop` to verify style. Project-specific rules live in `.rubocop.yml`, with the
+  existing baseline frozen in `.rubocop_todo.yml`.
 - Target Ruby version: **3.2.2** (see `.ruby-version` / `Gemfile`).
 - Use double-quoted strings (stay consistent with surrounding code).
 
