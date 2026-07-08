@@ -229,8 +229,11 @@
             </td>
             <td><%= artist_names_for(result[:track]) %></td>
             <td>
+              <%# Nur Tags aus Kategorien, die auch der Ausgangstrack traegt (@relevant_category_ids)
+                  - andere Tags des verwandten Tracks waren fuer die Berechnung nicht relevant und
+                  wuerden nur unnoetigen Noise erzeugen (Intent 84 Nachtrag). %>
               <div class="d-flex flex-wrap gap-1">
-                <% result[:track].track_tags.each do |tt| %>
+                <% result[:track].track_tags.select { |tt| @relevant_category_ids.include?(tt.tag.category_id) }.each do |tt| %>
                   <%= track_tag_badge(tt) %>
                 <% end %>
               </div>

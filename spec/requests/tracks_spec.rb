@@ -748,6 +748,44 @@ RSpec.describe "Tracks", type: :request do
         expect(row.text).to include("RSpec Froehlich RT 7 (8 vs. 9) +9")
       end
     end
+
+    it "zeigt im Kategorie-Filter nur Kategorien, die der Ausgangstrack selbst verwendet" do
+      track = create_track(name: "RSpec RT Origin 9", spotify_id: "trk-rt-9")
+      own_category = Category.create!(name: "RSpec Emotion RT 9 Eigene")
+      other_category = Category.create!(name: "RSpec Emotion RT 9 Fremde")
+      own_category.tags.create!(name: "RSpec Froehlich RT 9", aliases: "x").tap do |tag|
+        TrackTag.create!(track: track, tag: tag, strength: 5)
+      end
+      other_category.tags.create!(name: "RSpec Ungenutzt RT 9", aliases: "y")
+
+      get track_path(track)
+
+      html = Nokogiri::HTML(response.body)
+      filter_labels = html.css("label.form-check-label").map(&:text)
+      expect(filter_labels).to include("RSpec Emotion RT 9 Eigene")
+      expect(filter_labels).to_not include("RSpec Emotion RT 9 Fremde")
+    end
+
+    it "zeigt bei einem verwandten Track nur Tags aus Kategorien, die auch der Ausgangstrack traegt" do
+      track = create_track(name: "RSpec RT Origin 10", spotify_id: "trk-rt-10")
+      related = create_track(name: "RSpec RT Related 10", spotify_id: "trk-rt-11")
+      shared_category = Category.create!(name: "RSpec Emotion RT 10 Gemeinsam")
+      other_category = Category.create!(name: "RSpec Qualitaet RT 10 Andere")
+      shared_tag = shared_category.tags.create!(name: "RSpec Froehlich RT 10", aliases: "x")
+      other_tag = other_category.tags.create!(name: "RSpec Tanzbar RT 10", aliases: "y")
+      TrackTag.create!(track: track, tag: shared_tag, strength: 5)
+      TrackTag.create!(track: related, tag: shared_tag, strength: 5)
+      TrackTag.create!(track: related, tag: other_tag, strength: 8)
+
+      get track_path(track)
+
+      html = Nokogiri::HTML(response.body)
+      row = html.css("tr").find { |tr| tr.text.include?("RSpec RT Related 10") }
+      aggregate_failures do
+        expect(row.text).to include("RSpec Froehlich RT 10")
+        expect(row.text).to_not include("RSpec Tanzbar RT 10")
+      end
+    end
   end
 
   describe "GET / (recently_played_index)" do

@@ -307,6 +307,14 @@ class Track < ApplicationRecord
     TrackFileLocator.preload_track_paths(tracks)
   end
 
+  # Kategorien, die dieser Track ueber seine eigenen Tags traegt (Intent 84 Nachtrag) - grenzt die
+  # "Verwandte Tracks"-Ansicht auf Kategorien ein, die fuer die Verwandtschaftsberechnung ueberhaupt
+  # relevant sein koennen. Rein in Ruby ueber die (via Track.for_show) bereits geladene
+  # track_tags-Assoziation, statt eine eigene Query zu bauen.
+  def tag_category_ids
+    track_tags.map { |tt| tt.tag.category_id }.uniq
+  end
+
   def dauer
     Time.at(duration_ms / 1000).utc.strftime('%M:%S')
   end

@@ -81,12 +81,21 @@ class TracksController < ApplicationController
     [pagy, page_tracks]
   end
 
-  # Intent 84 (Stufe 1) - Rangliste statt Karte, siehe RelatedTracksFinder. @categories fuers
-  # Filterformular unabhaengig von einer aktiven Auswahl geladen, da alle Kategorien immer
-  # anwaehlbar bleiben muessen.
+  # Intent 84 (Stufe 1 + Nachtrag) - Rangliste statt Karte, siehe RelatedTracksFinder. @categories
+  # fuers Filterformular bewusst auf die eigenen Tag-Kategorien des Tracks eingeschraenkt (nicht
+  # alle Kategorien im System) - eine Kategorie, die der Ausgangstrack gar nicht traegt, kann per
+  # Definition keine gemeinsamen Tags liefern und waere nur Rauschen in der Auswahl. @relevant_category_ids
+  # (die per Filter gewaehlten, sonst alle eigenen) grenzt zusaetzlich die je Zeile angezeigten Tags
+  # ein - nur Tags aus Kategorien, die tatsaechlich in die Berechnung eingeflossen sind.
   def load_related_tracks
-    @categories = Category.order(:name)
+    own_category_ids = @track.tag_category_ids
+    @categories = Category.where(id: own_category_ids).order(:name)
+    @relevant_category_ids = selected_related_category_ids || own_category_ids
     @related_tracks = RelatedTracksFinder.new(@track, category_ids: params[:related_category_ids]).call
     Track.preload_track_paths(@related_tracks.map { |r| r[:track] })
+  end
+
+  def selected_related_category_ids
+    Array(params[:related_category_ids]).map(&:to_i).presence
   end
 end
