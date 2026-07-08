@@ -80,5 +80,18 @@ RSpec.describe "Tags", type: :request do
 
       expect(JSON.parse(response.body)).to eq([])
     end
+
+    it "blendet Tags aus für die Neuzuordnung ausgeblendeten Kategorien aus" do
+      sichtbar = Category.create!(name: "RSpec Sichtbar Suche")
+      sichtbar.tags.create!(name: "RSpec Sichtbares Tag", aliases: "x")
+      ausgeblendet = Category.create!(name: "RSpec Ausgeblendet Suche", hidden_for_assignment: true)
+      ausgeblendet.tags.create!(name: "RSpec Ausgeblendetes Tag", aliases: "y")
+
+      get search_tags_path(term: "RSpec")
+
+      names = JSON.parse(response.body).map { |t| t["name"] }
+      expect(names).to include("RSpec Sichtbares Tag")
+      expect(names).to_not include("RSpec Ausgeblendetes Tag")
+    end
   end
 end

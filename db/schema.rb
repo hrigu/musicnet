@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_07_213651) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_08_083816) do
   create_table "albums", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name"
@@ -39,6 +39,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_07_213651) do
   create_table "categories", force: :cascade do |t|
     t.string "color"
     t.datetime "created_at", null: false
+    t.boolean "hidden_for_assignment", default: false, null: false
     t.boolean "is_event", default: false, null: false
     t.string "name", null: false
     t.datetime "updated_at", null: false

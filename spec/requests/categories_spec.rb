@@ -18,6 +18,15 @@ RSpec.describe "Categories", type: :request do
       expect(response.body).to include("RSpec Emotion")
       expect(response.body).to include("RSpec Traurig")
     end
+
+    it "markiert für die Neuzuordnung ausgeblendete Kategorien, sichtbare nicht" do
+      Category.create!(name: "RSpec Verborgen Index", hidden_for_assignment: true)
+      Category.create!(name: "RSpec Normal Index")
+
+      get categories_path
+
+      expect(response.body.scan("category-hidden-badge").size).to eq(1)
+    end
   end
 
   describe "POST /categories" do
@@ -68,6 +77,22 @@ RSpec.describe "Categories", type: :request do
 
       expect(response).to have_http_status(:unprocessable_content)
       expect(category.reload.color).to be_blank
+    end
+
+    it "blendet eine Kategorie für die Neuzuordnung aus" do
+      category = Category.create!(name: "RSpec Ausblenden")
+
+      patch category_path(category), params: { category: { hidden_for_assignment: "1" } }
+
+      expect(category.reload.hidden_for_assignment).to be true
+    end
+
+    it "blendet eine Kategorie wieder ein" do
+      category = Category.create!(name: "RSpec Einblenden", hidden_for_assignment: true)
+
+      patch category_path(category), params: { category: { hidden_for_assignment: "0" } }
+
+      expect(category.reload.hidden_for_assignment).to be false
     end
   end
 

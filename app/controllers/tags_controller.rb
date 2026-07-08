@@ -6,6 +6,8 @@ class TagsController < ApplicationController
   def search
     term = params[:term].to_s.strip
     tags = term.blank? ? [] : Tag.includes(:category)
+                                  .joins(:category)
+                                  .merge(Category.visible_for_assignment)
                                   .where("LOWER(tags.name) LIKE ?", "%#{term.downcase}%")
                                   .order(:name)
                                   .limit(MAX_SEARCH_RESULTS)
