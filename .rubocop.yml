@@ -1,0 +1,31 @@
+require: []
+
+AllCops:
+  NewCops: disable
+  TargetRubyVersion: 3.2
+
+# Behebt den Widerspruch zu CODE_GUIDELINES.md ("Use double-quoted strings") - Rubocops
+# unkonfigurierter Default ist single_quotes.
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+
+# Verlangt einen Doc-Kommentar ueber jeder Klasse/jedem Modul - wird in diesem Projekt nirgends
+# genutzt oder gewuenscht (Kommentare erklaeren hier gezielt das WARUM an einzelnen Stellen, siehe
+# CODE_GUIDELINES.md, nicht als Pflicht-Header pro Klasse).
+Style/Documentation:
+  Enabled: false
+
+# Angehoben gegenueber den Rubocop-Defaults (100/10/17) - in diesem Projekt wiederholt knapp
+# ueberschritten durch normale, klar strukturierte Rails-Controller/Service-Objekte (z.B.
+# RelatedTracksFinder, TrackTagsController, Intent 84/85), ohne dass die Methoden dadurch
+# tatsaechlich unuebersichtlich wurden.
+Metrics/ClassLength:
+  Max: 150
+
+Metrics/MethodLength:
+  Max: 15
+
+Metrics/AbcSize:
+  Max: 25
+
+inherit_from: .rubocop_todo.yml
