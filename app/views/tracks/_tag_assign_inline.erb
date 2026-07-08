@@ -11,10 +11,13 @@
   <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1 lh-1" data-action="tag-assign#open"
           data-tag-assign-target="openButton" title="Tag zuweisen">+</button>
 
+  <%# form_with ignoriert ein style:-Attribut stillschweigend (kein von form_with erkannter
+      Passthrough-Key) - Breite/Positionierung deshalb ueber die CSS-Klasse "tag-assign-panel"
+      (application.scss), nicht als style-Option hier. Ohne das war das Fenster nur so breit wie
+      sein (anfangs leerer) Inhalt, praktisch unbenutzbar. %>
   <%= form_with url: track_tags_path, method: :post,
         data: { tag_assign_target: "panel" },
-        class: "d-none position-absolute bg-body border rounded p-2 shadow-sm",
-        style: "z-index: 20; min-width: 14rem; top: 100%;" do %>
+        class: "d-none tag-assign-panel bg-body border rounded p-2 shadow-sm" do %>
     <%= hidden_field_tag :track_id, track.id %>
     <%= hidden_field_tag :tag_id, "", data: { tag_assign_target: "tagIdField" } %>
     <%= hidden_field_tag :strength, 5 %>

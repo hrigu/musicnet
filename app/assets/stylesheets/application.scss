@@ -104,6 +104,19 @@ body {
       box-shadow: 0 0 0 0.5rem rgba(25, 135, 84, 0);
     }
   }
+
+  // Inline-Widget zum Zuweisen eines bestehenden Tags (Intent 83) - form_with ignoriert ein
+  // style:-Attribut stillschweigend, Breite/Positionierung muessen deshalb hier als Klasse
+  // stehen, nicht als style-Option in der View (siehe tracks/_tag_assign_inline.erb). Die schmale
+  // 8%-Tags-Spalte (.col-tags oben) wuerde das Suchfeld sonst auf ein paar Millimeter zusammen-
+  // schrumpfen - min-width haelt es unabhaengig von der Spaltenbreite lesbar.
+  .tag-assign-panel {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 20;
+    min-width: 18rem;
+  }
 }
 
 // Feste relative Spaltenbreiten, damit die Tabelle bei wechselnden Tracknamen nicht staendig die
