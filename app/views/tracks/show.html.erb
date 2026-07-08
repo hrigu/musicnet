@@ -184,3 +184,49 @@
     <% end %>
   <% end %>
 </div>
+
+<%# Rangliste verwandter Tracks (Intent 84, Stufe 1 - bewusst noch keine Karte, siehe
+    RelatedTracksFinder). Eigener Turbo-Frame, damit das Kategorie-Filterformular nur diesen
+    Abschnitt neu laedt, nicht die ganze Seite. %>
+<%= turbo_frame_tag dom_id(@track, :related_tracks), class: "d-block mb-3" do %>
+  <div class="text-muted small mb-1">Verwandte Tracks</div>
+
+  <%# Kein local: true - dieses GET-Formular soll bewusst als Turbo-Frame-Request laufen (Default
+      innerhalb eines turbo_frame_tag), damit nur dieser Abschnitt neu laedt, nicht lokal:true
+      waere hier ohnehin wirkungslos, siehe die form_with-Falle bei Intent 83. %>
+  <%= form_with url: track_path(@track), method: :get,
+        class: "d-flex flex-wrap align-items-center gap-3 mb-2" do %>
+    <% @categories.each do |category| %>
+      <div class="form-check form-check-inline mb-0">
+        <%= check_box_tag "related_category_ids[]", category.id,
+              params[:related_category_ids]&.include?(category.id.to_s),
+              id: "related_category_#{category.id}", class: "form-check-input" %>
+        <%= label_tag "related_category_#{category.id}", category.name, class: "form-check-label small" %>
+      </div>
+    <% end %>
+    <%= submit_tag "Filtern", class: "btn btn-sm btn-outline-secondary" %>
+  <% end %>
+
+  <% if @related_tracks.empty? %>
+    <span class="text-muted">–</span>
+  <% else %>
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th scope="col">Track</th>
+          <th scope="col" class="text-end">Punkte</th>
+          <th scope="col"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @related_tracks.each do |result| %>
+          <tr>
+            <td><%= link_to result[:track].name, track_path(result[:track]) %></td>
+            <td class="text-end text-muted"><%= result[:score] %></td>
+            <td><%= render partial: "components/audio_file", locals: { track: result[:track] } %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+<% end %>

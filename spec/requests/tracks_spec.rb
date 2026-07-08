@@ -686,6 +686,48 @@ RSpec.describe "Tracks", type: :request do
     end
   end
 
+  describe "GET /tracks/:id - Verwandte Tracks (Intent 84)" do
+    it "zeigt Tracks mit gemeinsamem Tag in der Verwandte-Tracks-Liste" do
+      track = create_track(name: "RSpec RT Origin", spotify_id: "trk-rt-1")
+      related = create_track(name: "RSpec RT Match", spotify_id: "trk-rt-2")
+      category = Category.create!(name: "RSpec Emotion RT")
+      tag = category.tags.create!(name: "RSpec Froehlich RT", aliases: "x")
+      TrackTag.create!(track: track, tag: tag, strength: 5)
+      TrackTag.create!(track: related, tag: tag, strength: 6)
+
+      get track_path(track)
+
+      expect(response.body).to include("RSpec RT Match")
+    end
+
+    it "schraenkt die Liste per Kategorie-Filter ein" do
+      track = create_track(name: "RSpec RT Origin 2", spotify_id: "trk-rt-3")
+      in_category = create_track(name: "RSpec RT In Category", spotify_id: "trk-rt-4")
+      outside_category = create_track(name: "RSpec RT Outside Category", spotify_id: "trk-rt-5")
+      emotion = Category.create!(name: "RSpec Emotion RT 2")
+      quality = Category.create!(name: "RSpec Qualitaet RT 2")
+      emotion_tag = emotion.tags.create!(name: "RSpec Froehlich RT 2", aliases: "x")
+      quality_tag = quality.tags.create!(name: "RSpec Tanzbar RT 2", aliases: "y")
+      TrackTag.create!(track: track, tag: emotion_tag, strength: 5)
+      TrackTag.create!(track: track, tag: quality_tag, strength: 5)
+      TrackTag.create!(track: in_category, tag: emotion_tag, strength: 5)
+      TrackTag.create!(track: outside_category, tag: quality_tag, strength: 5)
+
+      get track_path(track, related_category_ids: [emotion.id])
+
+      expect(response.body).to include("RSpec RT In Category")
+      expect(response.body).to_not include("RSpec RT Outside Category")
+    end
+
+    it "zeigt keine Liste, wenn es keine verwandten Tracks gibt" do
+      track = create_track(name: "RSpec RT Origin 3", spotify_id: "trk-rt-6")
+
+      get track_path(track)
+
+      expect(response).to have_http_status(:success)
+    end
+  end
+
   describe "GET / (recently_played_index)" do
     it "verwendet den angemeldeten User für recently_played" do
       current_spotify_user = users(:one).spotify_user

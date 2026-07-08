@@ -43,6 +43,7 @@ class TracksController < ApplicationController
     # (Options-Aufbau) in der View je eine eigene Query ausloesen, statt sich eine geladene
     # Ergebnisliste zu teilen.
     @addable_playlists = Playlist.where.not(id: @track.playlist_tracks.map(&:playlist_id)).order(:name).to_a
+    load_related_tracks
   end
 
   # send_file allein unterstuetzt keine HTTP-Range-Requests (nur ueber X-Sendfile/einen
@@ -78,5 +79,14 @@ class TracksController < ApplicationController
     pagy, page_tracks = pagy(:offset, tracks, limit: PAGE_SIZE)
     Track.preload_track_paths(page_tracks)
     [pagy, page_tracks]
+  end
+
+  # Intent 84 (Stufe 1) - Rangliste statt Karte, siehe RelatedTracksFinder. @categories fuers
+  # Filterformular unabhaengig von einer aktiven Auswahl geladen, da alle Kategorien immer
+  # anwaehlbar bleiben muessen.
+  def load_related_tracks
+    @categories = Category.order(:name)
+    @related_tracks = RelatedTracksFinder.new(@track, category_ids: params[:related_category_ids]).call
+    Track.preload_track_paths(@related_tracks.map { |r| r[:track] })
   end
 end
