@@ -91,14 +91,22 @@ class TracksController < ApplicationController
     own_category_ids = @track.tag_category_ids
     @categories = Category.where(id: own_category_ids).order(:name)
     @relevant_category_ids = selected_related_category_ids || own_category_ids
-    finder = RelatedTracksFinder.new(@track, category_ids: params[:related_category_ids])
+    finder = RelatedTracksFinder.new(@track, category_ids: params[:related_category_ids],
+                                              attribute_weights: selected_related_attribute_weights)
     @related_tracks = finder.call
-    @related_base_tag_count = finder.base_tag_count
+    @related_active_comparison_count = finder.active_comparison_count
     @related_additional_tied_count = finder.additional_tied_count
     Track.preload_track_paths(@related_tracks.map { |r| r[:track] })
   end
 
   def selected_related_category_ids
     Array(params[:related_category_ids]).map(&:to_i).presence
+  end
+
+  # Nur Attribute, die per Checkbox aktiviert wurden, werden ueberhaupt an RelatedTracksFinder
+  # weitergereicht - ein blosses Gewicht im Formular ohne angehaktes Attribut darf nichts bewirken
+  # (Intent 84 Nachtrag 5).
+  def selected_related_attribute_weights
+    Array(params[:related_attribute_ids]).index_with { |key| params.dig(:related_attribute_weights, key) }
   end
 end

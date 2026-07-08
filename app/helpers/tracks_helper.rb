@@ -78,13 +78,32 @@ module TracksHelper
   end
 
   # Macht die Punktzahl in der "Verwandte Tracks"-Rangliste nachvollziehbar (Intent 84 Nachtrag) -
-  # zeigt pro gemeinsamem Tag, welche beiden Staerken verglichen wurden und wie viele Punkte das
-  # ergeben hat, statt nur die Summe ohne Herkunft anzuzeigen.
+  # zeigt pro Attribut (Tag, Genre, Bibliothek, Energie, Tempo), welche beiden Werte verglichen
+  # wurden und wie viele (ggf. gewichtete) Punkte das ergeben hat, statt nur die Summe ohne
+  # Herkunft anzuzeigen.
   def related_track_score_breakdown(contributions)
     contributions
-      .sort_by { |c| -c.points }
-      .map { |c| "#{c.tag_name} (#{c.base_strength} vs. #{c.candidate_strength}) +#{c.points}" }
+      .sort_by { |c| -c.weighted_points }
+      .map { |c| related_contribution_text(c) }
       .join(", ")
+  end
+
+  RELATED_ATTRIBUTE_LABELS = { "genre" => "Genre", "library" => "Bibliothek", "energy" => "Energie", "tempo" => "Tempo" }.freeze
+
+  def related_attribute_keys
+    RELATED_ATTRIBUTE_LABELS.keys
+  end
+
+  def related_attribute_label(key)
+    RELATED_ATTRIBUTE_LABELS.fetch(key)
+  end
+
+  def related_attribute_enabled?(key)
+    Array(params[:related_attribute_ids]).include?(key)
+  end
+
+  def related_attribute_weight(key)
+    params.dig(:related_attribute_weights, key).presence || "1.0"
   end
 
   # Nutzt playlist_tracks, falls das (z.B. auf /tracks) bereits preloaded ist, sonst playlists
@@ -100,6 +119,17 @@ module TracksHelper
   end
 
   private
+
+  def related_contribution_text(c)
+    base = "#{c.label} (#{c.base_value} vs. #{c.candidate_value}) +#{c.points}"
+    return base if c.weight == 1.0
+
+    "#{base} ×#{format_weight_factor(c.weight)}=#{format_weight_factor(c.weighted_points)}"
+  end
+
+  def format_weight_factor(number)
+    number == number.to_i ? number.to_i.to_s : number.to_s
+  end
 
   # Leitet aus der Kategorie-Farbe (nur als Hue-Anker genutzt, nicht als exakter Badge-Ton) eine
   # zarte, tag-individuelle Variante ab - Farbton fix pro Kategorie (Familie), Helligkeit variiert

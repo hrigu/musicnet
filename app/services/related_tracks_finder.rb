@@ -1,47 +1,55 @@
 # frozen_string_literal: true
 
-# Verwandtschafts-Rangliste zu einem Ausgangs-Track (Intent 84, Stufe 1 - bewusst ohne Karte/
-# Layout, siehe .intents/completed/84.*.md). Metrik v1: pro gemeinsamem Tag ein Beitrag, der mit
-# zunehmendem Staerke-Unterschied sinkt (10 - |Differenz|, nie negativ), aufsummiert ueber alle
-# gemeinsamen Tags - zwei Tracks mit demselben Tag und aehnlicher Staerke gelten so als enger
-# verwandt als mit weit auseinanderliegender Staerke. Absichtlich in Ruby statt einem SQL-Self-Join
-# gehalten: bei der ueberschaubaren Tag-Anzahl dieses Single-User-Projekts ist das klar lesbar und
-# schnell genug, ohne die Komplexitaet eines Self-Joins einzugehen.
+# Verwandtschafts-Rangliste zu einem Ausgangs-Track (Intent 84). Metrik: pro vergleichbarem
+# Attribut (gemeinsames Tag, Genre, Bibliothek, Energie, Tempo) ein Punktbeitrag, der bei
+# numerischen Werten mit zunehmendem Unterschied sinkt und bei kategorischen Werten entweder voll
+# oder gar nicht zaehlt, aufsummiert und mit einem optionalen Gewicht pro Attribut multipliziert.
+# Diese Klasse ist bewusst nur noch der Orchestrator (Kandidaten sammeln, Beitraege einholen,
+# diversifizieren, kuerzen) - die eigentliche Fachlogik pro Vergleichsart steckt in TagMatcher
+# (Tags, immer aktiv, ueber category_ids einschraenkbar) und AttributeMatcher (Genre/Bibliothek/
+# Energie/Tempo, einzeln ueber attribute_weights zu-/abschaltbar, Intent 84 Nachtrag 5 - nur ein
+# Schluessel in diesem Hash gilt als aktiviert, der Wert ist das Gewicht).
 class RelatedTracksFinder
   MAX_RESULTS = 10
   MAX_STRENGTH_DIFFERENCE = 10
+  DEFAULT_ATTRIBUTE_WEIGHT = 1.0
 
-  # Ein Eintrag pro gemeinsamem Tag, der zur Gesamtpunktzahl eines Kandidat-Tracks beigetragen hat
-  # - macht die Punktzahl in der View nachvollziehbar (Intent 84 Nachtrag), statt nur die Summe
-  # ohne Herkunft anzuzeigen.
-  Contribution = Struct.new(:tag_name, :base_strength, :candidate_strength, :points)
+  # Ein Eintrag pro vergleichbarem Attribut, der zur Gesamtpunktzahl eines Kandidat-Tracks
+  # beigetragen hat - macht die Punktzahl in der View nachvollziehbar. label ist der Tag-Name bzw.
+  # ein Attribut-Label ("Genre", "Tempo", ...), base_value/candidate_value die verglichenen Werte
+  # (Staerken, Genre-Namen, BPM, ...).
+  Contribution = Struct.new(:label, :base_value, :candidate_value, :points, :weight) do
+    def weighted_points
+      (points * weight).round(2)
+    end
+  end
 
-  def initialize(track, category_ids: nil)
+  def initialize(track, category_ids: nil, attribute_weights: {})
     @track = track
-    @category_ids = Array(category_ids).map(&:to_i).presence
+    @tags = TagMatcher.new(track, Array(category_ids).map(&:to_i).presence)
+    @attributes = AttributeMatcher.new(track, normalize_attribute_weights(attribute_weights))
   end
 
   def call
     results
   end
 
-  # Anzahl der eigenen Tags des Ausgangstracks, die tatsaechlich in die Berechnung eingeflossen
-  # sind (Intent 84 Nachtrag) - je weniger, desto weniger aussagekraeftig ist die Rangliste, da nur
-  # wenige Attribute miteinander verglichen werden koennen. Nur nach #call sinnvoll (Reihenfolge
-  # wird hier nicht erzwungen, da base_track_tags ohnehin billig neu berechenbar ist).
-  def base_tag_count
-    base_track_tags.size
+  # Anzahl der fuer die Berechnung tatsaechlich nutzbaren Vergleichspunkte (eigene Tags + aktivierte
+  # Attribute, fuer die der Ausgangstrack einen Wert hat) - je weniger, desto weniger
+  # aussagekraeftig ist die Rangliste, da nur wenige Attribute miteinander verglichen werden.
+  def active_comparison_count
+    @tags.base_tag_count + @attributes.active_origin_value_count
   end
 
   # Wie viele weitere Treffer mit exakt derselben Punktzahl wie der zuletzt angezeigte existieren,
-  # aber wegen MAX_RESULTS nicht mehr angezeigt werden (Intent 84 Nachtrag) - macht sichtbar, dass
-  # die angezeigte Auswahl bei einem Gleichstand willkuerlich ist, statt das stillschweigend zu
-  # verstecken. 0, wenn gar nicht gekuerzt wurde (dann gibt es nichts Abgeschnittenes).
+  # aber wegen MAX_RESULTS nicht mehr angezeigt werden - macht sichtbar, dass die angezeigte
+  # Auswahl bei einem Gleichstand willkuerlich ist, statt das stillschweigend zu verstecken. 0,
+  # wenn gar nicht gekuerzt wurde.
   def additional_tied_count
     return 0 if results.size < MAX_RESULTS
 
     boundary_score = results.last[:score]
-    total_at_boundary = @all_contributions.count { |_track_id, c| c.sum(&:points) == boundary_score }
+    total_at_boundary = @all_contributions.count { |_track_id, c| c.sum(&:weighted_points).round(2) == boundary_score }
     shown_at_boundary = results.count { |result| result[:score] == boundary_score }
     total_at_boundary - shown_at_boundary
   end
@@ -53,30 +61,47 @@ class RelatedTracksFinder
   end
 
   def compute_results
-    base_by_tag_id = base_track_tags.index_by(&:tag_id)
-    return [] if base_by_tag_id.empty?
+    candidate_ids = Set.new(@tags.candidate_ids).merge(@attributes.candidate_ids).delete(@track.id)
+    return [] if candidate_ids.empty?
 
-    @all_contributions = group_contributions_by_track(base_by_tag_id)
+    candidates = tracks_by_id_for(candidate_ids)
+    @all_contributions = build_all_contributions(candidates)
     return [] if @all_contributions.empty?
 
-    tracks_by_id = tracks_by_id_for(@all_contributions.keys)
     diversify(@all_contributions)
       .first(MAX_RESULTS)
-      .map { |track_id, contributions| build_result(tracks_by_id[track_id], contributions) }
+      .map { |track_id, contributions| build_result(candidates[track_id], contributions) }
+  end
+
+  def tracks_by_id_for(track_ids)
+    Track.where(id: track_ids)
+         .includes(:artists, track_tags: { tag: :category }, playlists: :libraries)
+         .index_by(&:id)
+  end
+
+  # Ein Kandidat muss nicht in allen Quellen (Tag, Genre, Bibliothek, Energie/Tempo) auftauchen, es
+  # reicht eine einzige - die vollstaendige Punktzahl wird hier ueber alle aktiven Vergleichsarten
+  # gemeinsam berechnet, nicht nur ueber die Quelle, die ihn hat auftauchen lassen.
+  def build_all_contributions(candidates)
+    contributions_by_track_id = {}
+    candidates.each_value do |candidate|
+      contributions = @tags.contributions_for(candidate) + @attributes.contributions_for(candidate)
+      contributions_by_track_id[candidate.id] = contributions if contributions.any?
+    end
+    contributions_by_track_id
   end
 
   # Ein haeufig vergebenes Tag (z.B. automatisch aus vielen Playlist-Namen zugeordnet) darf ein
   # selteneres, aber ebenso stark passendes Tag (z.B. nur manuell an wenige Tracks vergeben) nicht
   # aus der Rangliste verdraengen, nur weil beide auf die gleiche Punktzahl kommen und das
-  # haeufigere Tag zufaellig mehr bzw. zuerst zurueckgegebene Kandidaten hat (Intent 84 Nachtrag,
-  # konkret beobachtet: Jazz mit 148, Walzer mit nur 21 gleichauf liegenden Treffern - ohne dies
-  # bestand die Top 10 nur aus Jazz-Treffern). Gruppiert daher zuerst nach dem staerksten
-  # beitragenden Tag jedes Kandidaten, sortiert jede Gruppe fuer sich nach Punktzahl, und reiht die
-  # Gruppen dann abwechselnd (Round-Robin) aneinander, bevor auf MAX_RESULTS gekuerzt wird.
+  # haeufigere Tag zufaellig mehr bzw. zuerst zurueckgegebene Kandidaten hat (Intent 84 Nachtrag).
+  # Gruppiert daher zuerst nach dem staerksten beitragenden Attribut jedes Kandidaten, sortiert
+  # jede Gruppe fuer sich nach gewichteter Punktzahl, und reiht die Gruppen dann abwechselnd
+  # (Round-Robin) aneinander, bevor auf MAX_RESULTS gekuerzt wird.
   def diversify(contributions_by_track_id)
     buckets = contributions_by_track_id
-              .sort_by { |_track_id, contributions| -contributions.sum(&:points) }
-              .group_by { |_track_id, contributions| contributions.max_by(&:points).tag_name }
+              .sort_by { |_track_id, contributions| -contributions.sum(&:weighted_points) }
+              .group_by { |_track_id, contributions| contributions.max_by(&:weighted_points).label }
               .values
 
     round_robin(buckets)
@@ -88,37 +113,16 @@ class RelatedTracksFinder
     result
   end
 
-  def base_track_tags
-    scope = @track.track_tags
-    scope = scope.joins(:tag).where(tags: { category_id: @category_ids }) if @category_ids
-    scope.to_a
-  end
-
-  def tracks_by_id_for(track_ids)
-    Track.where(id: track_ids).includes(:artists, track_tags: { tag: :category }).index_by(&:id)
-  end
-
-  def group_contributions_by_track(base_by_tag_id)
-    contributions_by_track_id = Hash.new { |hash, key| hash[key] = [] }
-    candidate_track_tags(base_by_tag_id.keys).includes(:tag).each do |candidate|
-      contribution = build_contribution(base_by_tag_id[candidate.tag_id], candidate)
-      contributions_by_track_id[candidate.track_id] << contribution if contribution
-    end
-    contributions_by_track_id
-  end
-
-  def build_contribution(base, candidate)
-    points = [MAX_STRENGTH_DIFFERENCE - (candidate.strength - base.strength).abs, 0].max
-    return nil if points.zero?
-
-    Contribution.new(candidate.tag.name, base.strength, candidate.strength, points)
-  end
-
-  def candidate_track_tags(tag_ids)
-    TrackTag.where(tag_id: tag_ids).where.not(track_id: @track.id)
-  end
-
   def build_result(track, contributions)
-    { track: track, score: contributions.sum(&:points), contributions: contributions }
+    { track: track, score: contributions.sum(&:weighted_points).round(2), contributions: contributions }
+  end
+
+  def normalize_attribute_weights(raw)
+    raw.to_h.each_with_object({}) do |(key, weight), memo|
+      key = key.to_sym
+      next unless AttributeMatcher::KEYS.include?(key)
+
+      memo[key] = weight.present? ? weight.to_f.clamp(0, Float::INFINITY) : DEFAULT_ATTRIBUTE_WEIGHT
+    end
   end
 end

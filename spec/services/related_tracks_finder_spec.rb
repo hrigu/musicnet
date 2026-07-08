@@ -3,9 +3,13 @@
 require "rails_helper"
 
 RSpec.describe RelatedTracksFinder do
-  def create_track(name)
+  def create_track(name, genre: nil, energy: nil, tempo: nil)
     album = Album.create!(name: "Album #{name}", spotify_id: "alb-rtf-#{name}")
-    Track.create!(name: name, spotify_id: "trk-rtf-#{name}", album: album, duration_ms: 200_000)
+    audio_features = {}
+    audio_features["energy"] = energy if energy
+    audio_features["tempo"] = tempo if tempo
+    Track.create!(name: name, spotify_id: "trk-rtf-#{name}", album: album, duration_ms: 200_000,
+                  genre: genre, audio_features: audio_features.presence)
   end
 
   it "findet Tracks mit gemeinsamem Tag, sortiert nach Naehe der Staerke" do
@@ -41,12 +45,13 @@ RSpec.describe RelatedTracksFinder do
     result = RelatedTracksFinder.new(origin).call.first
 
     expect(result[:score]).to eq(9 + 8)
-    contributions = result[:contributions].sort_by(&:tag_name)
-    expect(contributions.map(&:tag_name)).to eq(["RSpec Froehlich Breakdown", "RSpec Tanzbar Breakdown"].sort)
-    froehlich = contributions.find { |c| c.tag_name == "RSpec Froehlich Breakdown" }
-    expect(froehlich.base_strength).to eq(8)
-    expect(froehlich.candidate_strength).to eq(9)
+    contributions = result[:contributions].sort_by(&:label)
+    expect(contributions.map(&:label)).to eq(["RSpec Froehlich Breakdown", "RSpec Tanzbar Breakdown"].sort)
+    froehlich = contributions.find { |c| c.label == "RSpec Froehlich Breakdown" }
+    expect(froehlich.base_value).to eq(8)
+    expect(froehlich.candidate_value).to eq(9)
     expect(froehlich.points).to eq(9)
+    expect(froehlich.weight).to eq(1.0)
   end
 
   it "ignoriert Tracks ohne gemeinsames Tag" do
@@ -72,7 +77,7 @@ RSpec.describe RelatedTracksFinder do
     expect(results.map { |r| r[:track] }).to_not include(origin)
   end
 
-  it "liefert eine leere Liste, wenn der Ausgangstrack keine Tags hat" do
+  it "liefert eine leere Liste, wenn der Ausgangstrack keine Tags hat und keine Attribute gewaehlt sind" do
     origin = create_track("Origin 4")
 
     expect(RelatedTracksFinder.new(origin).call).to eq([])
@@ -105,7 +110,99 @@ RSpec.describe RelatedTracksFinder do
     expect(results.map { |r| r[:track] } & rare_matches).to_not be_empty
   end
 
-  describe "#base_tag_count" do
+  describe "Attribut Genre" do
+    it "findet Tracks mit gleichem Genre, wenn aktiviert" do
+      origin = create_track("Origin RTF Genre", genre: "Jazz")
+      match = create_track("Match RTF Genre", genre: "Jazz")
+      other = create_track("Other RTF Genre", genre: "Rock")
+
+      results = RelatedTracksFinder.new(origin, attribute_weights: { "genre" => 1.0 }).call
+
+      expect(results.map { |r| r[:track] }).to include(match)
+      expect(results.map { |r| r[:track] }).to_not include(other)
+    end
+
+    it "ignoriert das Genre, wenn nicht aktiviert" do
+      origin = create_track("Origin RTF Genre Off", genre: "Jazz")
+      create_track("Match RTF Genre Off", genre: "Jazz")
+
+      expect(RelatedTracksFinder.new(origin).call).to eq([])
+    end
+  end
+
+  describe "Attribut Bibliothek" do
+    it "findet Tracks mit gemeinsamer Bibliothek, wenn aktiviert" do
+      origin = create_track("Origin RTF Library")
+      match = create_track("Match RTF Library")
+      other = create_track("Other RTF Library")
+      library = Library.create!(name: "RSpec Bibliothek RTF", keyword: "rtf-lib")
+      playlist_a = Playlist.create!(spotify_id: "pl-rtf-lib-a", name: "Playlist A")
+      playlist_b = Playlist.create!(spotify_id: "pl-rtf-lib-b", name: "Playlist B")
+      playlist_a.libraries << library
+      playlist_b.libraries << library
+      PlaylistTrack.create!(playlist: playlist_a, track: origin, added_at: Time.current)
+      PlaylistTrack.create!(playlist: playlist_b, track: match, added_at: Time.current)
+      PlaylistTrack.create!(playlist: Playlist.create!(spotify_id: "pl-rtf-lib-c", name: "Playlist C"), track: other, added_at: Time.current)
+
+      results = RelatedTracksFinder.new(origin, attribute_weights: { "library" => 1.0 }).call
+
+      expect(results.map { |r| r[:track] }).to include(match)
+      expect(results.map { |r| r[:track] }).to_not include(other)
+    end
+  end
+
+  describe "Attribut Energie" do
+    it "gewichtet aehnliche Energie hoeher als weit auseinanderliegende" do
+      origin = create_track("Origin RTF Energy", energy: 0.8)
+      close = create_track("Close RTF Energy", energy: 0.82)
+      far = create_track("Far RTF Energy", energy: 0.2)
+
+      results = RelatedTracksFinder.new(origin, attribute_weights: { "energy" => 1.0 }).call
+
+      close_score = results.find { |r| r[:track] == close }[:score]
+      far_score = results.find { |r| r[:track] == far }[:score]
+      expect(close_score).to be > far_score
+    end
+  end
+
+  describe "Attribut Tempo" do
+    it "gewichtet aehnliches Tempo hoeher als weit auseinanderliegendes" do
+      origin = create_track("Origin RTF Tempo", tempo: 120)
+      close = create_track("Close RTF Tempo", tempo: 122)
+      far = create_track("Far RTF Tempo", tempo: 80)
+
+      results = RelatedTracksFinder.new(origin, attribute_weights: { "tempo" => 1.0 }).call
+
+      close_score = results.find { |r| r[:track] == close }[:score]
+      far_score = results.find { |r| r[:track] == far }[:score]
+      expect(close_score).to be > far_score
+    end
+  end
+
+  describe "Gewichtung" do
+    it "vervielfacht den Punktbeitrag eines Attributs um den angegebenen Faktor" do
+      origin = create_track("Origin RTF Weight", genre: "Jazz")
+      match = create_track("Match RTF Weight", genre: "Jazz")
+
+      unweighted = RelatedTracksFinder.new(origin, attribute_weights: { "genre" => 1.0 }).call
+      weighted = RelatedTracksFinder.new(origin, attribute_weights: { "genre" => 2.5 }).call
+
+      unweighted_score = unweighted.find { |r| r[:track] == match }[:score]
+      weighted_score = weighted.find { |r| r[:track] == match }[:score]
+      expect(weighted_score).to eq(unweighted_score * 2.5)
+    end
+
+    it "verwendet Gewicht 1.0, wenn kein oder ein ungueltiges Gewicht angegeben wird" do
+      origin = create_track("Origin RTF Weight Default", genre: "Jazz")
+      create_track("Match RTF Weight Default", genre: "Jazz")
+
+      results = RelatedTracksFinder.new(origin, attribute_weights: { "genre" => "" }).call
+
+      expect(results.first[:contributions].first.weight).to eq(1.0)
+    end
+  end
+
+  describe "#active_comparison_count" do
     it "zaehlt die fuer die Berechnung verwendeten eigenen Tags des Ausgangstracks" do
       origin = create_track("Origin RTF BaseCount")
       category = Category.create!(name: "RSpec Emotion RTF BaseCount")
@@ -117,7 +214,17 @@ RSpec.describe RelatedTracksFinder do
       finder = RelatedTracksFinder.new(origin)
       finder.call
 
-      expect(finder.base_tag_count).to eq(2)
+      expect(finder.active_comparison_count).to eq(2)
+    end
+
+    it "zaehlt zusaetzlich aktivierte Attribute mit, sofern der Ausgangstrack dafuer einen Wert hat" do
+      origin = create_track("Origin RTF BaseCount 2", genre: "Jazz", tempo: 120)
+
+      finder = RelatedTracksFinder.new(origin, attribute_weights: { "genre" => 1.0, "tempo" => 1.0, "energy" => 1.0 })
+      finder.call
+
+      # Genre + Tempo zaehlen (Wert vorhanden), Energie nicht (kein Wert am Ausgangstrack)
+      expect(finder.active_comparison_count).to eq(2)
     end
   end
 

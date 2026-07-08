@@ -815,6 +815,47 @@ RSpec.describe "Tracks", type: :request do
 
       expect(response.body).to_not include("weitere Treffer")
     end
+
+    it "findet Tracks mit gleichem Genre, wenn das Attribut aktiviert ist (Intent 84 Nachtrag 5)" do
+      album = Album.create!(name: "Album RT Genre", spotify_id: "alb-rt-genre-1")
+      other_album = Album.create!(name: "Album RT Genre 2", spotify_id: "alb-rt-genre-2")
+      track = Track.create!(name: "RSpec RT Genre Origin", spotify_id: "trk-rt-genre-1", album: album,
+                             duration_ms: 200_000, genre: "Jazz")
+      match = Track.create!(name: "RSpec RT Genre Match", spotify_id: "trk-rt-genre-2", album: other_album,
+                             duration_ms: 200_000, genre: "Jazz")
+
+      get track_path(track, related_attribute_ids: ["genre"])
+
+      expect(response.body).to include("RSpec RT Genre Match")
+    end
+
+    it "ignoriert Genre, wenn das Attribut nicht aktiviert ist" do
+      album = Album.create!(name: "Album RT Genre Off", spotify_id: "alb-rt-genre-off-1")
+      other_album = Album.create!(name: "Album RT Genre Off 2", spotify_id: "alb-rt-genre-off-2")
+      track = Track.create!(name: "RSpec RT Genre Off Origin", spotify_id: "trk-rt-genre-off-1", album: album,
+                             duration_ms: 200_000, genre: "Jazz")
+      Track.create!(name: "RSpec RT Genre Off Match", spotify_id: "trk-rt-genre-off-2", album: other_album,
+                    duration_ms: 200_000, genre: "Jazz")
+
+      get track_path(track)
+
+      expect(response.body).to_not include("RSpec RT Genre Off Match")
+    end
+
+    it "vervielfacht den Punktbeitrag eines Attributs gemaess dem eingegebenen Gewicht" do
+      album = Album.create!(name: "Album RT Weight", spotify_id: "alb-rt-weight-1")
+      other_album = Album.create!(name: "Album RT Weight 2", spotify_id: "alb-rt-weight-2")
+      track = Track.create!(name: "RSpec RT Weight Origin", spotify_id: "trk-rt-weight-1", album: album,
+                             duration_ms: 200_000, genre: "Jazz")
+      Track.create!(name: "RSpec RT Weight Match", spotify_id: "trk-rt-weight-2", album: other_album,
+                    duration_ms: 200_000, genre: "Jazz")
+
+      get track_path(track, related_attribute_ids: ["genre"], related_attribute_weights: { genre: "2.0" })
+
+      html = Nokogiri::HTML(response.body)
+      row = html.css("tr").find { |tr| tr.text.include?("RSpec RT Weight Match") }
+      expect(row.text).to include("×2=20")
+    end
   end
 
   describe "GET / (recently_played_index)" do

@@ -204,6 +204,24 @@
         <%= label_tag "related_category_#{category.id}", category.name, class: "form-check-label small" %>
       </div>
     <% end %>
+
+    <%# Zusaetzliche, nicht tag-basierte Attribute (Intent 84 Nachtrag 5) - jedes einzeln an-/
+        abwaehlbar, mit einem Gewichtsfaktor (Default 1.0), um ihren Einfluss auf die Punktzahl
+        relativ zu Tags und den anderen Attributen zu steuern (z.B. Tempo hoch gewichten, um
+        vor allem mixbare Anschlusstracks zu finden). %>
+    <% related_attribute_keys.each do |key| %>
+      <div class="d-flex align-items-center gap-1">
+        <div class="form-check form-check-inline mb-0">
+          <%= check_box_tag "related_attribute_ids[]", key, related_attribute_enabled?(key),
+                id: "related_attribute_#{key}", class: "form-check-input" %>
+          <%= label_tag "related_attribute_#{key}", related_attribute_label(key), class: "form-check-label small" %>
+        </div>
+        <%= number_field_tag "related_attribute_weights[#{key}]", related_attribute_weight(key),
+              step: 0.5, min: 0, class: "form-control form-control-sm", style: "width: 4.5rem;",
+              title: "Gewicht für #{related_attribute_label(key)}" %>
+      </div>
+    <% end %>
+
     <%= submit_tag "Filtern", class: "btn btn-sm btn-outline-secondary" %>
   <% end %>
 
@@ -212,7 +230,8 @@
       nur 2 Tags in der gewaehlten Kategorie hatte weit mehr als 10 gleichauf liegende Treffer). %>
   <% if @related_additional_tied_count.positive? %>
     <div class="alert alert-warning py-1 px-2 small mb-2">
-      Nur <%= @related_base_tag_count %> <%= @related_base_tag_count == 1 ? "Attribut fliesst" : "Attribute fliessen" %>
+      Nur <%= @related_active_comparison_count %>
+      <%= @related_active_comparison_count == 1 ? "Attribut fliesst" : "Attribute fliessen" %>
       hier in die Berechnung ein - die Rangliste ist entsprechend wenig differenzierend.
       Es gibt <%= @related_additional_tied_count %> weitere Tracks mit derselben Punktzahl wie der
       letzte angezeigte Treffer, die hier nicht angezeigt werden.
