@@ -856,6 +856,31 @@ RSpec.describe "Tracks", type: :request do
       row = html.css("tr").find { |tr| tr.text.include?("RSpec RT Weight Match") }
       expect(row.text).to include("×2=20")
     end
+
+    it "findet Tracks mit gemeinsamer Bibliothek, ohne einen StrictLoadingViolationError auszulösen" do
+      # Regression: @track kommt hier (anders als in den RelatedTracksFinder-Unit-Specs, die einen
+      # frisch erstellten Track direkt uebergeben) ueber Track.for_show, das :playlists nie
+      # vorlaedt und strict_loading aktiviert - ein @track.playlists-Zugriff loeste real einen
+      # ActiveRecord::StrictLoadingViolationError aus, den kein Unit-Test gefangen hat.
+      album = Album.create!(name: "Album RT Library Strict", spotify_id: "alb-rt-lib-strict-1")
+      other_album = Album.create!(name: "Album RT Library Strict 2", spotify_id: "alb-rt-lib-strict-2")
+      track = Track.create!(name: "RSpec RT Library Strict Origin", spotify_id: "trk-rt-lib-strict-1",
+                             album: album, duration_ms: 200_000)
+      match = Track.create!(name: "RSpec RT Library Strict Match", spotify_id: "trk-rt-lib-strict-2",
+                             album: other_album, duration_ms: 200_000)
+      library = Library.create!(name: "RSpec Bibliothek RT Strict", keyword: "rt-lib-strict")
+      playlist_a = Playlist.create!(spotify_id: "pl-rt-lib-strict-a", name: "Playlist A")
+      playlist_b = Playlist.create!(spotify_id: "pl-rt-lib-strict-b", name: "Playlist B")
+      playlist_a.libraries << library
+      playlist_b.libraries << library
+      PlaylistTrack.create!(playlist: playlist_a, track: track, added_at: Time.current)
+      PlaylistTrack.create!(playlist: playlist_b, track: match, added_at: Time.current)
+
+      get track_path(track, related_attribute_ids: ["library"])
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("RSpec RT Library Strict Match")
+    end
   end
 
   describe "GET / (recently_played_index)" do

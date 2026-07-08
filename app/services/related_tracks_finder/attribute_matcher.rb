@@ -53,8 +53,16 @@ class RelatedTracksFinder
       end
     end
 
+    # Bewusst eine eigenstaendige Query statt @track.playlists.flat_map(&:library_ids) - der
+    # Ausgangstrack kommt aus TracksController#show via Track.for_show, das :playlists nie
+    # vorlaedt und strict_loading aktiviert (dokumentierte Falle, siehe CLAUDE.md); ein Zugriff auf
+    # diese Assoziation wuerde einen ActiveRecord::StrictLoadingViolationError ausloesen (real
+    # aufgetreten, Intent 84 Nachtrag 5 Bugfix).
     def origin_library_ids
-      @origin_library_ids ||= @track.playlists.flat_map(&:library_ids).uniq
+      @origin_library_ids ||= Library.joins(playlists: :playlist_tracks)
+                                      .where(playlist_tracks: { track_id: @track.id })
+                                      .distinct
+                                      .pluck(:id)
     end
 
     def genre_candidate_ids
