@@ -77,6 +77,16 @@ module TracksHelper
     track.artists.map(&:name).join(", ")
   end
 
+  # Macht die Punktzahl in der "Verwandte Tracks"-Rangliste nachvollziehbar (Intent 84 Nachtrag) -
+  # zeigt pro gemeinsamem Tag, welche beiden Staerken verglichen wurden und wie viele Punkte das
+  # ergeben hat, statt nur die Summe ohne Herkunft anzuzeigen.
+  def related_track_score_breakdown(contributions)
+    contributions
+      .sort_by { |c| -c.points }
+      .map { |c| "#{c.tag_name} (#{c.base_strength} vs. #{c.candidate_strength}) +#{c.points}" }
+      .join(", ")
+  end
+
   # Nutzt playlist_tracks, falls das (z.B. auf /tracks) bereits preloaded ist, sonst playlists
   # (z.B. auf tracks#show) - je nach Aufrufkontext ist nur eine der beiden Assoziationen preloaded
   # und die andere wuerde mit strict_loading einen Fehler auslösen.

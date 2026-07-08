@@ -726,6 +726,28 @@ RSpec.describe "Tracks", type: :request do
 
       expect(response).to have_http_status(:success)
     end
+
+    it "zeigt Künstler, Tags und eine nachvollziehbare Punkte-Herkunft pro verwandtem Track" do
+      album = Album.create!(name: "Album RT 7", spotify_id: "alb-rt-7")
+      artist = Artist.create!(name: "RSpec RT Artist", spotify_id: "art-rt-7")
+      track = Track.create!(name: "RSpec RT Origin 7", spotify_id: "trk-rt-7", album: album, duration_ms: 200_000)
+      related = Track.create!(name: "RSpec RT Related 7", spotify_id: "trk-rt-8", album: album, duration_ms: 200_000)
+      related.artists << artist
+      category = Category.create!(name: "RSpec Emotion RT 7")
+      tag = category.tags.create!(name: "RSpec Froehlich RT 7", aliases: "x")
+      TrackTag.create!(track: track, tag: tag, strength: 8)
+      TrackTag.create!(track: related, tag: tag, strength: 9)
+
+      get track_path(track)
+
+      html = Nokogiri::HTML(response.body)
+      row = html.css("tr").find { |tr| tr.text.include?("RSpec RT Related 7") }
+      aggregate_failures do
+        expect(row.text).to include("RSpec RT Artist")
+        expect(row.text).to include("RSpec Froehlich RT 7")
+        expect(row.text).to include("RSpec Froehlich RT 7 (8 vs. 9) +9")
+      end
+    end
   end
 
   describe "GET / (recently_played_index)" do

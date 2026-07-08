@@ -214,6 +214,8 @@
       <thead>
         <tr>
           <th scope="col">Track</th>
+          <th scope="col">Künstler</th>
+          <th scope="col">Tags</th>
           <th scope="col" class="text-end">Punkte</th>
           <th scope="col"></th>
         </tr>
@@ -221,7 +223,18 @@
       <tbody>
         <% @related_tracks.each do |result| %>
           <tr>
-            <td><%= link_to result[:track].name, track_path(result[:track]) %></td>
+            <td>
+              <%= link_to result[:track].name, track_path(result[:track]) %>
+              <div class="text-muted small"><%= related_track_score_breakdown(result[:contributions]) %></div>
+            </td>
+            <td><%= artist_names_for(result[:track]) %></td>
+            <td>
+              <div class="d-flex flex-wrap gap-1">
+                <% result[:track].track_tags.each do |tt| %>
+                  <%= track_tag_badge(tt) %>
+                <% end %>
+              </div>
+            </td>
             <td class="text-end text-muted"><%= result[:score] %></td>
             <td><%= render partial: "components/audio_file", locals: { track: result[:track] } %></td>
           </tr>

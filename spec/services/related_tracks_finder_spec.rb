@@ -25,6 +25,30 @@ RSpec.describe RelatedTracksFinder do
     expect(results.first[:score]).to be > results.second[:score]
   end
 
+  it "liefert die Punkte-Herkunft pro gemeinsamem Tag, damit die Punktezahl nachvollziehbar ist" do
+    origin = create_track("Origin RTF Breakdown")
+    match = create_track("Match RTF Breakdown")
+    emotion = Category.create!(name: "RSpec Emotion RTF Breakdown")
+    quality = Category.create!(name: "RSpec Qualitaet RTF Breakdown")
+    emotion_tag = emotion.tags.create!(name: "RSpec Froehlich Breakdown", aliases: "x")
+    quality_tag = quality.tags.create!(name: "RSpec Tanzbar Breakdown", aliases: "y")
+
+    TrackTag.create!(track: origin, tag: emotion_tag, strength: 8)
+    TrackTag.create!(track: match, tag: emotion_tag, strength: 9)
+    TrackTag.create!(track: origin, tag: quality_tag, strength: 5)
+    TrackTag.create!(track: match, tag: quality_tag, strength: 3)
+
+    result = RelatedTracksFinder.new(origin).call.first
+
+    expect(result[:score]).to eq(9 + 8)
+    contributions = result[:contributions].sort_by(&:tag_name)
+    expect(contributions.map(&:tag_name)).to eq(["RSpec Froehlich Breakdown", "RSpec Tanzbar Breakdown"].sort)
+    froehlich = contributions.find { |c| c.tag_name == "RSpec Froehlich Breakdown" }
+    expect(froehlich.base_strength).to eq(8)
+    expect(froehlich.candidate_strength).to eq(9)
+    expect(froehlich.points).to eq(9)
+  end
+
   it "ignoriert Tracks ohne gemeinsames Tag" do
     origin = create_track("Origin 2")
     unrelated = create_track("Unrelated")
