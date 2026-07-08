@@ -1,0 +1,31 @@
+<%# locals: track - Kompaktes "+"-Widget zum Zuweisen eines BESTEHENDEN Tags direkt in der
+    Tracks-Liste (Intent 83). Bewusst kein "Neuer Tag"-Zweig und keine Staerke-Abfrage (fix 5,
+    Feinjustierung ueber die Inline-Bearbeitung aus Intent 81) - neue Tags anlegen bleibt der
+    Track-Detailseite vorbehalten (Intent 79). data-tag-assign-existing-only-value schaltet
+    tag_assign_controller.js in diesen reduzierten Modus (kein Kategorie-/Staerke-Schritt, sofort
+    absenden bei Auswahl); data-tag-assign-track-id-value blendet in der Live-Suche bereits
+    zugewiesene Tags aus (TagsController#search). %>
+<div data-controller="tag-assign" data-tag-assign-existing-only-value="true"
+     data-tag-assign-track-id-value="<%= track.id %>"
+     data-action="click@window->tag-assign#outsideClick" class="d-inline-block position-relative">
+  <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1 lh-1" data-action="tag-assign#open"
+          data-tag-assign-target="openButton" title="Tag zuweisen">+</button>
+
+  <%= form_with url: track_tags_path, method: :post,
+        data: { tag_assign_target: "panel" },
+        class: "d-none position-absolute bg-body border rounded p-2 shadow-sm",
+        style: "z-index: 20; min-width: 14rem; top: 100%;" do %>
+    <%= hidden_field_tag :track_id, track.id %>
+    <%= hidden_field_tag :tag_id, "", data: { tag_assign_target: "tagIdField" } %>
+    <%= hidden_field_tag :strength, 5 %>
+
+    <div class="position-relative">
+      <%= text_field_tag :tag_search, nil, autocomplete: "off", placeholder: "Tag suchen…",
+            class: "form-control form-control-sm",
+            data: { tag_assign_target: "searchInput",
+                    action: "input->tag-assign#onInput keydown->tag-assign#onSearchKeydown keydown.esc->tag-assign#close" } %>
+      <div class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 21;"
+           data-tag-assign-target="results"></div>
+    </div>
+  <% end %>
+</div>

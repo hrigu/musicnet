@@ -95,8 +95,17 @@
       + Tag hinzufügen
     </button>
 
+    <%# local: true allein reicht nicht, um Turbo zu deaktivieren (das ist ein reines
+        Rails-UJS-Relikt ohne Wirkung auf Turbo Drive/Forms) - erst seit Intent 83 relevant, weil
+        TrackTagsController#create bei Erfolg jetzt einen Turbo-Stream statt nur einen Redirect
+        rendert (fuer das neue Inline-Widget auf /tracks). Ohne data-turbo="false" wuerde dieses
+        Formular denselben Turbo-Stream erhalten, dessen Ziel-Element (die Tags-Zelle der
+        Tracks-Liste) es auf dieser Seite gar nicht gibt - der Turbo-Stream waere ein stiller
+        No-Op und die Seite bliebe unveraendert stehen, obwohl die Zuordnung serverseitig
+        gespeichert wurde. %>
     <%= form_with url: track_tags_path, method: :post, local: true,
-          class: "border rounded p-3 mt-2 d-none", data: { tag_assign_target: "panel" } do %>
+          class: "border rounded p-3 mt-2 d-none",
+          data: { tag_assign_target: "panel", turbo: "false" } do %>
       <%= hidden_field_tag :track_id, @track.id %>
       <%= hidden_field_tag :tag_id, "", data: { tag_assign_target: "tagIdField" } %>
       <%= hidden_field_tag :tag_name, "", data: { tag_assign_target: "tagNameField" } %>

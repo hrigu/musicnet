@@ -6,21 +6,22 @@
 # bestehender find_or_create_by! - verhindert Duplikate, falls der Name in der Kategorie doch
 # schon existiert).
 class TrackTagsController < ApplicationController
+  NO_TAG_SELECTED_ALERT = "Bitte einen Tag auswählen oder einen Namen mit Kategorie angeben."
+
+  # @track wird in beiden Zweigen gesetzt (nicht nur bei Erfolg), da create.turbo_stream.erb in
+  # jedem Fall die Tags-Zelle dieses Tracks neu rendert (Intent 83) - bei einem ungueltigen
+  # Aufruf (kein Tag gewaehlt) unveraendert, ohne dass das Template das gesondert wissen muss.
   def create
-    track = Track.find(params[:track_id])
+    @track = Track.find(params[:track_id])
     tag = resolve_tag
 
-    if tag.nil?
-      return redirect_to track_path(track), alert: "Bitte einen Tag auswählen oder einen Namen mit Kategorie angeben."
-    end
+    return respond_with_no_tag_selected if tag.nil?
 
-    track_tag = track.track_tags.find_or_initialize_by(tag: tag)
-    track_tag.strength = params[:strength]
+    save_track_tag(tag)
 
-    if track_tag.save
-      redirect_to track_path(track), notice: "Tag \"#{tag.name}\" hinzugefügt."
-    else
-      redirect_to track_path(track), alert: track_tag.errors.full_messages.to_sentence
+    respond_to do |format|
+      format.turbo_stream
+      format.html { respond_html_after_create(tag) }
     end
   end
 
@@ -55,6 +56,28 @@ class TrackTagsController < ApplicationController
   end
 
   private
+
+  def respond_with_no_tag_selected
+    respond_to do |format|
+      format.turbo_stream
+      format.html { redirect_to track_path(@track), alert: NO_TAG_SELECTED_ALERT }
+    end
+  end
+
+  def save_track_tag(tag)
+    @track_tag = @track.track_tags.find_or_initialize_by(tag: tag)
+    @track_tag.strength = params[:strength]
+    @saved = @track_tag.save
+    @track.reload
+  end
+
+  def respond_html_after_create(tag)
+    if @saved
+      redirect_to track_path(@track), notice: "Tag \"#{tag.name}\" hinzugefügt."
+    else
+      redirect_to track_path(@track), alert: @track_tag.errors.full_messages.to_sentence
+    end
+  end
 
   def resolve_tag
     return Tag.find_by(id: params[:tag_id]) if params[:tag_id].present?

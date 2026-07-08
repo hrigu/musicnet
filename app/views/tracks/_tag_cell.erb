@@ -1,0 +1,9 @@
+<%# locals: track - Container fuer die zugewiesenen Tag-Badges + das Inline-Zuweisen-Widget
+    (Intent 83). Traegt eine stabile dom_id, damit TrackTagsController#create den Inhalt nach
+    einer neuen Zuordnung per Turbo-Stream ersetzen kann. %>
+<div id="<%= dom_id(track, :track_tags_cell) %>" class="d-flex flex-wrap align-items-center gap-1">
+  <% track.track_tags.each do |tt| %>
+    <%= render partial: "components/track_tag_badge", locals: { track_tag: tt } %>
+  <% end %>
+  <%= render partial: "tracks/tag_assign_inline", locals: { track: track } %>
+</div>

@@ -82,6 +82,30 @@ RSpec.describe "TrackTags", type: :request do
     end
   end
 
+  describe "POST /track_tags als Turbo-Stream (Intent 83, Inline-Zuweisung auf /tracks)" do
+    it "haengt das neue Badge in die Tags-Zelle des Tracks an" do
+      track = create_track(spotify_id: "trk-tt-11")
+      category = Category.create!(name: "RSpec Emotion Inline Assign")
+      tag = category.tags.create!(name: "RSpec Inline Assign Tag", aliases: "x")
+
+      post track_tags_path, params: { track_id: track.id, tag_id: tag.id, strength: 5 }, as: :turbo_stream
+
+      expect(response).to have_http_status(:ok)
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(response.body).to include("RSpec Inline Assign Tag · 5")
+      expect(TrackTag.find_by(track: track, tag: tag).strength).to eq(5)
+    end
+
+    it "aendert nichts, wenn kein Tag angegeben ist, und rendert trotzdem ohne Fehler" do
+      track = create_track(spotify_id: "trk-tt-12")
+
+      post track_tags_path, params: { track_id: track.id, strength: 5 }, as: :turbo_stream
+
+      expect(response).to have_http_status(:ok)
+      expect(TrackTag.where(track: track).count).to eq(0)
+    end
+  end
+
   describe "PATCH /track_tags/:id" do
     it "aktualisiert die Stärke einer bestehenden Zuordnung" do
       track = create_track(spotify_id: "trk-tt-8")

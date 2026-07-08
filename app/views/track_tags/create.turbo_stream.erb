@@ -1,0 +1,3 @@
+<%= turbo_stream.replace dom_id(@track, :track_tags_cell) do %>
+  <%= render partial: "tracks/tag_cell", locals: { track: @track } %>
+<% end %>

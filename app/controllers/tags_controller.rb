@@ -2,7 +2,9 @@ class TagsController < ApplicationController
   MAX_SEARCH_RESULTS = 10
 
   # Livesuche fuers manuelle Zuweisen eines Tags an einen Track (Intent 79) - liefert pro Treffer
-  # auch die Kategorie mit, damit der DJ auf Anhieb sieht, wohin ein bestehender Tag gehoert.
+  # auch die Kategorie mit, damit der DJ auf Anhieb sieht, wohin ein bestehender Tag gehoert. Mit
+  # optionalem track_id (Intent 83, Inline-Zuweisung auf /tracks) werden bereits zugewiesene Tags
+  # ausgeschlossen, damit sie nicht nochmals vorgeschlagen werden.
   def search
     term = params[:term].to_s.strip
     tags = term.blank? ? [] : Tag.includes(:category)
@@ -11,6 +13,7 @@ class TagsController < ApplicationController
                                   .where("LOWER(tags.name) LIKE ?", "%#{term.downcase}%")
                                   .order(:name)
                                   .limit(MAX_SEARCH_RESULTS)
+    tags = tags.where.not(id: Track.find(params[:track_id]).tag_ids) if term.present? && params[:track_id].present?
 
     render json: tags.map { |tag| { id: tag.id, name: tag.name, category: tag.category.name } }
   end

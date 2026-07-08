@@ -93,5 +93,20 @@ RSpec.describe "Tags", type: :request do
       expect(names).to include("RSpec Sichtbares Tag")
       expect(names).to_not include("RSpec Ausgeblendetes Tag")
     end
+
+    it "blendet mit track_id bereits zugewiesene Tags aus" do
+      album = Album.create!(name: "Album", spotify_id: "alb-search-1")
+      track = Track.create!(name: "Track", spotify_id: "trk-search-1", album: album, duration_ms: 200_000)
+      category = Category.create!(name: "RSpec Emotion Track-Suche")
+      zugewiesen = category.tags.create!(name: "RSpec Zugewiesen Suche", aliases: "x")
+      nicht_zugewiesen = category.tags.create!(name: "RSpec Frei Suche", aliases: "y")
+      TrackTag.create!(track: track, tag: zugewiesen, strength: 5)
+
+      get search_tags_path(term: "RSpec", track_id: track.id)
+
+      names = JSON.parse(response.body).map { |t| t["name"] }
+      expect(names).to include(nicht_zugewiesen.name)
+      expect(names).to_not include(zugewiesen.name)
+    end
   end
 end
