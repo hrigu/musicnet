@@ -82,6 +82,28 @@ body {
   .badge.text-truncate {
     max-width: 100%;
   }
+
+  // Tag-Badge in der Tracks-Tabelle ist per Klick editierbar (Staerke, Intent 81) - role="button"
+  // allein zeigt in keinem Browser einen Pointer-Cursor, das muss explizit gesetzt werden.
+  .tag-strength-wrapper [role="button"] {
+    cursor: pointer;
+  }
+
+  // Kurzes Aufglimmen als Erfolgsfeedback nach dem Speichern einer neuen Staerke - eine
+  // CSS-Animation statt einer Transition, da sie nach dem Turbo-Stream-Replace einmalig automatisch
+  // ablaeuft und abklingt, ohne dass JS die Klasse wieder entfernen muss.
+  .tag-just-saved .badge {
+    animation: tag-glow 0.9s ease-out;
+  }
+
+  @keyframes tag-glow {
+    0% {
+      box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.85);
+    }
+    100% {
+      box-shadow: 0 0 0 0.5rem rgba(25, 135, 84, 0);
+    }
+  }
 }
 
 // Feste relative Spaltenbreiten, damit die Tabelle bei wechselnden Tracknamen nicht staendig die

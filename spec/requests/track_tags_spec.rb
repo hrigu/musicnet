@@ -82,6 +82,47 @@ RSpec.describe "TrackTags", type: :request do
     end
   end
 
+  describe "PATCH /track_tags/:id" do
+    it "aktualisiert die Stärke einer bestehenden Zuordnung" do
+      track = create_track(spotify_id: "trk-tt-8")
+      category = Category.create!(name: "RSpec Emotion Patch")
+      tag = category.tags.create!(name: "RSpec Patch Mich", aliases: "x")
+      track_tag = TrackTag.create!(track: track, tag: tag, strength: 3)
+
+      patch track_tag_path(track_tag), params: { strength: 8 }
+
+      expect(response).to redirect_to(track_path(track))
+      expect(track_tag.reload.strength).to eq(8)
+    end
+
+    it "aktualisiert per Turbo-Stream, ohne die Seite neu zu laden" do
+      track = create_track(spotify_id: "trk-tt-9")
+      category = Category.create!(name: "RSpec Emotion Patch Stream")
+      tag = category.tags.create!(name: "RSpec Patch Stream", aliases: "x")
+      track_tag = TrackTag.create!(track: track, tag: tag, strength: 3)
+
+      patch track_tag_path(track_tag), params: { strength: 8 }, as: :turbo_stream
+
+      expect(response).to have_http_status(:ok)
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(response.body).to include("RSpec Patch Stream · 8")
+      expect(track_tag.reload.strength).to eq(8)
+    end
+
+    it "lässt eine ungültige Stärke unangewendet und zeigt das Formular mit Fehler erneut" do
+      track = create_track(spotify_id: "trk-tt-10")
+      category = Category.create!(name: "RSpec Emotion Patch Invalid")
+      tag = category.tags.create!(name: "RSpec Patch Invalid", aliases: "x")
+      track_tag = TrackTag.create!(track: track, tag: tag, strength: 3)
+
+      patch track_tag_path(track_tag), params: { strength: 99 }, as: :turbo_stream
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("not included in the list")
+      expect(track_tag.reload.strength).to eq(3)
+    end
+  end
+
   describe "DELETE /track_tags/:id" do
     it "entfernt die Zuordnung, lässt den Tag selbst aber bestehen" do
       track = create_track(spotify_id: "trk-tt-7")

@@ -32,6 +32,28 @@ class TrackTagsController < ApplicationController
     redirect_to track_path(track), notice: "Tag \"#{tag_name}\" entfernt."
   end
 
+  # Inline-Editieren der Staerke direkt in der Tracks-Tabelle (Intent 81) - eigene Action statt in
+  # #create mitzuerledigen, da hier immer ein bestehender TrackTag per :id gemeint ist, nie eine
+  # neue Zuordnung. @saved steuert im turbo_stream-Template (update.turbo_stream.erb), ob wieder
+  # die Badge-Ansicht oder (bei einem Validierungsfehler) das Eingabefeld mit Fehlermeldung
+  # gerendert wird.
+  def update
+    @track_tag = TrackTag.find(params[:id])
+    @track_tag.strength = params.dig(:track_tag, :strength) || params[:strength]
+    @saved = @track_tag.save
+
+    respond_to do |format|
+      format.turbo_stream
+      format.html do
+        if @saved
+          redirect_to track_path(@track_tag.track), notice: "Tag \"#{@track_tag.tag.name}\" aktualisiert."
+        else
+          redirect_to track_path(@track_tag.track), alert: @track_tag.errors.full_messages.to_sentence
+        end
+      end
+    end
+  end
+
   private
 
   def resolve_tag

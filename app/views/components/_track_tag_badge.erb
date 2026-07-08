@@ -1,0 +1,30 @@
+<%# locals: track_tag, editing (optional, default false), just_saved (optional, default false) -
+    Inline-Editieren der Staerke direkt in der Tracks-Tabelle (Intent 81): Klick aufs Badge zeigt
+    ein Zahlenfeld mit nativem Spinner ("Raedchen"), Enter speichert per Turbo-Stream-Formular-
+    Submit. editing: true wird nur vom turbo_stream-Update nach einem fehlgeschlagenen Speichern
+    gesetzt, damit der DJ die Eingabe direkt korrigieren kann statt wieder von vorn klicken zu
+    muessen. just_saved: true loest ein kurzes Aufglimmen als Erfolgsfeedback aus (nur nach einem
+    erfolgreichen Speichern gesetzt, siehe track_tags/update.turbo_stream.erb). %>
+<% editing ||= false %>
+<% just_saved ||= false %>
+<span id="<%= dom_id(track_tag, :tag_badge) %>" data-controller="tag-strength"
+      data-action="click@window->tag-strength#outsideClick" class="tag-strength-wrapper">
+  <span data-tag-strength-target="badge" role="button" tabindex="0"
+        data-action="click->tag-strength#edit keydown.enter->tag-strength#edit"
+        class="<%= [("d-none" if editing), ("tag-just-saved" if just_saved)].compact.join(" ") %>">
+    <%= track_tag_badge(track_tag) %>
+  </span>
+
+  <%= form_with model: track_tag, url: track_tag_path(track_tag), method: :patch,
+        data: { "tag-strength-target": "form" },
+        class: "d-inline-flex align-items-center gap-1 #{"d-none" unless editing}" do |f| %>
+    <span class="small text-muted"><%= track_tag.tag.name %></span>
+    <%= f.number_field :strength, min: 1, max: 10, value: track_tag.strength,
+          data: { "tag-strength-target": "input", action: "keydown.esc->tag-strength#cancel" },
+          class: "form-control form-control-sm d-inline-block", style: "width: 4.5rem;" %>
+  <% end %>
+
+  <% if editing && track_tag.errors.any? %>
+    <div class="text-danger small"><%= track_tag.errors.full_messages.to_sentence %></div>
+  <% end %>
+</span>

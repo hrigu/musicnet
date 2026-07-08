@@ -1,0 +1,3 @@
+<%= turbo_stream.replace dom_id(@track_tag, :tag_badge) do %>
+  <%= render partial: "components/track_tag_badge", locals: { track_tag: @track_tag, editing: !@saved, just_saved: @saved } %>
+<% end %>

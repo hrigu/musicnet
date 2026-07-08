@@ -53,7 +53,7 @@
     <td>
       <div class="d-flex flex-wrap gap-1">
         <% track.track_tags.each do |tt| %>
-          <%= track_tag_badge(tt) %>
+          <%= render partial: "components/track_tag_badge", locals: { track_tag: tt } %>
         <% end %>
       </div>
     </td>
