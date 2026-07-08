@@ -29,13 +29,35 @@ class RelatedTracksFinder
     return [] if contributions_by_track_id.empty?
 
     tracks_by_id = tracks_by_id_for(contributions_by_track_id.keys)
-    contributions_by_track_id
-      .sort_by { |_track_id, contributions| -contributions.sum(&:points) }
+    diversify(contributions_by_track_id)
       .first(MAX_RESULTS)
       .map { |track_id, contributions| build_result(tracks_by_id[track_id], contributions) }
   end
 
   private
+
+  # Ein haeufig vergebenes Tag (z.B. automatisch aus vielen Playlist-Namen zugeordnet) darf ein
+  # selteneres, aber ebenso stark passendes Tag (z.B. nur manuell an wenige Tracks vergeben) nicht
+  # aus der Rangliste verdraengen, nur weil beide auf die gleiche Punktzahl kommen und das
+  # haeufigere Tag zufaellig mehr bzw. zuerst zurueckgegebene Kandidaten hat (Intent 84 Nachtrag,
+  # konkret beobachtet: Jazz mit 148, Walzer mit nur 21 gleichauf liegenden Treffern - ohne dies
+  # bestand die Top 10 nur aus Jazz-Treffern). Gruppiert daher zuerst nach dem staerksten
+  # beitragenden Tag jedes Kandidaten, sortiert jede Gruppe fuer sich nach Punktzahl, und reiht die
+  # Gruppen dann abwechselnd (Round-Robin) aneinander, bevor auf MAX_RESULTS gekuerzt wird.
+  def diversify(contributions_by_track_id)
+    buckets = contributions_by_track_id
+              .sort_by { |_track_id, contributions| -contributions.sum(&:points) }
+              .group_by { |_track_id, contributions| contributions.max_by(&:points).tag_name }
+              .values
+
+    round_robin(buckets)
+  end
+
+  def round_robin(buckets)
+    result = []
+    buckets.each { |bucket| result << bucket.shift unless bucket.empty? } until buckets.all?(&:empty?)
+    result
+  end
 
   def base_track_tags
     scope = @track.track_tags

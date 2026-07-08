@@ -78,6 +78,33 @@ RSpec.describe RelatedTracksFinder do
     expect(RelatedTracksFinder.new(origin).call).to eq([])
   end
 
+  it "laesst ein selteneres, ebenso stark passendes Tag nicht von einem haeufigeren verdraengen" do
+    origin = create_track("Origin RTF Diversity")
+    category = Category.create!(name: "RSpec Musikstil RTF Diversity")
+    popular_tag = category.tags.create!(name: "RSpec Jazz Diversity", aliases: "x")
+    rare_tag = category.tags.create!(name: "RSpec Walzer Diversity", aliases: "y")
+    TrackTag.create!(track: origin, tag: popular_tag, strength: 5)
+    TrackTag.create!(track: origin, tag: rare_tag, strength: 5)
+
+    # Absichtlich zuerst viele Treffer fuer das haeufige Tag anlegen (wie im echten Fall: Jazz per
+    # automatischer Playlist-Zuordnung an viele Tracks, Walzer nur manuell an wenige) - ohne feste
+    # Diversifizierung wuerden diese wegen niedrigerer ids/Erstellungsreihenfolge die Rangliste
+    # komplett fuellen, bevor ueberhaupt ein Walzer-Treffer drankommt.
+    15.times do |i|
+      popular_match = create_track("Popular Match #{i}")
+      TrackTag.create!(track: popular_match, tag: popular_tag, strength: 5)
+    end
+    rare_matches = 3.times.map do |i|
+      rare_match = create_track("Rare Match #{i}")
+      TrackTag.create!(track: rare_match, tag: rare_tag, strength: 5)
+      rare_match
+    end
+
+    results = RelatedTracksFinder.new(origin, category_ids: [category.id]).call
+
+    expect(results.map { |r| r[:track] } & rare_matches).to_not be_empty
+  end
+
   describe "category_ids" do
     it "beruecksichtigt nur gemeinsame Tags aus den gewaehlten Kategorien" do
       origin = create_track("Origin 5")
