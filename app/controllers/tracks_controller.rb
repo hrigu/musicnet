@@ -91,7 +91,10 @@ class TracksController < ApplicationController
     own_category_ids = @track.tag_category_ids
     @categories = Category.where(id: own_category_ids).order(:name)
     @relevant_category_ids = selected_related_category_ids || own_category_ids
-    @related_tracks = RelatedTracksFinder.new(@track, category_ids: params[:related_category_ids]).call
+    finder = RelatedTracksFinder.new(@track, category_ids: params[:related_category_ids])
+    @related_tracks = finder.call
+    @related_base_tag_count = finder.base_tag_count
+    @related_additional_tied_count = finder.additional_tied_count
     Track.preload_track_paths(@related_tracks.map { |r| r[:track] })
   end
 

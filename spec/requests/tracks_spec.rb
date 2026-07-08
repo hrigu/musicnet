@@ -786,6 +786,35 @@ RSpec.describe "Tracks", type: :request do
         expect(row.text).to_not include("RSpec Tanzbar RT 10")
       end
     end
+
+    it "zeigt einen Hinweis, wenn weitere Treffer mit gleicher Punktzahl abgeschnitten wurden" do
+      track = create_track(name: "RSpec RT Origin 11", spotify_id: "trk-rt-12")
+      category = Category.create!(name: "RSpec Emotion RT 11")
+      tag = category.tags.create!(name: "RSpec Tag RT 11", aliases: "x")
+      TrackTag.create!(track: track, tag: tag, strength: 5)
+      12.times do |i|
+        album = Album.create!(name: "Album RT 11 #{i}", spotify_id: "alb-rt-11-#{i}")
+        match = Track.create!(name: "RSpec RT Match 11 #{i}", spotify_id: "trk-rt-11-#{i}", album: album, duration_ms: 200_000)
+        TrackTag.create!(track: match, tag: tag, strength: 5)
+      end
+
+      get track_path(track)
+
+      expect(response.body).to include("2 weitere")
+    end
+
+    it "zeigt keinen Hinweis, wenn nichts abgeschnitten wurde" do
+      track = create_track(name: "RSpec RT Origin 12", spotify_id: "trk-rt-13")
+      related = create_track(name: "RSpec RT Match 12", spotify_id: "trk-rt-14")
+      category = Category.create!(name: "RSpec Emotion RT 12")
+      tag = category.tags.create!(name: "RSpec Tag RT 12", aliases: "x")
+      TrackTag.create!(track: track, tag: tag, strength: 5)
+      TrackTag.create!(track: related, tag: tag, strength: 5)
+
+      get track_path(track)
+
+      expect(response.body).to_not include("weitere Treffer")
+    end
   end
 
   describe "GET / (recently_played_index)" do

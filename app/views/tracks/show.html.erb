@@ -207,6 +207,18 @@
     <%= submit_tag "Filtern", class: "btn btn-sm btn-outline-secondary" %>
   <% end %>
 
+  <%# Macht sichtbar, dass die Rangliste bei einem Punktegleichstand willkuerlich gekuerzt wurde,
+      statt das stillschweigend zu verstecken (Intent 84 Nachtrag - konkreter Anlass: ein Track mit
+      nur 2 Tags in der gewaehlten Kategorie hatte weit mehr als 10 gleichauf liegende Treffer). %>
+  <% if @related_additional_tied_count.positive? %>
+    <div class="alert alert-warning py-1 px-2 small mb-2">
+      Nur <%= @related_base_tag_count %> <%= @related_base_tag_count == 1 ? "Attribut fliesst" : "Attribute fliessen" %>
+      hier in die Berechnung ein - die Rangliste ist entsprechend wenig differenzierend.
+      Es gibt <%= @related_additional_tied_count %> weitere Tracks mit derselben Punktzahl wie der
+      letzte angezeigte Treffer, die hier nicht angezeigt werden.
+    </div>
+  <% end %>
+
   <% if @related_tracks.empty? %>
     <span class="text-muted">–</span>
   <% else %>

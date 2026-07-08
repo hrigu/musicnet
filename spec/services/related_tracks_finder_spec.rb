@@ -105,6 +105,56 @@ RSpec.describe RelatedTracksFinder do
     expect(results.map { |r| r[:track] } & rare_matches).to_not be_empty
   end
 
+  describe "#base_tag_count" do
+    it "zaehlt die fuer die Berechnung verwendeten eigenen Tags des Ausgangstracks" do
+      origin = create_track("Origin RTF BaseCount")
+      category = Category.create!(name: "RSpec Emotion RTF BaseCount")
+      tag_a = category.tags.create!(name: "RSpec Tag A BaseCount", aliases: "x")
+      tag_b = category.tags.create!(name: "RSpec Tag B BaseCount", aliases: "y")
+      TrackTag.create!(track: origin, tag: tag_a, strength: 5)
+      TrackTag.create!(track: origin, tag: tag_b, strength: 5)
+
+      finder = RelatedTracksFinder.new(origin)
+      finder.call
+
+      expect(finder.base_tag_count).to eq(2)
+    end
+  end
+
+  describe "#additional_tied_count" do
+    it "ist 0, wenn keine Kuerzung auf MAX_RESULTS stattgefunden hat" do
+      origin = create_track("Origin RTF Tied None")
+      match = create_track("Match RTF Tied None")
+      category = Category.create!(name: "RSpec Emotion RTF Tied None")
+      tag = category.tags.create!(name: "RSpec Tag RTF Tied None", aliases: "x")
+      TrackTag.create!(track: origin, tag: tag, strength: 5)
+      TrackTag.create!(track: match, tag: tag, strength: 5)
+
+      finder = RelatedTracksFinder.new(origin)
+      finder.call
+
+      expect(finder.additional_tied_count).to eq(0)
+    end
+
+    it "zaehlt Treffer mit derselben Punktzahl wie der letzte angezeigte, die aber abgeschnitten wurden" do
+      origin = create_track("Origin RTF Tied")
+      category = Category.create!(name: "RSpec Emotion RTF Tied")
+      tag = category.tags.create!(name: "RSpec Tag RTF Tied", aliases: "x")
+      TrackTag.create!(track: origin, tag: tag, strength: 5)
+
+      # 12 Treffer mit identischer Staerke (= identische Punktzahl) - mehr als MAX_RESULTS (10)
+      12.times do |i|
+        match = create_track("Match RTF Tied #{i}")
+        TrackTag.create!(track: match, tag: tag, strength: 5)
+      end
+
+      finder = RelatedTracksFinder.new(origin)
+      finder.call
+
+      expect(finder.additional_tied_count).to eq(2)
+    end
+  end
+
   describe "category_ids" do
     it "beruecksichtigt nur gemeinsame Tags aus den gewaehlten Kategorien" do
       origin = create_track("Origin 5")

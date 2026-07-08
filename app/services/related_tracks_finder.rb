@@ -22,19 +22,48 @@ class RelatedTracksFinder
   end
 
   def call
-    base_by_tag_id = base_track_tags.index_by(&:tag_id)
-    return [] if base_by_tag_id.empty?
+    results
+  end
 
-    contributions_by_track_id = group_contributions_by_track(base_by_tag_id)
-    return [] if contributions_by_track_id.empty?
+  # Anzahl der eigenen Tags des Ausgangstracks, die tatsaechlich in die Berechnung eingeflossen
+  # sind (Intent 84 Nachtrag) - je weniger, desto weniger aussagekraeftig ist die Rangliste, da nur
+  # wenige Attribute miteinander verglichen werden koennen. Nur nach #call sinnvoll (Reihenfolge
+  # wird hier nicht erzwungen, da base_track_tags ohnehin billig neu berechenbar ist).
+  def base_tag_count
+    base_track_tags.size
+  end
 
-    tracks_by_id = tracks_by_id_for(contributions_by_track_id.keys)
-    diversify(contributions_by_track_id)
-      .first(MAX_RESULTS)
-      .map { |track_id, contributions| build_result(tracks_by_id[track_id], contributions) }
+  # Wie viele weitere Treffer mit exakt derselben Punktzahl wie der zuletzt angezeigte existieren,
+  # aber wegen MAX_RESULTS nicht mehr angezeigt werden (Intent 84 Nachtrag) - macht sichtbar, dass
+  # die angezeigte Auswahl bei einem Gleichstand willkuerlich ist, statt das stillschweigend zu
+  # verstecken. 0, wenn gar nicht gekuerzt wurde (dann gibt es nichts Abgeschnittenes).
+  def additional_tied_count
+    return 0 if results.size < MAX_RESULTS
+
+    boundary_score = results.last[:score]
+    total_at_boundary = @all_contributions.count { |_track_id, c| c.sum(&:points) == boundary_score }
+    shown_at_boundary = results.count { |result| result[:score] == boundary_score }
+    total_at_boundary - shown_at_boundary
   end
 
   private
+
+  def results
+    @results ||= compute_results
+  end
+
+  def compute_results
+    base_by_tag_id = base_track_tags.index_by(&:tag_id)
+    return [] if base_by_tag_id.empty?
+
+    @all_contributions = group_contributions_by_track(base_by_tag_id)
+    return [] if @all_contributions.empty?
+
+    tracks_by_id = tracks_by_id_for(@all_contributions.keys)
+    diversify(@all_contributions)
+      .first(MAX_RESULTS)
+      .map { |track_id, contributions| build_result(tracks_by_id[track_id], contributions) }
+  end
 
   # Ein haeufig vergebenes Tag (z.B. automatisch aus vielen Playlist-Namen zugeordnet) darf ein
   # selteneres, aber ebenso stark passendes Tag (z.B. nur manuell an wenige Tracks vergeben) nicht
