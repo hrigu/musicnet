@@ -1,16 +1,82 @@
+<h1>Zuletzt gespielt</h1>
 
-<h1>Meine zuletzt gespielten Stücke</h1>
-
-<ul>
-<% @tracks.each do |p| %>
-  <li>
-    <%= l(Time.zone.parse(p.played_at)) %> |
-    <%# p.context_type %>
-    <%= p.popularity %>  |
-    <%= p.name %>, |
-    <%= p.artists.map(&:name).join(", ") %>|
-    <%= p.album.name %>  |
-    <%# p.album.genres.join(", ") Teuer!!%>
+<ul class="nav nav-tabs mb-3">
+  <li class="nav-item">
+    <%= link_to "Musicnet", recently_played_index_tracks_path(tab: "musicnet"),
+          class: ["nav-link", ("active" if @active_recently_played_tab == "musicnet")].compact.join(" ") %>
   </li>
-<% end %>
+  <li class="nav-item">
+    <%= link_to "Spotify", recently_played_index_tracks_path(tab: "spotify"),
+          class: ["nav-link", ("active" if @active_recently_played_tab == "spotify")].compact.join(" ") %>
+  </li>
 </ul>
+
+<% if @active_recently_played_tab == "musicnet" %>
+  <div class="table-responsive rounded border">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th scope="col">Zeit</th>
+          <th scope="col">Titel</th>
+          <th scope="col">Künstler</th>
+          <th scope="col">Album</th>
+          <th scope="col">Ort</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @musicnet_playbacks.any? %>
+          <% @musicnet_playbacks.each do |playback| %>
+            <tr>
+              <td class="text-muted"><%= l(playback.played_at) %></td>
+              <td><%= link_to playback.track.name, track_path(playback.track) %></td>
+              <td><%= playback.track.artists.map(&:name).join(", ") %></td>
+              <td><%= playback.track.album.name %></td>
+              <td class="text-muted">
+                <% if playback.latitude && playback.longitude %>
+                  <%= "#{playback.latitude}, #{playback.longitude}" %>
+                <% else %>
+                  –
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="5" class="text-muted">Noch keine lokal gespeicherten Musicnet-Playbacks.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% else %>
+  <div class="table-responsive rounded border">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th scope="col">Zeit</th>
+          <th scope="col">Titel</th>
+          <th scope="col">Künstler</th>
+          <th scope="col">Album</th>
+          <th scope="col">Bekanntheit</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @spotify_tracks.any? %>
+          <% @spotify_tracks.each do |playback| %>
+            <tr>
+              <td class="text-muted"><%= l(Time.zone.parse(playback.played_at)) %></td>
+              <td><%= playback.name %></td>
+              <td><%= playback.artists.map(&:name).join(", ") %></td>
+              <td><%= playback.album.name %></td>
+              <td class="text-muted"><%= playback.popularity %></td>
+            </tr>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="5" class="text-muted">Keine Spotify-Playbacks gefunden.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>

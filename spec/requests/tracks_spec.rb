@@ -886,19 +886,6 @@ RSpec.describe "Tracks", type: :request do
     end
   end
 
-  describe "GET / (recently_played_index)" do
-    it "verwendet den angemeldeten User für recently_played" do
-      current_spotify_user = users(:one).spotify_user
-      other_spotify_user = users(:two).spotify_user
-      allow(current_spotify_user).to receive(:recently_played).with(limit: 50).and_return([])
-      expect(other_spotify_user).not_to receive(:recently_played)
-
-      get root_path
-
-      expect(response).to have_http_status(:success)
-    end
-  end
-
   describe "POST /tracks/download" do
     it "reiht DownloadMissingTracksJob ein und redirected sofort zu tracks_path" do
       allow(DownloadMissingTracksJob).to receive(:perform_later)

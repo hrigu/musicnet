@@ -3,11 +3,13 @@
 class TracksController < ApplicationController
   PAGE_SIZE = 50
   RECENT_TAG_SUGGESTION_LIMIT = 5
+  RECENTLY_PLAYED_TABS = %w[musicnet spotify].freeze
 
   # Zeigt die letzten 50 gespielte Lieder
-  # tracks sind RSpotify::Track
   def recently_played_index
-    @tracks = current_user.spotify_user.recently_played(limit: 50) #=>
+    @active_recently_played_tab = RECENTLY_PLAYED_TABS.include?(params[:tab]) ? params[:tab] : "musicnet"
+    @musicnet_playbacks = current_user.dj_session_playbacks.includes(track: %i[artists album]).recent_first.limit(100)
+    @spotify_tracks = load_spotify_recently_played
   end
 
   def index
@@ -70,6 +72,12 @@ class TracksController < ApplicationController
   end
 
   private
+
+  def load_spotify_recently_played
+    return [] unless @active_recently_played_tab == "spotify"
+
+    current_user.spotify_user.recently_played(limit: 50)
+  end
 
   def send_track_file_with_range_support(path)
     response.headers["Accept-Ranges"] = "bytes"
