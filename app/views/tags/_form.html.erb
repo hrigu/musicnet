@@ -24,5 +24,14 @@
     </div>
   </div>
 
+  <div class="form-check mb-3">
+    <%= f.check_box :assignable, class: "form-check-input" %>
+    <%= f.label :assignable, "Für neue Vergaben erlauben", class: "form-check-label" %>
+    <div class="form-text">
+      Wenn deaktiviert, bleibt das Tag sichtbar und bestehende Zuordnungen bleiben erhalten,
+      kann aber nicht mehr neu vergeben werden.
+    </div>
+  </div>
+
   <%= f.submit "Speichern", class: "btn btn-outline-secondary" %>
 <% end %>

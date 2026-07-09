@@ -29,6 +29,15 @@ RSpec.describe "Tags", type: :request do
       expect(tag.alias_list).to eq(%w[x y])
     end
 
+    it "kann ein neues Tag direkt als fuer neue Vergaben gesperrt anlegen" do
+      category = Category.create!(name: "RSpec Kategorie gesperrt")
+
+      post category_tags_path(category), params: { tag: { name: "RSpec Gesperrtes Tag", aliases: "x", assignable: "0" } }
+
+      expect(response).to redirect_to(categories_path)
+      expect(Tag.find_by(name: "RSpec Gesperrtes Tag")&.assignable).to be false
+    end
+
     it "rendert das Formular erneut mit Fehlermeldung bei fehlenden Aliasen" do
       category = Category.create!(name: "RSpec Kategorie")
 
@@ -48,6 +57,26 @@ RSpec.describe "Tags", type: :request do
 
       expect(response).to redirect_to(categories_path)
       expect(tag.reload.category).to eq(category_b)
+    end
+
+    it "kann einen Tag fuer neue Vergaben sperren" do
+      category = Category.create!(name: "RSpec Kategorie Tag Sperren")
+      tag = category.tags.create!(name: "RSpec Tag Sperren", aliases: "x")
+
+      patch tag_path(tag), params: { tag: { assignable: "0" } }
+
+      expect(response).to redirect_to(categories_path)
+      expect(tag.reload.assignable).to be false
+    end
+
+    it "kann einen gesperrten Tag wieder freigeben" do
+      category = Category.create!(name: "RSpec Kategorie Tag Freigeben")
+      tag = category.tags.create!(name: "RSpec Tag Freigeben", aliases: "x", assignable: false)
+
+      patch tag_path(tag), params: { tag: { assignable: "1" } }
+
+      expect(response).to redirect_to(categories_path)
+      expect(tag.reload.assignable).to be true
     end
   end
 
@@ -119,6 +148,18 @@ RSpec.describe "Tags", type: :request do
       names = JSON.parse(response.body).map { |t| t["name"] }
       expect(names).to include(freies_tag.name)
       expect(names).to_not include("RSpec Gesperrt Assignable")
+    end
+  end
+
+  describe "Tag-Verwaltung im Kategorien-Index" do
+    it "markiert gesperrte Tags sichtbar" do
+      category = Category.create!(name: "RSpec Kategorie Index Tag Sperre")
+      category.tags.create!(name: "RSpec Tag Index Frei", aliases: "x")
+      category.tags.create!(name: "RSpec Tag Index Gesperrt", aliases: "y", assignable: false)
+
+      get categories_path
+
+      expect(response.body.scan("tag-assignable-badge").size).to eq(1)
     end
   end
 end

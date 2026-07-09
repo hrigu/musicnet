@@ -32,7 +32,12 @@
       <tbody>
         <% category.tags.order(:name).each do |tag| %>
           <tr>
-            <td><%= tag_badge(tag) %></td>
+            <td>
+              <%= tag_badge(tag) %>
+              <% unless tag.assignable? %>
+                <span class="badge text-bg-warning tag-assignable-badge">gesperrt</span>
+              <% end %>
+            </td>
             <td class="text-muted"><%= tag.aliases %></td>
             <td class="text-end">
               <%= link_to "Bearbeiten", edit_tag_path(tag), class: "btn btn-sm btn-outline-secondary" %>
