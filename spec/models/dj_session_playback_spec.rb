@@ -57,4 +57,28 @@ RSpec.describe DjSessionPlayback, type: :model do
       expect(described_class.recent_first).to eq([newer, older])
     end
   end
+
+  describe ".group_into_sessions" do
+    def playback_at(played_at)
+      described_class.new(played_at: Time.zone.parse(played_at))
+    end
+
+    it "fasst Playbacks mit kleiner Luecke zu einer Session zusammen" do
+      first = playback_at("2026-07-09 20:00:00")
+      second = playback_at("2026-07-09 20:20:00")
+
+      expect(described_class.group_into_sessions([second, first])).to eq([[second, first]])
+    end
+
+    it "beginnt eine neue Session, wenn die Luecke SESSION_GAP ueberschreitet" do
+      first = playback_at("2026-07-09 20:00:00")
+      second = playback_at("2026-07-09 22:00:00")
+
+      expect(described_class.group_into_sessions([second, first])).to eq([[second], [first]])
+    end
+
+    it "gibt eine leere Liste fuer keine Playbacks zurueck" do
+      expect(described_class.group_into_sessions([])).to eq([])
+    end
+  end
 end

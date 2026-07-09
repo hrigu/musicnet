@@ -53,6 +53,61 @@ RSpec.describe "RecentlyPlayed", type: :request do
       end
     end
 
+    it "gruppiert nah beieinander liegende Musicnet-Playbacks in eine Session" do
+      first_track = create_recent_track(name: "RSpec Naheliegend Track 1", spotify_id: "recent-close-1",
+                                        artist_name: "RSpec Naheliegend Artist")
+      second_track = create_recent_track(name: "RSpec Naheliegend Track 2", spotify_id: "recent-close-2",
+                                         artist_name: "RSpec Naheliegend Artist")
+      DjSessionPlayback.create!(user: users(:one), track: first_track, played_at: Time.zone.parse("2026-07-09 20:00:00"))
+      DjSessionPlayback.create!(user: users(:one), track: second_track, played_at: Time.zone.parse("2026-07-09 20:20:00"))
+
+      get root_path
+
+      document = Nokogiri::HTML(response.body)
+
+      expect(document.css("tr.dj-session-header").size).to eq(1)
+    end
+
+    it "startet eine neue Session, wenn zwischen zwei Musicnet-Playbacks eine grosse Luecke liegt" do
+      first_track = create_recent_track(name: "RSpec Entfernt Track 1", spotify_id: "recent-far-1",
+                                        artist_name: "RSpec Entfernt Artist")
+      second_track = create_recent_track(name: "RSpec Entfernt Track 2", spotify_id: "recent-far-2",
+                                         artist_name: "RSpec Entfernt Artist")
+      DjSessionPlayback.create!(user: users(:one), track: first_track, played_at: Time.zone.parse("2026-07-09 12:00:00"))
+      DjSessionPlayback.create!(user: users(:one), track: second_track, played_at: Time.zone.parse("2026-07-09 20:00:00"))
+
+      get root_path
+
+      document = Nokogiri::HTML(response.body)
+
+      expect(document.css("tr.dj-session-header").size).to eq(2)
+    end
+
+    it "zeigt einen aufgeloesten Ortsnamen statt Rohkoordinaten" do
+      track = create_recent_track(name: "RSpec Ort Aufgeloest", spotify_id: "recent-location-resolved",
+                                  artist_name: "RSpec Ort Artist")
+      DjSessionPlayback.create!(user: users(:one), track:, played_at: Time.zone.parse("2026-07-09 20:00:00"),
+                                latitude: 47.376887, longitude: 8.541694, location_name: "Zürich")
+
+      get root_path
+
+      aggregate_failures do
+        expect(response.body).to include("Zürich")
+        expect(response.body).to_not include("47.376887")
+      end
+    end
+
+    it "zeigt Rohkoordinaten als Fallback, solange kein Ortsname aufgeloest ist" do
+      track = create_recent_track(name: "RSpec Ort Ausstehend", spotify_id: "recent-location-pending",
+                                  artist_name: "RSpec Ort Artist Pending")
+      DjSessionPlayback.create!(user: users(:one), track:, played_at: Time.zone.parse("2026-07-09 20:00:00"),
+                                latitude: 47.376887, longitude: 8.541694)
+
+      get root_path
+
+      expect(response.body).to include("47.376887")
+    end
+
     it "verwendet den angemeldeten User für recently_played im Spotify-Tab" do
       current_spotify_user = users(:one).spotify_user
       other_spotify_user = users(:two).spotify_user

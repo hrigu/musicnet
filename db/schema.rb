@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_09_113001) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_09_153755) do
   create_table "albums", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name"
@@ -50,6 +50,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_09_113001) do
     t.datetime "created_at", null: false
     t.decimal "latitude", precision: 10, scale: 6
     t.decimal "location_accuracy_meters", precision: 8, scale: 2
+    t.string "location_name"
     t.decimal "longitude", precision: 10, scale: 6
     t.datetime "played_at", null: false
     t.integer "track_id", null: false

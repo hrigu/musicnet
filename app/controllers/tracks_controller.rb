@@ -8,7 +8,8 @@ class TracksController < ApplicationController
   # Zeigt die letzten 50 gespielte Lieder
   def recently_played_index
     @active_recently_played_tab = RECENTLY_PLAYED_TABS.include?(params[:tab]) ? params[:tab] : "musicnet"
-    @musicnet_playbacks = current_user.dj_session_playbacks.includes(track: %i[artists album]).recent_first.limit(100)
+    musicnet_playbacks = current_user.dj_session_playbacks.includes(track: %i[artists album]).recent_first.limit(100)
+    @musicnet_session_groups = DjSessionPlayback.group_into_sessions(musicnet_playbacks.to_a)
     @spotify_tracks = load_spotify_recently_played
   end
 

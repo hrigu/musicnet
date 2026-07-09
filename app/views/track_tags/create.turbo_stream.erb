@@ -1,4 +1,14 @@
+<%# Zwei getrennte Ziele, weil dieser Turbo-Stream sowohl vom Inline-Widget in der /tracks-Liste
+    als auch vom Formular auf der Track-Detailseite ausgeloest werden kann - welches der beiden
+    tatsaechlich existiert, haengt davon ab, von welcher Seite aus zugewiesen wurde. Ein
+    turbo_stream.replace auf ein nicht vorhandenes Ziel ist ein stiller No-Op, daher ist es sicher,
+    hier immer beide zu rendern statt zu unterscheiden, von wo die Anfrage kam. %>
 <%= turbo_stream.replace dom_id(@track, :track_tags_cell) do %>
   <%= render partial: "tracks/tag_cell",
              locals: { track: @track, recent_tags: Tag.recently_assigned_by(current_user, limit: TracksController::RECENT_TAG_SUGGESTION_LIMIT) } %>
+<% end %>
+
+<%= turbo_stream.replace dom_id(@track, :track_tags_panel) do %>
+  <%= render partial: "tracks/tag_panel",
+             locals: { track: @track, recent_tag_suggestions: Tag.recently_assigned_by(current_user, limit: TracksController::RECENT_TAG_SUGGESTION_LIMIT) } %>
 <% end %>

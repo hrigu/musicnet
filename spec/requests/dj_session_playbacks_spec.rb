@@ -64,5 +64,24 @@ RSpec.describe "DjSessionPlaybacks", type: :request do
         expect(playback.location_accuracy_meters.to_f).to eq(12.25)
       end
     end
+
+    it "stoesst die Ortsnamen-Aufloesung im Hintergrund an, wenn Ortsdaten geliefert werden" do
+      track = create_track(spotify_id: "rspec-dsp-4")
+
+      expect do
+        post dj_session_playbacks_path,
+             params: {
+               dj_session_playback: { track_id: track.id, latitude: 47.376887, longitude: 8.541694 }
+             }, as: :json
+      end.to have_enqueued_job(ResolveDjSessionPlaybackLocationJob)
+    end
+
+    it "stoesst keine Ortsnamen-Aufloesung an, wenn keine Ortsdaten geliefert werden" do
+      track = create_track(spotify_id: "rspec-dsp-5")
+
+      expect do
+        post dj_session_playbacks_path, params: { dj_session_playback: { track_id: track.id } }, as: :json
+      end.not_to have_enqueued_job(ResolveDjSessionPlaybackLocationJob)
+    end
   end
 end

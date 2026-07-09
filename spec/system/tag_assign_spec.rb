@@ -176,6 +176,30 @@ RSpec.describe "Manuelles Tag-Zuweisen auf der Track-Detailseite (Intent 79)", t
     expect(Tag.find_by(name: "Tastaturtag").category).to eq(category)
   end
 
+  it "unterbricht die laufende Wiedergabe nicht, wenn waehrenddessen ein Tag zugewiesen wird (Bugfix Intent 87)" do
+    track = create_track_with_real_audio("RSpec Assign Waehrend Wiedergabe", spotify_id: "assign-during-playback")
+    category = Category.create!(name: "RSpec Emotion Waehrend Wiedergabe")
+    category.tags.create!(name: "RSpec Waehrend Wiedergabe Tag", aliases: "x")
+
+    visit track_path(track)
+    find_button("Abspielen").click
+    sleep 0.3
+    expect(page.evaluate_script("!document.querySelector('#global-audio-player audio').paused")).to be(true)
+    page.execute_script("document.getElementById('global-audio-player').dataset.marker = 'still-here'")
+
+    click_button "+ Tag hinzufügen"
+    fill_in "tag_search", with: "waehrend"
+    within("[data-tag-assign-target='results']") { click_button("RSpec Waehrend Wiedergabe Tag") }
+    fill_in "strength", with: "5"
+    click_button "Hinzufügen"
+
+    expect(page).to have_content("RSpec Waehrend Wiedergabe Tag · 5")
+    aggregate_failures do
+      expect(page.evaluate_script("document.getElementById('global-audio-player').dataset.marker")).to eq("still-here")
+      expect(page.evaluate_script("!document.querySelector('#global-audio-player audio').paused")).to be(true)
+    end
+  end
+
   it "entfernt einen zugewiesenen Tag nach Bestätigung" do
     track = create_playable_track("RSpec Assign Track 8", spotify_id: "assign-8")
     category = Category.create!(name: "RSpec Emotion Entfernen")

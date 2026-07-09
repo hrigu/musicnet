@@ -1,4 +1,20 @@
 # Diary
+## 2026-07-09
+* Bug: Lief gerade ein Track im globalen Player und man wies dem Track auf der Detailseite
+  (`/tracks/:id`) manuell ein Tag zu (Intent 79), stoppte die Wiedergabe sofort. Ursache: das
+  Zuweisungs-Formular hatte `data-turbo="false"` gesetzt (seit Intent 83 nötig, weil der
+  Turbo-Stream aus `TrackTagsController#create` nur die Tags-Zelle der `/tracks`-Liste kannte und
+  auf der Detailseite ein stiller No-Op gewesen wäre) - das deaktiviert aber nicht nur den
+  Turbo-Stream, sondern Turbo Drive für den ganzen Submit, wodurch der Browser einen echten
+  Hard-Reload der Seite auslöste. `data-turbo-permanent` (der globale Audio-Player) überlebt nur
+  Turbo-Drive-Visits, keinen klassischen Reload - das Dokument inkl. `<audio>`-Element wurde
+  komplett neu aufgebaut. Fix: eigene Partial `tracks/_tag_panel.html.erb` mit eigenem `dom_id`
+  für den Tag-Bereich der Detailseite, der Turbo-Stream ersetzt jetzt beide Ziele (Listen-Zelle
+  UND Detailseiten-Panel; ein `turbo_stream.replace` auf ein nicht vorhandenes Ziel ist ein
+  stiller No-Op, daher gefahrlos immer beide zu rendern) - `data-turbo="false"` konnte ganz
+  entfallen. Regressionsabgesichert in `spec/system/tag_assign_spec.rb` (gegen den alten Code
+  reproduziert, mit dem Fix grün).
+
 ## 2026-07-08
 * Feature (Intent 79): Tags lassen sich jetzt auch manuell auf der Track-Detailseite zuweisen -
   Livesuche nach einem bestehenden Tag (inkl. Kategorie), oder bei einem neuen Namen die Kategorie

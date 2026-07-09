@@ -24,21 +24,32 @@
         </tr>
       </thead>
       <tbody>
-        <% if @musicnet_playbacks.any? %>
-          <% @musicnet_playbacks.each do |playback| %>
-            <tr>
-              <td class="text-muted"><%= l(playback.played_at) %></td>
-              <td><%= link_to playback.track.name, track_path(playback.track) %></td>
-              <td><%= playback.track.artists.map(&:name).join(", ") %></td>
-              <td><%= playback.track.album.name %></td>
-              <td class="text-muted">
-                <% if playback.latitude && playback.longitude %>
-                  <%= "#{playback.latitude}, #{playback.longitude}" %>
-                <% else %>
-                  –
-                <% end %>
+        <% if @musicnet_session_groups.any? %>
+          <% @musicnet_session_groups.each do |session_playbacks| %>
+            <% session_start = session_playbacks.last.played_at %>
+            <% session_end = session_playbacks.first.played_at %>
+            <% session_location = session_playbacks.find { |p| p.latitude && p.longitude } %>
+            <tr class="table-light dj-session-header">
+              <td colspan="5">
+                <strong>Session</strong>
+                <span class="text-muted">
+                  <%= l(session_start, format: :short) %>–<%= l(session_end, format: :time_only) %> Uhr ·
+                  <%= pluralize(session_playbacks.size, "Titel") %>
+                  <% if session_location %>
+                    · <%= playback_location_label(session_location) %>
+                  <% end %>
+                </span>
               </td>
             </tr>
+            <% session_playbacks.each do |playback| %>
+              <tr>
+                <td class="text-muted"><%= l(playback.played_at) %></td>
+                <td><%= link_to playback.track.name, track_path(playback.track) %></td>
+                <td><%= playback.track.artists.map(&:name).join(", ") %></td>
+                <td><%= playback.track.album.name %></td>
+                <td class="text-muted"><%= playback_location_label(playback) || "–" %></td>
+              </tr>
+            <% end %>
           <% end %>
         <% else %>
           <tr>
