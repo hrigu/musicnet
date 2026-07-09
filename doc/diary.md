@@ -1,5 +1,19 @@
 # Diary
 ## 2026-07-09
+* Bug: `/artists/:id` warf einen 500er (`ActionView::MissingTemplate`, dann nach dem ersten Fix
+  einen zweiten `NoMethodError`) - vom User live im Browser gemeldet. Ursache 1: `tracks/_tracks.erb`
+  rendert die Track-Zeilen per `render partial: "track", collection: tracks, ...` mit einem
+  unqualifizierten Partial-Namen - Rails loest den ueber die Prefixes des **aufrufenden
+  Controllers** auf (nicht ueber das Verzeichnis der Partial selbst), bei `tracks#index` passte das
+  zufaellig (Prefixes `["tracks", "application"]`), bei `artists#show` (Prefixes `["artists",
+  "application"]`) nicht - "tracks/_track.erb" fehlte in der Suche. Fix: voll qualifizierter Pfad
+  `"tracks/track"`. Ursache 2, danach sichtbar: `_track.erb` (ueber `_tag_cell.erb`/
+  `_tag_assign_inline.erb`) braucht `@recent_tag_suggestions` (Intent 86), das `ArtistsController#show`
+  nie gesetzt hat - nur `TracksController#index`/`#show` taten das. Fix: gleicher Aufruf auch in
+  `ArtistsController#show` ergaenzt. Beide Fixes zusammen loesten nebenbei alle bisher als
+  "vorbestehend, unabhaengig" eingestuften Failures in `artists_spec.rb` (11 Stueck) und sogar den
+  scheinbar unabhaengigen `song_queue_spec.rb`-Failure auf - waren tatsaechlich alle derselbe Bug,
+  keine getrennten Baustellen wie zuvor angenommen.
 * Feature (Intent 88): Der Spotify-Tab in "Zuletzt gespielt" ist jetzt handlungsfähig statt reiner
   Text: bereits lokal vorhandene Tracks (Abgleich per `spotify_id`) verlinken direkt auf ihre
   Musicnet-Detailseite; noch nicht lokale Tracks lassen sich per Klick herunterladen -

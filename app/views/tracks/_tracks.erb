@@ -42,7 +42,13 @@
     </tr>
     </thead>
     <tbody>
-    <%= render partial: "track", collection: tracks, as: :track, locals: { recent_tags: @recent_tag_suggestions } %>
+    <%# Voll qualifizierter Partial-Pfad ("tracks/track"), nicht nur "track": ein unqualifizierter
+        Name wird von Rails ueber die Prefixes des AUFRUFENDEN CONTROLLERS aufgeloest (nicht ueber
+        das Verzeichnis dieser Partial selbst) - bei tracks#index passt das zufaellig, weil
+        TracksController#index selbst die Prefixes ["tracks", "application"] mitbringt, bricht aber
+        mit ActionView::MissingTemplate, sobald artists#show dieselbe _tracks.erb-Partial rendert
+        (Prefixes dann ["artists", "application"], "tracks/_track.erb" fehlt in der Suche). %>
+    <%= render partial: "tracks/track", collection: tracks, as: :track, locals: { recent_tags: @recent_tag_suggestions } %>
     </tbody>
   </table>
 </div>
