@@ -5,5 +5,5 @@
   <% track.track_tags.each do |tt| %>
     <%= render partial: "components/track_tag_badge", locals: { track_tag: tt } %>
   <% end %>
-  <%= render partial: "tracks/tag_assign_inline", locals: { track: track } %>
+  <%= render partial: "tracks/tag_assign_inline", locals: { track: track, recent_tags: recent_tags } %>
 </div>

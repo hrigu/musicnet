@@ -2,6 +2,7 @@
 
 class TracksController < ApplicationController
   PAGE_SIZE = 50
+  RECENT_TAG_SUGGESTION_LIMIT = 5
 
   # Zeigt die letzten 50 gespielte Lieder
   # tracks sind RSpotify::Track
@@ -14,6 +15,7 @@ class TracksController < ApplicationController
                   .in_active_library(current_user.active_library_id)
                   .sorted(params[:sort], params[:direction])
     @pagy, @tracks = paginate_for_index(tracks)
+    @recent_tag_suggestions = Tag.recently_assigned_by(current_user, limit: RECENT_TAG_SUGGESTION_LIMIT)
   end
 
   def query_suggestions
@@ -35,6 +37,7 @@ class TracksController < ApplicationController
 
   def show
     @track = Track.for_show.find(params[:id])
+    @recent_tag_suggestions = Tag.recently_assigned_by(current_user, limit: RECENT_TAG_SUGGESTION_LIMIT)
     # Ids aus dem bereits preload-eten playlist_tracks ableiten statt @track.playlist_ids zu
     # nutzen - :playlists ist eine eigene Assoziation, die Track.for_show nie preload-et, ein
     # Zugriff wuerde also sowohl eine zusaetzliche Query als auch einen strict_loading-Fehler

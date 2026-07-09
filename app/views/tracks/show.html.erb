@@ -118,6 +118,22 @@
       <%= hidden_field_tag :category_id, "", data: { tag_assign_target: "categoryIdField" } %>
 
       <div data-tag-assign-target="stepSearch">
+        <% recent_tag_suggestions = @recent_tag_suggestions.reject { |tag| @track.tag_ids.include?(tag.id) } %>
+        <% if recent_tag_suggestions.any? %>
+          <div class="mb-2">
+            <div class="form-label small mb-1">Zuletzt verwendet</div>
+            <div class="d-flex flex-wrap gap-1">
+              <% recent_tag_suggestions.each do |tag| %>
+                <button type="button" class="btn btn-sm btn-outline-secondary"
+                        data-action="tag-assign#selectExisting"
+                        data-tag-id="<%= tag.id %>" data-tag-name="<%= tag.name %>">
+                  <%= tag.name %>
+                </button>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
         <label class="form-label small">Tag-Name</label>
         <div class="position-relative">
           <%= text_field_tag :tag_search, nil, autocomplete: "off", placeholder: "z.B. traurig",

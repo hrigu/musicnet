@@ -111,6 +111,28 @@ RSpec.describe "Manuelles Tag-Zuweisen auf der Track-Detailseite (Intent 79)", t
     expect(page).to have_content("RSpec Traurig Tastatur · 9")
   end
 
+  it "zeigt zuletzt verwendete Tags als Vorschlaege und uebernimmt sie per Klick" do
+    first_track = create_playable_track("RSpec Assign Suggestion Seed", spotify_id: "assign-suggestion-seed")
+    second_track = create_playable_track("RSpec Assign Suggestion Target", spotify_id: "assign-suggestion-target")
+    category = Category.create!(name: "RSpec Emotion Vorschlag Detail")
+    tag = category.tags.create!(name: "RSpec Vorschlag Detail", aliases: "x")
+    TrackTag.create!(track: first_track, tag:, strength: 5)
+    TagAssignment.create!(user: users(:one), tag:)
+
+    visit track_path(second_track)
+    click_button "+ Tag hinzufügen"
+
+    within("[data-tag-assign-target='stepSearch']") do
+      expect(page).to have_button("RSpec Vorschlag Detail")
+      click_button("RSpec Vorschlag Detail")
+    end
+
+    fill_in "strength", with: "7"
+    click_button "Hinzufügen"
+
+    expect(page).to have_content("RSpec Vorschlag Detail · 7")
+  end
+
   it "wählt mit Pfeil-runter den zweiten statt den ersten Treffer aus" do
     track = create_playable_track("RSpec Assign Track 6", spotify_id: "assign-6")
     category = Category.create!(name: "RSpec Emotion Pfeil")

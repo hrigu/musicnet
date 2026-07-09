@@ -1,10 +1,11 @@
-<%# locals: track - Kompaktes "+"-Widget zum Zuweisen eines BESTEHENDEN Tags direkt in der
+<%# locals: track, recent_tags - Kompaktes "+"-Widget zum Zuweisen eines BESTEHENDEN Tags direkt in der
     Tracks-Liste (Intent 83). Bewusst kein "Neuer Tag"-Zweig und keine Staerke-Abfrage (fix 5,
     Feinjustierung ueber die Inline-Bearbeitung aus Intent 81) - neue Tags anlegen bleibt der
     Track-Detailseite vorbehalten (Intent 79). data-tag-assign-existing-only-value schaltet
     tag_assign_controller.js in diesen reduzierten Modus (kein Kategorie-/Staerke-Schritt, sofort
     absenden bei Auswahl); data-tag-assign-track-id-value blendet in der Live-Suche bereits
     zugewiesene Tags aus (TagsController#search). %>
+<% suggested_recent_tags = recent_tags.reject { |tag| track.tag_ids.include?(tag.id) } %>
 <div data-controller="tag-assign" data-tag-assign-existing-only-value="true"
      data-tag-assign-track-id-value="<%= track.id %>"
      data-action="click@window->tag-assign#outsideClick" class="d-inline-block position-relative">
@@ -21,6 +22,21 @@
     <%= hidden_field_tag :track_id, track.id %>
     <%= hidden_field_tag :tag_id, "", data: { tag_assign_target: "tagIdField" } %>
     <%= hidden_field_tag :strength, 5 %>
+
+    <% if suggested_recent_tags.any? %>
+      <div class="mb-2">
+        <div class="small text-muted mb-1">Zuletzt verwendet</div>
+        <div class="d-flex flex-wrap gap-1">
+          <% suggested_recent_tags.each do |tag| %>
+            <button type="button" class="btn btn-sm btn-outline-secondary"
+                    data-action="tag-assign#selectExisting"
+                    data-tag-id="<%= tag.id %>" data-tag-name="<%= tag.name %>">
+              <%= tag.name %>
+            </button>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
 
     <div class="position-relative">
       <%= text_field_tag :tag_search, nil, autocomplete: "off", placeholder: "Tag suchen…",

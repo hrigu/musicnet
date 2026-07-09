@@ -51,7 +51,7 @@
   <% end %>
   <% if column_visible?("tags") %>
     <td>
-      <%= render partial: "tracks/tag_cell", locals: { track: track } %>
+      <%= render partial: "tracks/tag_cell", locals: { track: track, recent_tags: recent_tags } %>
     </td>
   <% end %>
   <% if column_visible?("file") %>

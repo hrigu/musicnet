@@ -1,3 +1,4 @@
 <%= turbo_stream.replace dom_id(@track, :track_tags_cell) do %>
-  <%= render partial: "tracks/tag_cell", locals: { track: @track } %>
+  <%= render partial: "tracks/tag_cell",
+             locals: { track: @track, recent_tags: Tag.recently_assigned_by(current_user, limit: TracksController::RECENT_TAG_SUGGESTION_LIMIT) } %>
 <% end %>

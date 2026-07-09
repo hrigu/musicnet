@@ -69,4 +69,23 @@ RSpec.describe "Bestehendes Tag inline in der Tracks-Liste zuweisen (Intent 83)"
     expect(page).to have_selector("[data-tag-assign-target='openButton']", visible: true)
     expect(TrackTag.where(track: track).count).to eq(0)
   end
+
+  it "zeigt zuletzt verwendete Tags als Vorschlaege und weist sie direkt zu" do
+    seed_track = create_playable_track("RSpec Inline Suggestion Seed", spotify_id: "inline-suggestion-seed")
+    target_track = create_playable_track("RSpec Inline Suggestion Target", spotify_id: "inline-suggestion-target")
+    category = Category.create!(name: "RSpec Emotion Inline Vorschlag")
+    tag = category.tags.create!(name: "RSpec Inline Vorschlag", aliases: "x")
+    TrackTag.create!(track: seed_track, tag:, strength: 5)
+    TagAssignment.create!(user: users(:one), tag:)
+
+    visit tracks_path
+    within("tr", text: "RSpec Inline Suggestion Target") do
+      find("[data-tag-assign-target='openButton']").click
+      expect(page).to have_button("RSpec Inline Vorschlag")
+      click_button("RSpec Inline Vorschlag")
+    end
+
+    expect(page).to have_content("RSpec Inline Vorschlag · 5")
+    expect(TrackTag.find_by(track: target_track, tag: tag)&.strength).to eq(5)
+  end
 end

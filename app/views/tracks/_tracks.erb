@@ -42,7 +42,7 @@
     </tr>
     </thead>
     <tbody>
-    <%= render tracks %>
+    <%= render partial: "track", collection: tracks, as: :track, locals: { recent_tags: @recent_tag_suggestions } %>
     </tbody>
   </table>
 </div>
