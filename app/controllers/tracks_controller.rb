@@ -11,6 +11,7 @@ class TracksController < ApplicationController
     musicnet_playbacks = current_user.dj_session_playbacks.includes(track: %i[artists album]).recent_first.limit(100)
     @musicnet_session_groups = DjSessionPlayback.group_into_sessions(musicnet_playbacks.to_a)
     @spotify_tracks = load_spotify_recently_played
+    @local_tracks_by_spotify_id = local_tracks_by_spotify_id(@spotify_tracks)
   end
 
   def index
@@ -36,6 +37,19 @@ class TracksController < ApplicationController
     tracks_without_file = Track.for_download.reject(&:track_path)
     DownloadMissingTracksJob.perform_later(tracks_without_file)
     redirect_to tracks_path
+  end
+
+  # Importiert+laedt einen noch nicht lokalen Spotify-Track aus dem "Zuletzt gespielt"-Tab
+  # herunter (Intent 88) - im Hintergrund, gleicher Lock-Guard wie #download, da beide denselben
+  # DOWNLOAD_LOCK teilen.
+  def import_from_spotify
+    if DownloadPlaylistService::DOWNLOAD_LOCK.locked?
+      return redirect_to recently_played_index_tracks_path(tab: "spotify"),
+                         alert: "Es läuft bereits ein Download - bitte warten, bis er fertig ist"
+    end
+
+    ImportAndDownloadSpotifyTrackJob.perform_later(params[:spotify_track_id])
+    redirect_to recently_played_index_tracks_path(tab: "spotify")
   end
 
   def show
@@ -78,6 +92,14 @@ class TracksController < ApplicationController
     return [] unless @active_recently_played_tab == "spotify"
 
     current_user.spotify_user.recently_played(limit: 50)
+  end
+
+  # Ein einziger Query statt N+1 - @spotify_tracks sind transiente RSpotify::Track-Objekte, kein
+  # ActiveRecord, darum kein includes/preload moeglich, nur ein direkter Abgleich per spotify_id.
+  def local_tracks_by_spotify_id(spotify_tracks)
+    return {} if spotify_tracks.empty?
+
+    Track.where(spotify_id: spotify_tracks.map(&:id)).index_by(&:spotify_id)
   end
 
   def send_track_file_with_range_support(path)

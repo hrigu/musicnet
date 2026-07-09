@@ -1,5 +1,18 @@
 # Diary
 ## 2026-07-09
+* Feature (Intent 88): Der Spotify-Tab in "Zuletzt gespielt" ist jetzt handlungsfähig statt reiner
+  Text: bereits lokal vorhandene Tracks (Abgleich per `spotify_id`) verlinken direkt auf ihre
+  Musicnet-Detailseite; noch nicht lokale Tracks lassen sich per Klick herunterladen -
+  `ImportStandaloneSpotifyTrackService` legt Track/Album/Artist ohne Playlist-Zuordnung an,
+  `DownloadStandaloneTrackService` lädt genau diesen einen Track per `spotdl` herunter (teilt sich
+  den `DOWNLOAD_LOCK` mit dem bestehenden Playlist-Download), ein Hintergrund-Job kombiniert beides
+  mit der Audio-Feature-Extraktion und meldet sich über denselben "downloads"-Kanal wie der
+  bestehende Batch-Download. Nebenbei geklärt: die zuvor nur 12 sichtbaren Einträge waren keine
+  Einschränkung dieser App, sondern Spotifys eigenes, rollierendes ~50-Wiedergaben-Fenster
+  (`/me/player/recently-played` liefert nie mehr, auch nicht in der Spotify-App selbst) - der
+  bestehende Aufruf fragte bereits das Maximum an. Ein kurzer Hinweistext im Spotify-Tab macht das
+  jetzt nachvollziehbar.
+
 * Bug: Lief gerade ein Track im globalen Player und man wies dem Track auf der Detailseite
   (`/tracks/:id`) manuell ein Tag zu (Intent 79), stoppte die Wiedergabe sofort. Ursache: das
   Zuweisungs-Formular hatte `data-turbo="false"` gesetzt (seit Intent 83 nötig, weil der

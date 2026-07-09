@@ -8,8 +8,9 @@ RSpec.describe "RecentlyPlayed", type: :request do
 
   before { sign_in users(:one) }
 
-  def spotify_playback(name:, played_at:, artist_name:, album_name:, popularity:)
+  def spotify_playback(name:, played_at:, artist_name:, album_name:, popularity:, id: SecureRandom.hex(8))
     OpenStruct.new(
+      id:,
       played_at:,
       name:,
       popularity:,
@@ -133,6 +134,40 @@ RSpec.describe "RecentlyPlayed", type: :request do
         expect(response.body).to include("RSpec Spotify Artist")
         expect(response.body).to include("RSpec Spotify Album")
         expect(response.body).to include("77")
+      end
+    end
+
+    it "verlinkt einen Spotify-Track, der bereits lokal existiert, auf seine Detailseite" do
+      current_spotify_user = users(:one).spotify_user
+      local_track = create_recent_track(name: "RSpec Bereits Lokal", spotify_id: "recent-already-local",
+                                        artist_name: "RSpec Bereits Lokal Artist")
+      playback = spotify_playback(id: "recent-already-local", name: "RSpec Bereits Lokal", played_at: "2026-07-09T22:00:00Z",
+                                  artist_name: "RSpec Bereits Lokal Artist", album_name: "RSpec Bereits Lokal Album",
+                                  popularity: 42)
+      allow(current_spotify_user).to receive(:recently_played).with(limit: 50).and_return([playback])
+
+      get root_path(tab: "spotify")
+
+      aggregate_failures do
+        expect(response.body).to include(track_path(local_track))
+        expect(response.body).to include("in Musicnet")
+      end
+    end
+
+    it "bietet fuer einen noch nicht lokalen Spotify-Track keinen Link, sondern reinen Text" do
+      current_spotify_user = users(:one).spotify_user
+      playback = spotify_playback(id: "recent-not-local", name: "RSpec Noch Nicht Lokal", played_at: "2026-07-09T22:00:00Z",
+                                  artist_name: "RSpec Noch Nicht Lokal Artist", album_name: "RSpec Noch Nicht Lokal Album",
+                                  popularity: 13)
+      allow(current_spotify_user).to receive(:recently_played).with(limit: 50).and_return([playback])
+
+      get root_path(tab: "spotify")
+
+      document = Nokogiri::HTML(response.body)
+      matching_links = document.css("a").select { |a| a.text.strip == "RSpec Noch Nicht Lokal" }
+      aggregate_failures do
+        expect(response.body).to include("RSpec Noch Nicht Lokal")
+        expect(matching_links).to be_empty
       end
     end
   end

@@ -19,6 +19,7 @@ Rails.application.routes.draw do
     collection do
       get :recently_played_index
       post :download
+      post :import_from_spotify
       get :query_suggestions
     end
     member do

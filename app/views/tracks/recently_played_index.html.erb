@@ -60,6 +60,13 @@
     </table>
   </div>
 <% else %>
+  <%# Spotifys /recently-played liefert grundsaetzlich nie mehr als ein rollierendes Fenster von
+      ca. 50 Wiedergaben zurueck (auch in der Spotify-App selbst so begrenzt) - kein Verhalten
+      dieser App. Der Aufruf fragt bereits das Maximum an (limit: 50). %>
+  <p class="text-muted small">
+    Spotify liefert maximal die letzten 50 Wiedergaben zurück (eigenes, rollierendes Fenster -
+    keine Beschränkung durch Musicnet).
+  </p>
   <div class="table-responsive rounded border">
     <table class="table table-hover align-middle mb-0">
       <thead class="table-light">
@@ -69,22 +76,38 @@
           <th scope="col">Künstler</th>
           <th scope="col">Album</th>
           <th scope="col">Bekanntheit</th>
+          <th scope="col">Musicnet</th>
         </tr>
       </thead>
       <tbody>
         <% if @spotify_tracks.any? %>
           <% @spotify_tracks.each do |playback| %>
+            <% local_track = @local_tracks_by_spotify_id[playback.id] %>
             <tr>
               <td class="text-muted"><%= l(Time.zone.parse(playback.played_at)) %></td>
-              <td><%= playback.name %></td>
+              <td>
+                <% if local_track %>
+                  <%= link_to playback.name, track_path(local_track) %>
+                <% else %>
+                  <%= playback.name %>
+                <% end %>
+              </td>
               <td><%= playback.artists.map(&:name).join(", ") %></td>
               <td><%= playback.album.name %></td>
               <td class="text-muted"><%= playback.popularity %></td>
+              <td>
+                <% if local_track %>
+                  <span class="badge text-bg-secondary">in Musicnet</span>
+                <% else %>
+                  <%= button_to "Herunterladen", import_from_spotify_tracks_path(spotify_track_id: playback.id),
+                        method: :post, class: "btn btn-sm btn-outline-secondary" %>
+                <% end %>
+              </td>
             </tr>
           <% end %>
         <% else %>
           <tr>
-            <td colspan="5" class="text-muted">Keine Spotify-Playbacks gefunden.</td>
+            <td colspan="6" class="text-muted">Keine Spotify-Playbacks gefunden.</td>
           </tr>
         <% end %>
       </tbody>
