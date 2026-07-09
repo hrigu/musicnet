@@ -1,10 +1,10 @@
-<%# locals: track, recent_tags - Kompaktes "+"-Widget zum Zuweisen eines BESTEHENDEN Tags direkt in der
-    Tracks-Liste (Intent 83). Bewusst kein "Neuer Tag"-Zweig und keine Staerke-Abfrage (fix 5,
-    Feinjustierung ueber die Inline-Bearbeitung aus Intent 81) - neue Tags anlegen bleibt der
-    Track-Detailseite vorbehalten (Intent 79). data-tag-assign-existing-only-value schaltet
-    tag_assign_controller.js in diesen reduzierten Modus (kein Kategorie-/Staerke-Schritt, sofort
-    absenden bei Auswahl); data-tag-assign-track-id-value blendet in der Live-Suche bereits
-    zugewiesene Tags aus (TagsController#search). %>
+<%# locals: track, recent_tags - Kompaktes "+"-Widget zum Zuweisen eines Tags direkt in der
+    Tracks-/Playlist-/Artist-Liste (Intent 83, seit Intent 90 auch mit "Neuer Tag"-Zweig). Bewusst
+    weiterhin keine Staerke-Abfrage (fix 5, Feinjustierung ueber die Inline-Bearbeitung aus Intent
+    81) - nur der Kategorie-Schritt fuer neue Tags kam dazu. data-tag-assign-existing-only-value
+    schaltet tag_assign_controller.js in diesen reduzierten Modus (kein Staerke-Schritt, sofort
+    absenden bei Auswahl/Kategorie-Bestaetigung); data-tag-assign-track-id-value blendet in der
+    Live-Suche bereits zugewiesene Tags aus (TagsController#search). %>
 <% suggested_recent_tags = recent_tags.reject { |tag| track.tag_ids.include?(tag.id) } %>
 <div data-controller="tag-assign" data-tag-assign-existing-only-value="true"
      data-tag-assign-track-id-value="<%= track.id %>"
@@ -21,30 +21,56 @@
         class: "d-none tag-assign-panel bg-body border rounded p-2 shadow-sm" do %>
     <%= hidden_field_tag :track_id, track.id %>
     <%= hidden_field_tag :tag_id, "", data: { tag_assign_target: "tagIdField" } %>
+    <%= hidden_field_tag :tag_name, "", data: { tag_assign_target: "tagNameField" } %>
+    <%= hidden_field_tag :category_id, "", data: { tag_assign_target: "categoryIdField" } %>
     <%= hidden_field_tag :strength, 5 %>
 
-    <% if suggested_recent_tags.any? %>
-      <div class="mb-2">
-        <div class="small text-muted mb-1">Zuletzt verwendet</div>
-        <div class="d-flex flex-wrap gap-1">
-          <% suggested_recent_tags.each do |tag| %>
-            <button type="button" class="btn btn-sm btn-outline-secondary"
-                    data-action="tag-assign#selectExisting"
-                    data-tag-id="<%= tag.id %>" data-tag-name="<%= tag.name %>">
-              <%= tag.name %>
-            </button>
-          <% end %>
+    <div data-tag-assign-target="stepSearch">
+      <% if suggested_recent_tags.any? %>
+        <div class="mb-2">
+          <div class="small text-muted mb-1">Zuletzt verwendet</div>
+          <div class="d-flex flex-wrap gap-1">
+            <% suggested_recent_tags.each do |tag| %>
+              <button type="button" class="btn btn-sm btn-outline-secondary"
+                      data-action="tag-assign#selectExisting"
+                      data-tag-id="<%= tag.id %>" data-tag-name="<%= tag.name %>">
+                <%= tag.name %>
+              </button>
+            <% end %>
+          </div>
         </div>
-      </div>
-    <% end %>
+      <% end %>
 
-    <div class="position-relative">
-      <%= text_field_tag :tag_search, nil, autocomplete: "off", placeholder: "Tag suchen…",
-            class: "form-control form-control-sm",
-            data: { tag_assign_target: "searchInput",
-                    action: "input->tag-assign#onInput keydown->tag-assign#onSearchKeydown keydown.esc->tag-assign#close" } %>
-      <div class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 21;"
-           data-tag-assign-target="results"></div>
+      <div class="position-relative">
+        <%= text_field_tag :tag_search, nil, autocomplete: "off", placeholder: "Tag suchen…",
+              class: "form-control form-control-sm",
+              data: { tag_assign_target: "searchInput",
+                      action: "input->tag-assign#onInput keydown->tag-assign#onSearchKeydown keydown.esc->tag-assign#close" } %>
+        <div class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 21;"
+             data-tag-assign-target="results"></div>
+      </div>
+    </div>
+
+    <%# Kategorie-Schritt fuer ein neues Tag (Intent 90) - kein Staerke-Schritt danach, siehe
+        tag_assign_controller.js#confirmCategory (existingOnly submitted direkt). %>
+    <div data-tag-assign-target="stepCategory" class="d-none mt-2">
+      <label class="form-label small">
+        Kategorie für den neuen Tag „<span data-tag-assign-target="newTagLabel"></span>“
+      </label>
+      <select class="form-select form-select-sm" data-tag-assign-target="categorySelect"
+              data-action="keydown.enter->tag-assign#confirmCategory">
+        <% Category.order(:name).each do |category| %>
+          <option value="<%= category.id %>"><%= category.name %></option>
+        <% end %>
+      </select>
+      <div class="d-flex gap-2 mt-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-action="tag-assign#confirmCategory">
+          Weiter
+        </button>
+        <button type="button" class="btn btn-sm btn-link text-muted" data-action="tag-assign#backToSearch">
+          Zurück
+        </button>
+      </div>
     </div>
   <% end %>
 </div>

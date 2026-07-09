@@ -1,5 +1,26 @@
 # Diary
 ## 2026-07-09
+* Feature (Intent 90): Das kompakte "+"-Zuweisen-Widget (Intent 83/89, auf `/tracks`,
+  `/artists/:id` und `/playlists/:id`) erlaubt jetzt auch das Anlegen eines neuen Tags, wenn die
+  Livesuche keinen Treffer findet - kehrt damit eine bewusste Einschraenkung aus Intent 83 um.
+  Kein zusaetzlicher Staerke-Schritt (Standard-Staerke 5, konsistent mit der Sofort-Zuweisung
+  eines bestehenden Tags in diesem Widget), nur ein Kategorie-Schritt.
+  **Subtiler Bug dabei gefunden:** das Panel schloss sich sofort wieder, sobald "Neuer Tag: „…“"
+  angeklickt wurde. Ursache: `selectNew()` entfernt den geklickten Button per `hideResults()`
+  (`innerHTML = ""`) aus dem DOM, bevor der Klick zum window-weiten `outsideClick`-Listener
+  (Intent 83, nur im Inline-Widget verdrahtet) durchgeblubbert ist -
+  `element.contains(event.target)` liefert fuer ein bereits entferntes Element faelschlich
+  `false`, obwohl der Klick eindeutig innerhalb passierte. Blieb bisher unbemerkt, weil das
+  bestehende Zuweisen eines Tags im Inline-Modus sofort abschickt (das kurze Zuklappen vor dem
+  Turbo-Stream-Replace fiel nie auf) - erst der neue, mehrstufige Ablauf machte es sichtbar. Fix:
+  `event.composedPath().includes(this.element)` statt `element.contains(event.target)` -
+  composedPath() haelt den Ereignis-Pfad zum Zeitpunkt des Klicks fest, unabhaengig von spaeteren
+  DOM-Mutationen.
+* Nebenbei: zwei 33h alte Spring-Prozesse fuer dieses Projekt gefunden und gestoppt
+  (`bin/spring stop`) - gleiches Muster wie der Spring-Fehlalarm vom 8. Juli (siehe Eintrag dort),
+  hatte den Server vermutlich auf einem veralteten Code-Stand eingefroren und dadurch die
+  "Zuletzt verwendet"-Vorschlaege in der Playlist-Ansicht (Intent 89) faelschlich als fehlend
+  erscheinen lassen.
 * Feature (Intent 89): Tags lassen sich jetzt auch direkt in der Playlist-Ansicht zuweisen -
   `playlist_tracks/_playlist_track.erb` rendert die Tags-Spalte ueber dieselbe `tracks/tag_cell`-
   Partial wie `/tracks` und `/artists/:id` (statt eines eigenen, statischen Badge-Loops);

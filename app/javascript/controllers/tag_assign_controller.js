@@ -14,7 +14,8 @@ export default class extends Controller {
     "strengthInput", "tagIdField", "tagNameField", "categoryIdField"
   ]
 
-  // existingOnly (Intent 83): kein "Neuer Tag"-Zweig, kein Staerke-Schritt - ein Treffer wird
+  // existingOnly (Intent 83, Kategorie-Schritt fuer neue Tags seit Intent 90): kein
+  // Staerke-Schritt - sowohl ein bestehender Treffer als auch ein neu angelegtes Tag werden
   // sofort mit der im Formular fest hinterlegten Staerke (5) abgeschickt. trackId blendet in der
   // Live-Suche bereits am Track zugewiesene Tags aus.
   static values = { existingOnly: Boolean, trackId: Number }
@@ -36,9 +37,15 @@ export default class extends Controller {
     this.openButtonTarget.classList.remove("d-none")
   }
 
+  // composedPath() statt element.contains(event.target) (Intent 90): selectNew() entfernt den
+  // geklickten "Neuer Tag"-Button per hideResults() aus dem DOM, bevor der Klick zu diesem
+  // window-weiten Listener durchgeblubbert ist - contains() liefert fuer ein bereits entferntes
+  // Element faelschlich false, obwohl der Klick eindeutig innerhalb passierte, und schloss das
+  // Panel sofort wieder zu. composedPath() haelt den Ereignis-Pfad zum Zeitpunkt des Klicks fest,
+  // unabhaengig von spaeteren DOM-Mutationen.
   outsideClick(event) {
     if (this.panelTarget.classList.contains("d-none")) return
-    if (this.element.contains(event.target)) return
+    if (event.composedPath().includes(this.element)) return
 
     this.close()
   }
@@ -71,17 +78,15 @@ export default class extends Controller {
 
   // Jedes Ergebnis bekommt einen data-index, damit Pfeiltasten/Enter dasselbe Element wie ein
   // Mausklick treffen koennen (onSearchKeydown loest button.click() aus statt die Auswahl-Logik
-  // zu duplizieren). Im existingOnly-Modus (Intent 83) gibt es keinen "Neuer Tag"-Eintrag - ohne
-  // Treffer bleibt nur ein Hinweis statt einer Auswahlmoeglichkeit.
+  // zu duplizieren). "Neuer Tag" erscheint seit Intent 90 auch im existingOnly-Modus (Inline-
+  // Widget) - dort ohne Staerke-Schritt danach, siehe confirmCategory.
   renderResults(tags, term) {
     const items = tags.map((tag) => (
       `<button type="button" class="list-group-item list-group-item-action" data-action="tag-assign#selectExisting" data-tag-id="${tag.id}" data-tag-name="${tag.name}">${tag.name} <span class="text-muted small">(${tag.category})</span></button>`
     ))
-    if (!this.existingOnlyValue) {
-      items.push(
-        `<button type="button" class="list-group-item list-group-item-action" data-action="tag-assign#selectNew" data-tag-name="${term}">Neuer Tag: „${term}“</button>`
-      )
-    }
+    items.push(
+      `<button type="button" class="list-group-item list-group-item-action" data-action="tag-assign#selectNew" data-tag-name="${term}">Neuer Tag: „${term}“</button>`
+    )
 
     if (items.length === 0) {
       // Bewusst keine ".list-group-item"-Klasse - sonst wuerde die Pfeiltasten-/Enter-Navigation
@@ -164,11 +169,19 @@ export default class extends Controller {
     this.stepCategoryTarget.classList.remove("d-none")
   }
 
+  // existingOnly (Intent 90): kein Staerke-Schritt fuer ein neu angelegtes Tag - genau wie bei
+  // einem bestehenden Treffer wird sofort mit der fest hinterlegten Staerke (5) abgeschickt.
   confirmCategory(event) {
     event?.preventDefault()
     this.tagNameFieldTarget.value = this.pendingTagName
     this.categoryIdFieldTarget.value = this.categorySelectTarget.value
     this.stepCategoryTarget.classList.add("d-none")
+
+    if (this.existingOnlyValue) {
+      this.panelTarget.requestSubmit()
+      return
+    }
+
     this.showStrengthStep(this.pendingTagName)
   }
 
@@ -181,14 +194,16 @@ export default class extends Controller {
 
   // Abbruchmoeglichkeit fuer den Kategorie- und den Staerke-Schritt (z.B. wenn beim zweiten
   // Schritt auffaellt, dass das falsche Tag gewaehlt wurde) - setzt die bisherige Auswahl
-  // zurueck und geht zur Suche zurueck, statt das ganze Widget zu schliessen.
+  // zurueck und geht zur Suche zurueck, statt das ganze Widget zu schliessen. hasStepStrengthTarget
+  // (Intent 90): das Inline-Widget rendert keinen Staerke-Schritt, ein direkter Zugriff auf
+  // stepStrengthTarget wuerde dort mit "Missing target element" abbrechen.
   backToSearch() {
     this.pendingTagName = null
     this.tagIdFieldTarget.value = ""
     this.tagNameFieldTarget.value = ""
     this.categoryIdFieldTarget.value = ""
     this.stepCategoryTarget.classList.add("d-none")
-    this.stepStrengthTarget.classList.add("d-none")
+    if (this.hasStepStrengthTarget) this.stepStrengthTarget.classList.add("d-none")
     this.stepSearchTarget.classList.remove("d-none")
     this.searchInputTarget.value = ""
     this.searchInputTarget.focus()

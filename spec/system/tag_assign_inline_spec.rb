@@ -26,21 +26,44 @@ RSpec.describe "Bestehendes Tag inline in der Tracks-Liste zuweisen (Intent 83)"
     expect(TrackTag.find_by(track: track, tag: tag).strength).to eq(5)
   end
 
-  it "bietet keine Möglichkeit, hier ein neues Tag anzulegen" do
-    create_playable_track("RSpec Inline Assign Track 2", spotify_id: "inline-assign-2")
-    Category.create!(name: "RSpec Emotion Inline Assign Neu")
+  it "legt ein neues Tag direkt im Inline-Widget an, wenn die Suche keinen Treffer findet (Intent 90)" do
+    track = create_playable_track("RSpec Inline Assign Track 2", spotify_id: "inline-assign-2")
+    category = Category.create!(name: "RSpec Emotion Inline Assign Neu")
 
     visit tracks_path
     within("tr", text: "RSpec Inline Assign Track 2") { find("[data-tag-assign-target='openButton']").click }
     fill_in "tag_search", with: "Komplett Neuer Name"
 
-    within("[data-tag-assign-target='results']") do
-      expect(page).to have_content("Keine Treffer")
-      expect(page).to_not have_button(text: /Neuer Tag/)
+    within("[data-tag-assign-target='results']") { click_button("Neuer Tag: „Komplett Neuer Name“") }
+    find("[data-tag-assign-target='categorySelect']").select(category.name)
+    click_button "Weiter"
+
+    expect(page).to have_content("Komplett Neuer Name · 5")
+    tag = Tag.find_by(name: "Komplett Neuer Name")
+    aggregate_failures do
+      expect(tag.category).to eq(category)
+      expect(TrackTag.find_by(track: track, tag: tag).strength).to eq(5)
     end
   end
 
-  it "blendet bereits zugewiesene Tags aus den Vorschlägen aus" do
+  it "erlaubt den Abbruch beim Kategorie-Schritt eines neuen Tags im Inline-Widget (Intent 90)" do
+    create_playable_track("RSpec Inline Assign Track 2b", spotify_id: "inline-assign-2b")
+    Category.create!(name: "RSpec Emotion Inline Assign Neu Abbruch")
+
+    visit tracks_path
+    within("tr", text: "RSpec Inline Assign Track 2b") { find("[data-tag-assign-target='openButton']").click }
+    fill_in "tag_search", with: "Falscher Name"
+    within("[data-tag-assign-target='results']") { click_button("Neuer Tag: „Falscher Name“") }
+
+    click_button "Zurück"
+
+    aggregate_failures do
+      expect(page).to have_field("tag_search", with: "")
+      expect(Tag.find_by(name: "Falscher Name")).to be_nil
+    end
+  end
+
+  it "blendet bereits zugewiesene Tags aus den Vorschlägen aus (nur noch 'Neuer Tag' bleibt, Intent 90)" do
     track = create_playable_track("RSpec Inline Assign Track 3", spotify_id: "inline-assign-3")
     category = Category.create!(name: "RSpec Emotion Inline Assign Schon")
     tag = category.tags.create!(name: "RSpec Inline Assign Schon Da", aliases: "x")
@@ -51,7 +74,8 @@ RSpec.describe "Bestehendes Tag inline in der Tracks-Liste zuweisen (Intent 83)"
     fill_in "tag_search", with: "Schon Da"
 
     within("[data-tag-assign-target='results']") do
-      expect(page).to have_content("Keine Treffer")
+      expect(page).to_not have_content("RSpec Inline Assign Schon Da (")
+      expect(page).to have_button("Neuer Tag: „Schon Da“")
     end
   end
 
@@ -87,6 +111,42 @@ RSpec.describe "Bestehendes Tag inline in der Tracks-Liste zuweisen (Intent 83)"
 
     expect(page).to have_content("RSpec Inline Vorschlag · 5")
     expect(TrackTag.find_by(track: target_track, tag: tag)&.strength).to eq(5)
+  end
+
+  it "legt ein neues Tag auch von der Playlist-Ansicht aus an (Intent 90)" do
+    track = create_playable_track("RSpec Playlist Neues Tag Track", spotify_id: "playlist-new-tag-1")
+    playlist = Playlist.create!(name: "RSpec Playlist Neues Tag", spotify_id: "pl-new-tag-1")
+    PlaylistTrack.create!(playlist: playlist, track: track, added_at: Time.current)
+    category = Category.create!(name: "RSpec Emotion Playlist Neues Tag")
+
+    visit playlist_path(playlist)
+    within("tr", text: "RSpec Playlist Neues Tag Track") { find("[data-tag-assign-target='openButton']").click }
+    fill_in "tag_search", with: "Playlist Ganz Neu"
+    within("[data-tag-assign-target='results']") { click_button("Neuer Tag: „Playlist Ganz Neu“") }
+    find("[data-tag-assign-target='categorySelect']").select(category.name)
+    click_button "Weiter"
+
+    expect(page).to have_content("Playlist Ganz Neu · 5")
+    tag = Tag.find_by(name: "Playlist Ganz Neu")
+    expect(tag.category).to eq(category)
+  end
+
+  it "legt ein neues Tag auch von der Artist-Ansicht aus an (Intent 90)" do
+    artist = Artist.create!(name: "RSpec Artist Neues Tag", spotify_id: "artist-new-tag-1")
+    track = create_playable_track("RSpec Artist Neues Tag Track", spotify_id: "artist-new-tag-1", artist_name: nil)
+    track.artists << artist
+    category = Category.create!(name: "RSpec Emotion Artist Neues Tag")
+
+    visit artist_path(artist)
+    within(first("tr", text: "RSpec Artist Neues Tag Track")) { find("[data-tag-assign-target='openButton']").click }
+    fill_in "tag_search", with: "Artist Ganz Neu"
+    within("[data-tag-assign-target='results']") { click_button("Neuer Tag: „Artist Ganz Neu“") }
+    find("[data-tag-assign-target='categorySelect']").select(category.name)
+    click_button "Weiter"
+
+    expect(page).to have_content("Artist Ganz Neu · 5")
+    tag = Tag.find_by(name: "Artist Ganz Neu")
+    expect(tag.category).to eq(category)
   end
 
   it "entfernt ein zugewiesenes Tag direkt von /tracks aus, ohne die Seite zu verlassen (Intent 89)" do
