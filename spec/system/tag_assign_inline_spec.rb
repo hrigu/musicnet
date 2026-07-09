@@ -88,4 +88,62 @@ RSpec.describe "Bestehendes Tag inline in der Tracks-Liste zuweisen (Intent 83)"
     expect(page).to have_content("RSpec Inline Vorschlag · 5")
     expect(TrackTag.find_by(track: target_track, tag: tag)&.strength).to eq(5)
   end
+
+  it "entfernt ein zugewiesenes Tag direkt von /tracks aus, ohne die Seite zu verlassen (Intent 89)" do
+    track = create_playable_track("RSpec Inline Entfernen Track", spotify_id: "inline-remove-1")
+    category = Category.create!(name: "RSpec Emotion Inline Entfernen")
+    tag = category.tags.create!(name: "RSpec Inline Entfernen Tag", aliases: "x")
+    TrackTag.create!(track: track, tag: tag, strength: 5)
+
+    visit tracks_path
+    expect(page).to have_content("RSpec Inline Entfernen Tag · 5")
+
+    accept_confirm { within("tr", text: "RSpec Inline Entfernen Track") { click_button "×" } }
+
+    aggregate_failures do
+      expect(page).to have_current_path(tracks_path)
+      expect(page).to_not have_content("RSpec Inline Entfernen Tag · 5")
+      expect(TrackTag.where(track: track, tag: tag)).to be_empty
+    end
+  end
+
+  it "entfernt ein zugewiesenes Tag von der Playlist-Ansicht aus, ohne die Seite zu verlassen (Intent 89)" do
+    track = create_playable_track("RSpec Playlist Entfernen Track", spotify_id: "playlist-remove-1")
+    playlist = Playlist.create!(name: "RSpec Playlist Entfernen", spotify_id: "pl-remove-1")
+    PlaylistTrack.create!(playlist: playlist, track: track, added_at: Time.current)
+    category = Category.create!(name: "RSpec Emotion Playlist Entfernen")
+    tag = category.tags.create!(name: "RSpec Playlist Entfernen Tag", aliases: "x")
+    TrackTag.create!(track: track, tag: tag, strength: 5)
+
+    visit playlist_path(playlist)
+    expect(page).to have_content("RSpec Playlist Entfernen Tag · 5")
+
+    accept_confirm { within("tr", text: "RSpec Playlist Entfernen Track") { click_button "×" } }
+
+    aggregate_failures do
+      expect(page).to have_current_path(playlist_path(playlist))
+      expect(page).to_not have_content("RSpec Playlist Entfernen Tag · 5")
+      expect(TrackTag.where(track: track, tag: tag)).to be_empty
+    end
+  end
+
+  it "entfernt ein zugewiesenes Tag von der Artist-Ansicht aus, ohne die Seite zu verlassen (Intent 89)" do
+    artist = Artist.create!(name: "RSpec Artist Entfernen", spotify_id: "artist-remove-1")
+    track = create_playable_track("RSpec Artist Entfernen Track", spotify_id: "artist-remove-1", artist_name: nil)
+    track.artists << artist
+    category = Category.create!(name: "RSpec Emotion Artist Entfernen")
+    tag = category.tags.create!(name: "RSpec Artist Entfernen Tag", aliases: "x")
+    TrackTag.create!(track: track, tag: tag, strength: 5)
+
+    visit artist_path(artist)
+    expect(page).to have_content("RSpec Artist Entfernen Tag · 5")
+
+    accept_confirm { within(first("tr", text: "RSpec Artist Entfernen Track")) { click_button "×" } }
+
+    aggregate_failures do
+      expect(page).to have_current_path(artist_path(artist))
+      expect(page).to_not have_content("RSpec Artist Entfernen Tag · 5")
+      expect(TrackTag.where(track: track, tag: tag)).to be_empty
+    end
+  end
 end

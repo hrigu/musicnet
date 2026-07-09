@@ -1,0 +1,12 @@
+<%# Gleiches Doppel-Ziel-Muster wie create.turbo_stream.erb - welches der beiden Ziele tatsaechlich
+    existiert, haengt von der aufrufenden Seite ab, ein turbo_stream.replace auf ein fehlendes
+    Ziel ist ein stiller No-Op. %>
+<%= turbo_stream.replace dom_id(@track, :track_tags_cell) do %>
+  <%= render partial: "tracks/tag_cell",
+             locals: { track: @track, recent_tags: Tag.recently_assigned_by(current_user, limit: TracksController::RECENT_TAG_SUGGESTION_LIMIT) } %>
+<% end %>
+
+<%= turbo_stream.replace dom_id(@track, :track_tags_panel) do %>
+  <%= render partial: "tracks/tag_panel",
+             locals: { track: @track, recent_tag_suggestions: Tag.recently_assigned_by(current_user, limit: TracksController::RECENT_TAG_SUGGESTION_LIMIT) } %>
+<% end %>

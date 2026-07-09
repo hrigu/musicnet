@@ -26,12 +26,21 @@ class TrackTagsController < ApplicationController
     end
   end
 
+  # turbo_stream-Zweig (Intent 89) ergaenzt, damit ein "×"-Button ausserhalb der Detailseite
+  # (/tracks, /artists/:id, /playlists/:id - alle rendern components/_track_tag_badge.erb) nicht
+  # per vollem Redirect auf die Track-Detailseite wegnavigiert, gleiches Muster wie #create
+  # (Intent 87 Bugfix). @track wird in beiden Zweigen gesetzt, das turbo_stream-Template rendert
+  # damit dieselben zwei Ziele wie create.turbo_stream.erb.
   def destroy
     track_tag = TrackTag.find(params[:id])
-    track = track_tag.track
+    @track = track_tag.track
     tag_name = track_tag.tag.name
     track_tag.destroy
-    redirect_to track_path(track), notice: "Tag \"#{tag_name}\" entfernt."
+
+    respond_to do |format|
+      format.turbo_stream
+      format.html { redirect_to track_path(@track), notice: "Tag \"#{tag_name}\" entfernt." }
+    end
   end
 
   # Inline-Editieren der Staerke direkt in der Tracks-Tabelle (Intent 81) - eigene Action statt in

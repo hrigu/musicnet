@@ -26,6 +26,11 @@ class PlaylistsController < ApplicationController
   def show
     @playlist = Playlist.find(params[:id])
     @playlist_tracks = @playlist.playlist_tracks_for_display
+    # playlist_tracks/_playlist_track.erb rendert die Tag-Zuweisung ueber dieselbe Partial wie
+    # tracks/_track.erb (tracks/_tag_cell.erb -> _tag_assign_inline.erb, Intent 89) - braucht
+    # @recent_tag_suggestions, obwohl diese Seite kein TracksController-Request ist, gleiches
+    # fehlendes Puzzlestueck wie kuerzlich bei ArtistsController#show behoben.
+    @recent_tag_suggestions = Tag.recently_assigned_by(current_user, limit: TracksController::RECENT_TAG_SUGGESTION_LIMIT)
   end
 
   # Gleicht die Playlist mit Spotify ab; das Ergebnis wird als Flash auf die

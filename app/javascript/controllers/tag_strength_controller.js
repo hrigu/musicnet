@@ -21,6 +21,13 @@ export default class extends Controller {
     this.badgeTarget.classList.remove("d-none")
   }
 
+  // Der "×"-Entfernen-Button (Intent 89) sitzt innerhalb des Badge-Spans, dessen eigener
+  // click-Handler (edit()) sonst mitausgeloest wuerde (Event-Bubbling) - der Klick soll nur
+  // entfernen, nicht zusaetzlich den Staerke-Editor aufklappen.
+  stopPropagation(event) {
+    event.stopPropagation()
+  }
+
   // Ein Klick, der weder das eigene Badge noch das eigene Formular trifft, bricht den
   // Editiermodus ab - das deckt sowohl "Klick irgendwo daneben" als auch "Klick auf ein anderes
   // Tag" ab, ohne die beiden Faelle getrennt behandeln zu muessen: der Klick auf ein anderes Tag

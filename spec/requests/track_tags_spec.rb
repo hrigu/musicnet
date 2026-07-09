@@ -195,5 +195,22 @@ RSpec.describe "TrackTags", type: :request do
       expect(TrackTag.find_by(id: track_tag.id)).to be_nil
       expect(Tag.find_by(id: tag.id)).to be_present
     end
+
+    it "antwortet mit einem Turbo-Stream statt einem Redirect, wenn turbo_stream angefragt wird (Intent 89)" do
+      track = create_track(spotify_id: "trk-tt-8")
+      category = Category.create!(name: "RSpec Emotion Delete Stream")
+      tag = category.tags.create!(name: "RSpec Löschen Stream", aliases: "x")
+      track_tag = TrackTag.create!(track: track, tag: tag, strength: 5)
+
+      delete track_tag_path(track_tag), as: :turbo_stream
+
+      aggregate_failures do
+        expect(response.media_type).to eq(Mime[:turbo_stream].to_s)
+        expect(response.body).to include(ActionView::RecordIdentifier.dom_id(track, :track_tags_cell))
+        expect(response.body).to include(ActionView::RecordIdentifier.dom_id(track, :track_tags_panel))
+        expect(response.body).to_not include("RSpec Löschen Stream")
+        expect(TrackTag.find_by(id: track_tag.id)).to be_nil
+      end
+    end
   end
 end

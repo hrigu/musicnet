@@ -1,5 +1,19 @@
 # Diary
 ## 2026-07-09
+* Feature (Intent 89): Tags lassen sich jetzt auch direkt in der Playlist-Ansicht zuweisen -
+  `playlist_tracks/_playlist_track.erb` rendert die Tags-Spalte ueber dieselbe `tracks/tag_cell`-
+  Partial wie `/tracks` und `/artists/:id` (statt eines eigenen, statischen Badge-Loops);
+  `PlaylistsController#show` ergaenzt das dafuer noetige `@recent_tag_suggestions` (gleiches
+  fehlendes Puzzlestueck wie kuerzlich bei `ArtistsController#show`). Ausserdem: ein Tag entfernen
+  ging bisher nur auf der Track-Detailseite - der "×"-Button sitzt jetzt in der gemeinsamen
+  `components/_track_tag_badge.erb` und ist damit automatisch auf `/tracks`, `/artists/:id` und
+  `/playlists/:id` gleichzeitig verfuegbar. `TrackTagsController#destroy` antwortet dafuer mit
+  einem Turbo-Stream (Doppel-Ziel wie `#create`, Intent 87 Bugfix) statt ausschliesslich mit einem
+  Redirect, der sonst bei jedem Entfernen von einer Liste weg auf die Track-Detailseite navigiert
+  haette. Beim Testen ein echtes CSS-Layout-Problem gefunden: der neue Button liess bei langen
+  Tag-Namen den Zelleninhalt sichtbar in die Datei-Spalte hineinlaufen (ein System-Spec schlug mit
+  `MouseEventFailed` fehl) - `flex-wrap` behoben, gleiche Lehre wie beim 🎧-Button (Intent 51
+  Nachtrag), mit eigenem Layout-Regressionstest abgesichert.
 * Kleinigkeit (Nachtrag Intent 88): die Erfolgs-/Fehlschlag-Meldung im Live-Download-Log
   (`tracks/_spotify_import_progress_entry.html.erb`) war reiner unformatierter Text, ohne
   Farbmarkierung fuer Erfolg/Fehlschlag - vom User nach dem ersten echten Fehlschlag bemerkt.

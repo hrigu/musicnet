@@ -9,10 +9,21 @@
 <% just_saved ||= false %>
 <span id="<%= dom_id(track_tag, :tag_badge) %>" data-controller="tag-strength"
       data-action="click@window->tag-strength#outsideClick" class="tag-strength-wrapper">
+  <%# flex-wrap noetig (nicht nur d-inline-flex), damit der "×"-Button bei einem langen Tag-Namen
+      in der schmalen Tags-Spalte auf eine eigene Zeile umbricht statt die Nachbarspalte
+      (Datei-Buttons) sichtbar zu ueberlappen - ein einzelnes zu breites Flex-Item wird sonst
+      trotz table-layout: fixed nicht durch die Zellbreite begrenzt (gleiche Lehre wie beim
+      🎧-Button, Intent 51 Nachtrag). %>
   <span data-tag-strength-target="badge" role="button" tabindex="0"
         data-action="click->tag-strength#edit keydown.enter->tag-strength#edit"
-        class="<%= [("d-none" if editing), ("tag-just-saved" if just_saved)].compact.join(" ") %>">
+        class="<%= ["d-inline-flex flex-wrap align-items-center gap-1", ("d-none" if editing), ("tag-just-saved" if just_saved)].compact.join(" ") %>">
     <%= track_tag_badge(track_tag) %>
+    <%# Intent 89: "×" ueberall verfuegbar, wo diese Partial gerendert wird (/tracks, /artists/:id,
+        /playlists/:id, Track-Detailseite) - vorher gab es das nur auf der Detailseite ueber ihre
+        eigene, separate Markup. stopPropagation via data-action noetig, sonst wuerde der Klick
+        auf den Button zusaetzlich den umschliessenden click->tag-strength#edit ausloesen. %>
+    <%= button_to "×", track_tag_path(track_tag), method: :delete, class: "btn btn-sm btn-link p-0 lh-1",
+          data: { turbo_confirm: "Tag \"#{track_tag.tag.name}\" entfernen?", action: "click->tag-strength#stopPropagation" } %>
   </span>
 
   <%= form_with model: track_tag, url: track_tag_path(track_tag), method: :patch,

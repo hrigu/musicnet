@@ -52,11 +52,7 @@
   <% end %>
   <% if column_visible?("tags") %>
     <td>
-      <div class="d-flex flex-wrap gap-1">
-        <% track.track_tags.each do |tt| %>
-          <%= track_tag_badge(tt) %>
-        <% end %>
-      </div>
+      <%= render partial: "tracks/tag_cell", locals: { track: track, recent_tags: recent_tags } %>
     </td>
   <% end %>
   <% if column_visible?("file") %>

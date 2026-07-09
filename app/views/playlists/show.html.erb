@@ -111,7 +111,11 @@
     </tr>
     </thead>
     <tbody>
-      <%= render @playlist_tracks %>
+      <%# Explizite locals noetig statt der kurzen render @playlist_tracks-Form (Intent 89) - die
+          Partial rendert die Tags-Spalte jetzt ueber dieselbe tracks/tag_cell wie tracks/_track.erb,
+          die ein recent_tags-Local erwartet. %>
+      <%= render partial: "playlist_tracks/playlist_track", collection: @playlist_tracks,
+                 as: :playlist_track, locals: { recent_tags: @recent_tag_suggestions } %>
     </tbody>
   </table>
 </div>

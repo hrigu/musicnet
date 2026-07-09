@@ -541,4 +541,38 @@ RSpec.describe "Playlists", type: :request do
       expect(flash[:alert]).to include("läuft bereits")
     end
   end
+
+  describe "Tags in der Playlist-Ansicht (Intent 89)" do
+    before { sign_in users(:one) }
+
+    def create_playlist_with_track(tag: nil)
+      album = Album.create!(spotify_id: "alb-pl-tag-1", name: "Album Tag Test")
+      track = Track.create!(spotify_id: "trk-pl-tag-1", name: "Track Tag Test", album:, duration_ms: 200_000)
+      playlist = Playlist.create!(spotify_id: "pl-tag-1", name: "Playlist Tag Test")
+      PlaylistTrack.create!(playlist:, track:, added_at: Time.current)
+      TrackTag.create!(track:, tag:, strength: 5) if tag
+      [playlist, track]
+    end
+
+    it "zeigt das Tag-Zuweisen-Widget in der Track-Zeile, nicht nur statische Badges" do
+      playlist, = create_playlist_with_track
+
+      get playlist_path(playlist)
+
+      aggregate_failures do
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('data-controller="tag-assign"')
+      end
+    end
+
+    it "zeigt bereits zugewiesene Tags weiterhin als Badge an" do
+      category = Category.create!(name: "RSpec Playlist Tag Kategorie")
+      tag = category.tags.create!(name: "RSpec Playlist Tag", aliases: "x")
+      playlist, = create_playlist_with_track(tag:)
+
+      get playlist_path(playlist)
+
+      expect(response.body).to include("RSpec Playlist Tag")
+    end
+  end
 end
