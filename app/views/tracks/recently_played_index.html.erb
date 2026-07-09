@@ -1,5 +1,11 @@
 <h1>Zuletzt gespielt</h1>
 
+<%# Gleicher "downloads"-Kanal wie tracks/index.html.erb (Intent 39/40) - ohne diese Subscription
+    + das Ziel-Element hier bekommt man vom Import+Download eines Spotify-Tracks (Intent 88) keine
+    Rueckmeldung, weil der Broadcast zwar ankommt, aber kein Element dieser Seite ihn auffaengt. %>
+<%= turbo_stream_from "downloads" %>
+<div id="download-log" class="mb-3"></div>
+
 <ul class="nav nav-tabs mb-3">
   <li class="nav-item">
     <%= link_to "Musicnet", recently_played_index_tracks_path(tab: "musicnet"),

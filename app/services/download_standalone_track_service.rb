@@ -25,11 +25,22 @@ class DownloadStandaloneTrackService
 
       AudioFeaturesExtractionService.new([@track]).extract_missing
       Track.preload_track_paths([@track])
+      persist_file_name
       @track.track_path.present?
     end
   end
 
   private
+
+  # Gleiches Read-Through-Cache-Muster wie DownloadResultParser#persist_file_name (Intent 72) -
+  # ohne diese Persistierung zeigt die Detailseite trotz erfolgreichem Download
+  # "(nicht in DB gespeichert)" an, weil Track#file_name_from_db? auf die DB-Spalte prueft.
+  def persist_file_name
+    return unless @track.track_path
+
+    file_name = File.basename(@track.track_path)
+    @track.update_column(:file_name, file_name) if @track.file_name != file_name
+  end
 
   def track_url
     @track.url || "https://open.spotify.com/track/#{@track.spotify_id}"

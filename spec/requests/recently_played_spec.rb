@@ -109,6 +109,12 @@ RSpec.describe "RecentlyPlayed", type: :request do
       expect(response.body).to include("47.376887")
     end
 
+    it "abonniert den downloads-Kanal, damit Import+Download eines Spotify-Tracks live rueckmelden" do
+      get root_path
+
+      expect(response.body).to include('id="download-log"')
+    end
+
     it "verwendet den angemeldeten User für recently_played im Spotify-Tab" do
       current_spotify_user = users(:one).spotify_user
       other_spotify_user = users(:two).spotify_user

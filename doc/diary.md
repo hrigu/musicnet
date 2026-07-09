@@ -12,6 +12,14 @@
   (`/me/player/recently-played` liefert nie mehr, auch nicht in der Spotify-App selbst) - der
   bestehende Aufruf fragte bereits das Maximum an. Ein kurzer Hinweistext im Spotify-Tab macht das
   jetzt nachvollziehbar.
+* Bug (Nachtrag Intent 88, sofort beim ersten manuellen Test gefunden): der "Herunterladen"-Button
+  im Spotify-Tab lud die Datei zwar korrekt herunter, aber ohne Rueckmeldung und ohne dass die
+  Detailseite sie als "in DB gespeichert" erkannte. Ursache 1: `turbo_stream_from "downloads"` +
+  der `#download-log`-Container existierten nur auf `/tracks`, nicht auf "Zuletzt gespielt", wo der
+  Button liegt - der Broadcast kam an, aber niemand fing ihn auf. Ursache 2:
+  `DownloadStandaloneTrackService` schrieb den ermittelten Dateinamen nie in die `file_name`-Spalte
+  (anders als `DownloadResultParser#persist_file_name`, Intent 72). Beide Stellen ergaenzt,
+  Regressionstests gegen den alten Stand verifiziert.
 
 * Bug: Lief gerade ein Track im globalen Player und man wies dem Track auf der Detailseite
   (`/tracks/:id`) manuell ein Tag zu (Intent 79), stoppte die Wiedergabe sofort. Ursache: das

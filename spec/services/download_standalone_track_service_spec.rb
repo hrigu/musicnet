@@ -99,4 +99,30 @@ RSpec.describe DownloadStandaloneTrackService do
       FileUtils.rm_f(file_path)
     end
   end
+
+  it "speichert file_name in der DB, wenn nach dem Download eine Datei gefunden wird" do
+    track = build_track
+    FileUtils.mkdir_p(Rails.root.join("downloads/tracks"))
+    file_path = Rails.root.join("downloads/tracks/RSpec Artist - RSpec Standalone Download.m4a")
+    FileUtils.touch(file_path)
+    service = described_class.new(track)
+    allow(service).to receive(:system).and_return(true)
+
+    begin
+      service.download
+      expect(track.reload.file_name).to eq("RSpec Artist - RSpec Standalone Download.m4a")
+    ensure
+      FileUtils.rm_f(file_path)
+    end
+  end
+
+  it "speichert kein file_name, wenn der Download fehlschlaegt" do
+    track = build_track
+    service = described_class.new(track)
+    allow(service).to receive(:system).and_return(false)
+
+    service.download
+
+    expect(track.reload.file_name).to be_nil
+  end
 end
