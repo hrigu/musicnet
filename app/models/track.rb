@@ -388,12 +388,25 @@ class Track < ApplicationRecord
     file_name.present?
   end
 
+  def cover_image
+    read_cover_image_from_file
+  end
+
   private
 
   def read_genre_from_file
     return unless track_path
 
     WahWah.open(track_path).genre
+  rescue WahWah::WahWahArgumentError, WahWah::WahWahNotImplementedError
+    # Datei existiert, aber WahWah kann sie nicht parsen (z.B. unbekanntes Format).
+    nil
+  end
+
+  def read_cover_image_from_file
+    return unless track_path
+
+    WahWah.open(track_path).images.first
   rescue WahWah::WahWahArgumentError, WahWah::WahWahNotImplementedError
     # Datei existiert, aber WahWah kann sie nicht parsen (z.B. unbekanntes Format).
     nil

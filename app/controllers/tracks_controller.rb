@@ -46,6 +46,13 @@ class TracksController < ApplicationController
     load_related_tracks
   end
 
+  def cover
+    image = Track.find(params[:id]).cover_image
+    return head :not_found unless image
+
+    send_data image[:data], type: image[:mime_type], disposition: "inline"
+  end
+
   # send_file allein unterstuetzt keine HTTP-Range-Requests (nur ueber X-Sendfile/einen
   # vorgeschalteten Webserver, den es hier nicht gibt) - ohne Range-Support kann der Browser beim
   # Abspielen nicht an eine beliebige Stelle im Track springen (Intent 41: gemeldeter Seek-Bug im

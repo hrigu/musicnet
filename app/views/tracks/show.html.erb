@@ -1,11 +1,17 @@
 <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
-  <div>
-    <h1 class="mb-1"><%= @track.name %></h1>
-    <div class="text-muted">
-      Album: <%= @track.album.name %>
-      <% if @track.album.release_date %>
-        von <%= l(@track.album.release_date) %>
-      <% end %>
+  <div class="d-flex align-items-start gap-3">
+    <% if @track.track_path.present? %>
+      <%= image_tag cover_track_path(@track), alt: "", class: "rounded shadow-sm", width: 96, height: 96,
+            onerror: "this.remove()" %>
+    <% end %>
+    <div>
+      <h1 class="mb-1"><%= @track.name %></h1>
+      <div class="text-muted">
+        Album: <%= @track.album.name %>
+        <% if @track.album.release_date %>
+          von <%= l(@track.album.release_date) %>
+        <% end %>
+      </div>
     </div>
   </div>
   <%= render partial: 'components/audio_file', locals: { track: @track } %>

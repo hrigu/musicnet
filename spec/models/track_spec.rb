@@ -7,9 +7,10 @@ RSpec.describe Track, type: :model do
 
   # Legt eine echte Datei ins Download-Verzeichnis und räumt sie danach wieder weg —
   # das Pfad-Matching wird gegen das Dateisystem getestet, nicht gegen Stubs.
-  def with_download_file(file_name)
+  def with_download_file(file_name, source_fixture: nil)
     FileUtils.mkdir_p(downloads_dir)
-    FileUtils.touch(downloads_dir.join(file_name))
+    destination = downloads_dir.join(file_name)
+    source_fixture ? FileUtils.cp(Rails.root.join("spec/fixtures/files", source_fixture), destination) : FileUtils.touch(destination)
     yield
   ensure
     FileUtils.rm_f(downloads_dir.join(file_name))
@@ -655,6 +656,35 @@ RSpec.describe Track, type: :model do
 
       expect(found.strict_loading?).to be(true)
       expect(found).to eq(track)
+    end
+  end
+
+  describe "#cover_image" do
+    it "liefert das erste eingebettete Bild, wenn eines vorhanden ist" do
+      track = Track.new(name: "RSpec Cover Hit")
+
+      with_download_file("RSpec Artist - RSpec Cover Hit.m4a", source_fixture: "cover_embedded.m4a") do
+        image = track.cover_image
+
+        aggregate_failures do
+          expect(image).to include(mime_type: "image/png", type: :cover)
+          expect(image[:data]).to be_present
+        end
+      end
+    end
+
+    it "liefert nil ohne track_path" do
+      track = Track.new(name: "RSpec Cover Missing")
+
+      expect(track.cover_image).to be_nil
+    end
+
+    it "liefert nil, wenn die Datei kein Bild eingebettet hat" do
+      track = Track.new(name: "RSpec Cover None")
+
+      with_download_file("RSpec Artist - RSpec Cover None.m4a", source_fixture: "silence.m4a") do
+        expect(track.cover_image).to be_nil
+      end
     end
   end
 
