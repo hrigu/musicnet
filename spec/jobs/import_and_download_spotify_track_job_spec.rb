@@ -31,4 +31,19 @@ RSpec.describe ImportAndDownloadSpotifyTrackJob, type: :job do
 
     described_class.perform_now("job-spotify-1")
   end
+
+  it "broadcastet trotzdem einen Fehlschlag, wenn der Download eine Exception wirft" do
+    track = build_track
+    allow(ImportStandaloneSpotifyTrackService).to receive(:import).and_return(track)
+    download_service = instance_double(DownloadStandaloneTrackService)
+    allow(download_service).to receive(:download).and_raise(StandardError, "spotdl kaputt")
+    allow(DownloadStandaloneTrackService).to receive(:new).and_return(download_service)
+
+    expect(Turbo::StreamsChannel).to receive(:broadcast_append_to).with(
+      "downloads", target: "download-log",
+                   partial: "tracks/spotify_import_progress_entry", locals: { track: track, success: false }
+    )
+
+    expect { described_class.perform_now("job-spotify-1") }.to_not raise_error
+  end
 end

@@ -20,6 +20,14 @@
   `DownloadStandaloneTrackService` schrieb den ermittelten Dateinamen nie in die `file_name`-Spalte
   (anders als `DownloadResultParser#persist_file_name`, Intent 72). Beide Stellen ergaenzt,
   Regressionstests gegen den alten Stand verifiziert.
+* Bug (Nachtrag Intent 88, zweiter manueller Test): beim naechsten Versuch schlug der eigentliche
+  Datei-Download fehl (Track-Import/DB-Eintrag lief durch) - aber wieder ganz ohne Rueckmeldung,
+  diesmal nicht mal eine Fehlermeldung. Ursache: `ImportAndDownloadSpotifyTrackJob` fing keine
+  Exceptions aus dem Download-Schritt ab; der `:async`-ActiveJob-Adapter loggt eine unbehandelte
+  Exception nur serverseitig, zeigt sie aber nirgends an - der Broadcast danach wurde schlicht nie
+  erreicht. Fix: `safely_download` faengt jede Exception ab und broadcastet garantiert einen
+  Fehlschlag, gleiches Soft-Failure-Prinzip wie bei `AudioFeaturesExtractor`/`LocationNameResolver`.
+  Reproduziert und gegen den alten Stand als tatsaechlich rot verifiziert.
 
 * Bug: Lief gerade ein Track im globalen Player und man wies dem Track auf der Detailseite
   (`/tracks/:id`) manuell ein Tag zu (Intent 79), stoppte die Wiedergabe sofort. Ursache: das
