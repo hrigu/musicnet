@@ -1,5 +1,17 @@
 # Diary
 ## 2026-07-09
+* Bug: Rueckte ein Track ueber die Queue in den Player nach (statt per direktem Play-Button-Klick),
+  fehlten zwei Dinge, die beim direkten Klick funktionieren: der Titel-Link im Player zeigte auf
+  "#" statt die Track-Detailseite, und der Track wurde nicht in "Zuletzt gespielt" (lokale
+  Playback-Historie, Intent 87) erfasst. Ursache: `QueueEntriesController#track_json` (liefert die
+  Track-Infos an `/queue_entries/advance`) gab den Key `track_id` (snake_case) zurueck,
+  `audio_player_controller.js#play` destrukturiert aber `{ url, name, trackId, artist }`
+  (camelCase, wie es der direkte Play-Button-Weg schon immer lieferte) - `trackId` war beim
+  Queue-Weg also immer `undefined`, wodurch sowohl der Link (`trackId ? ... : "#"`) als auch
+  `persistPlayback(trackId)` (`if (!trackId) return`) stillschweigend ins Leere liefen. Fix: Key
+  auf `trackId` umbenannt. Mit zwei neuen System-Specs abgesichert (Cuprite, da reine
+  Request-Specs den JS-seitigen Key-Mismatch nie gesehen haetten) - gegen den alten Code als
+  tatsaechlich rot verifiziert.
 * Bug: `/artists/:id` warf einen 500er (`ActionView::MissingTemplate`, dann nach dem ersten Fix
   einen zweiten `NoMethodError`) - vom User live im Browser gemeldet. Ursache 1: `tracks/_tracks.erb`
   rendert die Track-Zeilen per `render partial: "track", collection: tracks, ...` mit einem

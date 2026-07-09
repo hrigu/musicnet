@@ -67,11 +67,17 @@ class QueueEntriesController < ApplicationController
     )
   end
 
+  # trackId (camelCase), nicht track_id: audio_player_controller.js#play destrukturiert
+  # { url, name, trackId, artist } sowohl aus diesem JSON (Queue-Advance) als auch aus dem
+  # CustomEvent-detail des direkten Play-Buttons (audio_trigger_controller.js, dort schon
+  # camelCase) - ein snake_case Key hier liess trackId beim Queue-Weg silently undefined werden,
+  # wodurch weder der Detailseiten-Link noch das Speichern in "Zuletzt gespielt" (Intent 87)
+  # ausgeloest wurden, obwohl der direkte Play-Button-Weg beides korrekt tat.
   def track_json(track)
     {
       url: stream_track_path(track.id),
       name: track.name,
-      track_id: track.id,
+      trackId: track.id,
       artist: track.artists.first&.name,
       playlists: helpers.playlist_names_for(track)
     }

@@ -63,7 +63,7 @@ RSpec.describe "QueueEntries", type: :request do
       expect(json["name"]).to eq("Advance Song")
       expect(json["artist"]).to eq("Advance Artist")
       expect(json["url"]).to eq(stream_track_path(track.id))
-      expect(json["track_id"]).to eq(track.id)
+      expect(json["trackId"]).to eq(track.id)
     end
 
     it "liefert nur den Hauptkuenstler (ersten), nicht alle kommagetrennt (Intent 67)" do

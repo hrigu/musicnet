@@ -161,6 +161,48 @@ RSpec.describe "Song-Queue (Intent 41/42)", type: :system do
     end
   end
 
+  it "verlinkt den Titel im Player auf die Detailseite, auch wenn der Track ueber die Queue " \
+     "nachgerueckt ist (Bugfix: trackId kam als snake_case track_id vom Server)" do
+    track_a = create_playable_track("Queue Link Aktuell", spotify_id: "queue-link-aktuell")
+    track_b = create_playable_track("Queue Link Naechster", spotify_id: "queue-link-naechster")
+
+    visit tracks_path
+    play_button_for(track_a.name).click
+    expect(page).to have_selector("#global-audio-player", text: track_a.name)
+    enqueue_button_for(track_b.name).click
+    expect(page).to have_selector("#audio-player-queue", text: track_b.name)
+
+    page.execute_script("document.querySelector('#global-audio-player audio').dispatchEvent(new Event('ended'))")
+    expect(page).to have_selector("[data-audio-player-target='name']", text: track_b.name)
+
+    name_link = page.find("[data-audio-player-target='name']")
+    expect(name_link[:href]).to end_with(track_path(track_b))
+  end
+
+  it "erfasst einen ueber die Queue nachgerueckten Track in der lokalen Playback-Historie" do
+    # Echte (stumme) Audiodatei noetig, nicht nur eine leere: persistPlayback() haengt am
+    # play()-Promise - bei einer leeren Datei rejected der Browser das Promise (kein dekodierbarer
+    # Inhalt), .catch(() => {}) schluckt das dann still, ohne persistPlayback je aufzurufen.
+    track_a = create_track_with_real_audio("Queue Historie Aktuell", spotify_id: "queue-historie-aktuell")
+    track_b = create_track_with_real_audio("Queue Historie Naechster", spotify_id: "queue-historie-naechster")
+
+    visit tracks_path
+    play_button_for(track_a.name).click
+    expect(page).to have_selector("#global-audio-player", text: track_a.name)
+    enqueue_button_for(track_b.name).click
+    expect(page).to have_selector("#audio-player-queue", text: track_b.name)
+
+    page.execute_script("document.querySelector('#global-audio-player audio').dispatchEvent(new Event('ended'))")
+    expect(page).to have_selector("[data-audio-player-target='name']", text: track_b.name)
+
+    # persistPlayback() feuert einen eigenen, unabhaengigen fetch nach dem play()-Promise - erst
+    # nachdem navigator.geolocation.getCurrentPosition() beantwortet ist (Timeout dort: 2s, siehe
+    # audio_player_controller.js), Capybara wartet nur auf DOM-Aenderungen, nicht auf diesen
+    # zusaetzlichen Request.
+    sleep 2.5
+    expect(DjSessionPlayback.where(track: track_b)).to exist
+  end
+
   it "ueberlebt einen Seitenwechsel (server-gerendert, kein Client-Zustand mehr noetig)" do
     track = create_playable_track("Queue Ueberlebt", spotify_id: "queue-ueberlebt")
 
