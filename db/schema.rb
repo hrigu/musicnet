@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 # This file is auto-generated from the current state of the database. Instead
 # of editing this file, please use the migrations feature of Active Record to
 # incrementally modify your database, and then regenerate this schema definition.
@@ -12,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 20_260_708_083_816) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_09_103002) do
   create_table "albums", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name"
@@ -61,7 +59,7 @@ ActiveRecord::Schema[8.1].define(version: 20_260_708_083_816) do
     t.integer "library_id", null: false
     t.integer "playlist_id", null: false
     t.datetime "updated_at", null: false
-    t.index %w[library_id playlist_id], name: "index_library_playlists_on_library_id_and_playlist_id", unique: true
+    t.index ["library_id", "playlist_id"], name: "index_library_playlists_on_library_id_and_playlist_id", unique: true
     t.index ["library_id"], name: "index_library_playlists_on_library_id"
     t.index ["playlist_id"], name: "index_library_playlists_on_playlist_id"
   end
@@ -95,13 +93,25 @@ ActiveRecord::Schema[8.1].define(version: 20_260_708_083_816) do
     t.index ["track_id"], name: "index_queue_entries_on_track_id"
   end
 
+  create_table "tag_assignments", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "tag_id", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["tag_id"], name: "index_tag_assignments_on_tag_id"
+    t.index ["user_id", "created_at"], name: "index_tag_assignments_on_user_id_and_created_at"
+    t.index ["user_id", "tag_id", "created_at"], name: "index_tag_assignments_on_user_id_and_tag_id_and_created_at"
+    t.index ["user_id"], name: "index_tag_assignments_on_user_id"
+  end
+
   create_table "tags", force: :cascade do |t|
     t.text "aliases", null: false
+    t.boolean "assignable", default: true, null: false
     t.integer "category_id", null: false
     t.datetime "created_at", null: false
     t.string "name", null: false
     t.datetime "updated_at", null: false
-    t.index %w[category_id name], name: "index_tags_on_category_id_and_name", unique: true
+    t.index ["category_id", "name"], name: "index_tags_on_category_id_and_name", unique: true
     t.index ["category_id"], name: "index_tags_on_category_id"
   end
 
@@ -112,7 +122,7 @@ ActiveRecord::Schema[8.1].define(version: 20_260_708_083_816) do
     t.integer "track_id", null: false
     t.datetime "updated_at", null: false
     t.index ["tag_id"], name: "index_track_tags_on_tag_id"
-    t.index %w[track_id tag_id], name: "index_track_tags_on_track_id_and_tag_id", unique: true
+    t.index ["track_id", "tag_id"], name: "index_track_tags_on_track_id_and_tag_id", unique: true
     t.index ["track_id"], name: "index_track_tags_on_track_id"
   end
 
@@ -154,6 +164,8 @@ ActiveRecord::Schema[8.1].define(version: 20_260_708_083_816) do
   add_foreign_key "playlist_tracks", "playlists", on_delete: :cascade
   add_foreign_key "playlist_tracks", "tracks", on_delete: :cascade
   add_foreign_key "queue_entries", "tracks"
+  add_foreign_key "tag_assignments", "tags"
+  add_foreign_key "tag_assignments", "users"
   add_foreign_key "tags", "categories"
   add_foreign_key "track_tags", "tags"
   add_foreign_key "track_tags", "tracks"
