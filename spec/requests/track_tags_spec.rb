@@ -23,6 +23,7 @@ RSpec.describe "TrackTags", type: :request do
       expect(response).to redirect_to(track_path(track))
       track_tag = TrackTag.find_by(track: track, tag: tag)
       expect(track_tag.strength).to eq(7)
+      expect(TagAssignment.find_by(user: users(:one), tag: tag)).to be_present
     end
 
     it "legt einen neuen Tag in der gewählten Kategorie an und verknüpft ihn" do
@@ -35,6 +36,7 @@ RSpec.describe "TrackTags", type: :request do
       tag = Tag.find_by(name: "RSpec Brandneu", category: category)
       expect(tag).to be_present
       expect(TrackTag.find_by(track: track, tag: tag).strength).to eq(4)
+      expect(TagAssignment.find_by(user: users(:one), tag: tag)).to be_present
     end
 
     it "verwendet einen schon bestehenden Tag in der Kategorie statt eines Duplikats" do
@@ -59,6 +61,7 @@ RSpec.describe "TrackTags", type: :request do
 
       expect(TrackTag.find_by(track: track, tag: tag).strength).to eq(9)
       expect(TrackTag.where(track: track, tag: tag).count).to eq(1)
+      expect(TagAssignment.where(user: users(:one), tag: tag).count).to eq(1)
     end
 
     it "zeigt eine Fehlermeldung bei ungültiger Stärke, ohne eine Zuordnung anzulegen" do
@@ -72,6 +75,7 @@ RSpec.describe "TrackTags", type: :request do
       follow_redirect!
       expect(response.body).to include("not included in the list")
       expect(TrackTag.find_by(track: track, tag: tag)).to be_nil
+      expect(TagAssignment.find_by(user: users(:one), tag: tag)).to be_nil
     end
 
     it "zeigt eine Fehlermeldung, wenn weder Tag noch Name+Kategorie angegeben sind" do
@@ -81,6 +85,35 @@ RSpec.describe "TrackTags", type: :request do
 
       expect(response).to redirect_to(track_path(track))
       expect(TrackTag.where(track: track).count).to eq(0)
+    end
+
+    it "lehnt ein fuer neue Vergaben gesperrtes bestehendes Tag ab" do
+      track = create_track(spotify_id: "trk-tt-13")
+      category = Category.create!(name: "RSpec Emotion Blocked")
+      tag = category.tags.create!(name: "RSpec Gesperrt", aliases: "x", assignable: false)
+
+      post track_tags_path, params: { track_id: track.id, tag_id: tag.id, strength: 5 }
+
+      expect(response).to redirect_to(track_path(track))
+      follow_redirect!
+      expect(response.body).to include("ist für neue Vergaben gesperrt")
+      expect(TrackTag.find_by(track: track, tag: tag)).to be_nil
+      expect(TagAssignment.find_by(user: users(:one), tag: tag)).to be_nil
+    end
+
+    it "lehnt einen gesperrten bestehenden Tag auch bei Namens-Match in der Kategorie ab" do
+      track = create_track(spotify_id: "trk-tt-14")
+      category = Category.create!(name: "RSpec Emotion Blocked Existing")
+      tag = category.tags.create!(name: "RSpec Schon Gesperrt", aliases: "x", assignable: false)
+
+      post track_tags_path,
+           params: { track_id: track.id, tag_name: "RSpec Schon Gesperrt", category_id: category.id, strength: 5 }
+
+      expect(response).to redirect_to(track_path(track))
+      follow_redirect!
+      expect(response.body).to include("ist für neue Vergaben gesperrt")
+      expect(TrackTag.find_by(track: track, tag: tag)).to be_nil
+      expect(TagAssignment.find_by(user: users(:one), tag: tag)).to be_nil
     end
   end
 

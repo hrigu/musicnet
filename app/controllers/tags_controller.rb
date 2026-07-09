@@ -15,6 +15,7 @@ class TagsController < ApplicationController
              Tag.includes(:category)
                 .joins(:category)
                 .merge(Category.visible_for_assignment)
+                .assignable
                 .where("LOWER(tags.name) LIKE ?", "%#{term.downcase}%")
                 .order(:name)
                 .limit(MAX_SEARCH_RESULTS)

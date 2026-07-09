@@ -7,6 +7,7 @@
 # schon existiert).
 class TrackTagsController < ApplicationController
   NO_TAG_SELECTED_ALERT = "Bitte einen Tag auswählen oder einen Namen mit Kategorie angeben."
+  TAG_NOT_ASSIGNABLE_ALERT = "Tag \"%s\" ist für neue Vergaben gesperrt."
 
   # @track wird in beiden Zweigen gesetzt (nicht nur bei Erfolg), da create.turbo_stream.erb in
   # jedem Fall die Tags-Zelle dieses Tracks neu rendert (Intent 83) - bei einem ungueltigen
@@ -58,9 +59,13 @@ class TrackTagsController < ApplicationController
   private
 
   def respond_with_no_tag_selected
+    respond_with_alert(tag_selection_alert)
+  end
+
+  def respond_with_alert(alert)
     respond_to do |format|
       format.turbo_stream
-      format.html { redirect_to track_path(@track), alert: NO_TAG_SELECTED_ALERT }
+      format.html { redirect_to track_path(@track), alert: alert }
     end
   end
 
@@ -68,6 +73,7 @@ class TrackTagsController < ApplicationController
     @track_tag = @track.track_tags.find_or_initialize_by(tag: tag)
     @track_tag.strength = params[:strength]
     @saved = @track_tag.save
+    TagAssignment.create!(user: current_user, tag: tag) if @saved
     @track.reload
   end
 
@@ -80,13 +86,28 @@ class TrackTagsController < ApplicationController
   end
 
   def resolve_tag
-    return Tag.find_by(id: params[:tag_id]) if params[:tag_id].present?
+    return assignable_tag(Tag.find_by(id: params[:tag_id])) if params[:tag_id].present?
     return nil if params[:tag_name].blank? || params[:category_id].blank?
 
     category = Category.find_by(id: params[:category_id])
     return nil unless category
 
     name = params[:tag_name].strip
-    category.tags.find_or_create_by!(name: name) { |t| t.aliases = name }
+    existing_tag = category.tags.find_by(name: name)
+    return assignable_tag(existing_tag) if existing_tag
+
+    category.tags.create!(name:, aliases: name)
+  end
+
+  def assignable_tag(tag)
+    return nil unless tag
+    return tag if tag.assignable?
+
+    @tag_selection_alert = format(TAG_NOT_ASSIGNABLE_ALERT, tag.name)
+    nil
+  end
+
+  def tag_selection_alert
+    @tag_selection_alert || NO_TAG_SELECTED_ALERT
   end
 end

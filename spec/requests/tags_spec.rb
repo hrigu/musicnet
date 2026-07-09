@@ -108,5 +108,17 @@ RSpec.describe "Tags", type: :request do
       expect(names).to include(nicht_zugewiesen.name)
       expect(names).to_not include(zugewiesen.name)
     end
+
+    it "blendet fuer neue Vergaben gesperrte Tags aus" do
+      category = Category.create!(name: "RSpec Kategorie Assignable Suche")
+      freies_tag = category.tags.create!(name: "RSpec Frei Assignable", aliases: "x")
+      category.tags.create!(name: "RSpec Gesperrt Assignable", aliases: "y", assignable: false)
+
+      get search_tags_path(term: "RSpec")
+
+      names = JSON.parse(response.body).map { |t| t["name"] }
+      expect(names).to include(freies_tag.name)
+      expect(names).to_not include("RSpec Gesperrt Assignable")
+    end
   end
 end
