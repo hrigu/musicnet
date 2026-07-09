@@ -143,7 +143,7 @@ export default class extends Controller {
     this.nameTarget.textContent = artist ? `${name} – ${artist}` : name
     this.nameTarget.href = trackId ? `/tracks/${trackId}` : "#"
     this.updatePlaceholderVisibility()
-    this.audioTarget.play()
+    this.audioTarget.play().then(() => this.persistPlayback(trackId)).catch(() => {})
   }
 
   // Ohne jemals geladenen Track (frischer Player, leere src) oder nach einem zu Ende gespielten
@@ -205,5 +205,39 @@ export default class extends Controller {
   selectOutputDevice() {
     const label = this.deviceSelectTarget.selectedOptions[0].text
     applyOutputDevice(this.audioTarget, this.deviceSelectTarget.value, label, SINK_ID_STORAGE_KEY, this.deviceNameTarget)
+  }
+
+  persistPlayback(trackId) {
+    if (!trackId) return
+
+    if (!navigator.geolocation) {
+      this.postPlayback({ track_id: trackId })
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        this.postPlayback({
+          track_id: trackId,
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          location_accuracy_meters: position.coords.accuracy,
+        })
+      },
+      () => this.postPlayback({ track_id: trackId }),
+      { maximumAge: 60_000, timeout: 2_000 }
+    )
+  }
+
+  postPlayback(playback) {
+    fetch("/dj_session_playbacks", {
+      method: "POST",
+      headers: {
+        "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ dj_session_playback: playback }),
+    }).catch(() => {})
   }
 }

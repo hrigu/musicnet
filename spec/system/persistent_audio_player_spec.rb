@@ -230,6 +230,21 @@ RSpec.describe "Dauerhafte Track-Wiedergabe (Intent 40)", type: :system do
     expect(page.find("[data-audio-player-target='deviceName']").text).to eq("")
   end
 
+  it "speichert beim Start eines Tracks ein lokales Playback-Ereignis (Intent 87)" do
+    track = create_track_with_real_audio("RSpec Session Playback", spotify_id: "session-playback")
+
+    visit tracks_path
+    play_button_for(track.name).click
+    sleep 0.5
+
+    playback = DjSessionPlayback.order(:id).last
+    aggregate_failures do
+      expect(playback).to be_present
+      expect(playback.user).to eq(users(:one))
+      expect(playback.track).to eq(track)
+    end
+  end
+
   it "springt an die per Slider gewaehlte Position im Track (Seek)" do
     track = create_track_with_real_audio("System Spec Seek", spotify_id: "sys-seek")
 
