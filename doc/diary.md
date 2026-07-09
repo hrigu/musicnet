@@ -1,5 +1,12 @@
 # Diary
 ## 2026-07-09
+* Kleinigkeit (Nachtrag Intent 88): die Erfolgs-/Fehlschlag-Meldung im Live-Download-Log
+  (`tracks/_spotify_import_progress_entry.html.erb`) war reiner unformatierter Text, ohne
+  Farbmarkierung fuer Erfolg/Fehlschlag - vom User nach dem ersten echten Fehlschlag bemerkt.
+  Jetzt `alert alert-success`/`alert alert-danger` (gleiche Bootstrap-Konvention wie die
+  Flash-Alerts im Layout). Abgesichert mit einem neuen View-Spec (`ApplicationController.render`,
+  da dieses Projekt keine `spec/views`-Konvention hatte - erster Spec dieser Art hier), gegen den
+  alten Stand als tatsaechlich rot verifiziert.
 * Bug: Rueckte ein Track ueber die Queue in den Player nach (statt per direktem Play-Button-Klick),
   fehlten zwei Dinge, die beim direkten Klick funktionieren: der Titel-Link im Player zeigte auf
   "#" statt die Track-Detailseite, und der Track wurde nicht in "Zuletzt gespielt" (lokale
