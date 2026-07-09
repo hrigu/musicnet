@@ -7,6 +7,7 @@ class Track < ApplicationRecord
   has_and_belongs_to_many :artists
   has_many :playlist_tracks
   has_many :queue_entries, dependent: :destroy
+  has_many :dj_session_playbacks, dependent: :destroy
   has_many :track_tags, dependent: :destroy
   has_many :tags, through: :track_tags
 

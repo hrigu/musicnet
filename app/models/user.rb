@@ -13,6 +13,7 @@ class User < ApplicationRecord
   # ueberhaupt von Spotify importiert wird - ein Bibliotheks-Wechsel hier aendert nichts an der
   # lokalen DB oder am naechsten Sync. nil bedeutet "Alle" (kein Filter).
   belongs_to :active_library, class_name: "Library", optional: true
+  has_many :dj_session_playbacks, dependent: :destroy
   has_many :tag_assignments, dependent: :destroy
   validate :active_library_must_exist_if_present
 
