@@ -40,7 +40,10 @@
                 <strong>Session</strong>
                 <span class="text-muted">
                   <%= l(session_start, format: :short) %>–<%= l(session_end, format: :time_only) %> Uhr ·
-                  <%= pluralize(session_playbacks.size, "Titel") %>
+                  <%# pluralize haengt standardmaessig ein englisches "s" an (-> "Titels") - im
+                      Deutschen ist "Titel" im Plural gleich dem Singular, darum expliziter
+                      plural:-Parameter statt des Helper-Defaults. %>
+                  <%= pluralize(session_playbacks.size, "Titel", plural: "Titel") %>
                   <% if session_location %>
                     · <%= playback_location_label(session_location) %>
                   <% end %>

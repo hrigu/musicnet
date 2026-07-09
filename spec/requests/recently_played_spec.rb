@@ -69,6 +69,22 @@ RSpec.describe "RecentlyPlayed", type: :request do
       expect(document.css("tr.dj-session-header").size).to eq(1)
     end
 
+    it "verwendet die korrekte deutsche Mehrzahl 'Titel' statt 'Titels' in der Session-Kopfzeile" do
+      first_track = create_recent_track(name: "RSpec Mehrzahl Track 1", spotify_id: "recent-plural-1",
+                                        artist_name: "RSpec Mehrzahl Artist")
+      second_track = create_recent_track(name: "RSpec Mehrzahl Track 2", spotify_id: "recent-plural-2",
+                                         artist_name: "RSpec Mehrzahl Artist")
+      DjSessionPlayback.create!(user: users(:one), track: first_track, played_at: Time.zone.parse("2026-07-09 20:00:00"))
+      DjSessionPlayback.create!(user: users(:one), track: second_track, played_at: Time.zone.parse("2026-07-09 20:20:00"))
+
+      get root_path
+
+      aggregate_failures do
+        expect(response.body).to include("2 Titel")
+        expect(response.body).to_not include("Titels")
+      end
+    end
+
     it "startet eine neue Session, wenn zwischen zwei Musicnet-Playbacks eine grosse Luecke liegt" do
       first_track = create_recent_track(name: "RSpec Entfernt Track 1", spotify_id: "recent-far-1",
                                         artist_name: "RSpec Entfernt Artist")

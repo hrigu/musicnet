@@ -28,6 +28,9 @@
   erreicht. Fix: `safely_download` faengt jede Exception ab und broadcastet garantiert einen
   Fehlschlag, gleiches Soft-Failure-Prinzip wie bei `AudioFeaturesExtractor`/`LocationNameResolver`.
   Reproduziert und gegen den alten Stand als tatsaechlich rot verifiziert.
+* Bug (Intent 87, Session-Kopfzeile): `pluralize(count, "Titel")` haengt ohne explizites
+  `plural:`-Argument ein englisches "s" an ("5 Titels" statt "5 Titel") - im Deutschen ist "Titel"
+  im Plural gleich dem Singular. Fix: `pluralize(count, "Titel", plural: "Titel")`.
 
 * Bug: Lief gerade ein Track im globalen Player und man wies dem Track auf der Detailseite
   (`/tracks/:id`) manuell ein Tag zu (Intent 79), stoppte die Wiedergabe sofort. Ursache: das
