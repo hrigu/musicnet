@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # This file is auto-generated from the current state of the database. Instead
 # of editing this file, please use the migrations feature of Active Record to
 # incrementally modify your database, and then regenerate this schema definition.
@@ -10,7 +12,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_09_153755) do
+ActiveRecord::Schema[8.1].define(version: 20_260_709_153_755) do
   create_table "albums", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name"
@@ -56,9 +58,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_09_153755) do
     t.integer "track_id", null: false
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
-    t.index ["track_id", "played_at"], name: "index_dj_session_playbacks_on_track_id_and_played_at"
+    t.index %w[track_id played_at], name: "index_dj_session_playbacks_on_track_id_and_played_at"
     t.index ["track_id"], name: "index_dj_session_playbacks_on_track_id"
-    t.index ["user_id", "played_at"], name: "index_dj_session_playbacks_on_user_id_and_played_at"
+    t.index %w[user_id played_at], name: "index_dj_session_playbacks_on_user_id_and_played_at"
     t.index ["user_id"], name: "index_dj_session_playbacks_on_user_id"
   end
 
@@ -75,7 +77,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_09_153755) do
     t.integer "library_id", null: false
     t.integer "playlist_id", null: false
     t.datetime "updated_at", null: false
-    t.index ["library_id", "playlist_id"], name: "index_library_playlists_on_library_id_and_playlist_id", unique: true
+    t.index %w[library_id playlist_id], name: "index_library_playlists_on_library_id_and_playlist_id", unique: true
     t.index ["library_id"], name: "index_library_playlists_on_library_id"
     t.index ["playlist_id"], name: "index_library_playlists_on_playlist_id"
   end
@@ -115,8 +117,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_09_153755) do
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
     t.index ["tag_id"], name: "index_tag_assignments_on_tag_id"
-    t.index ["user_id", "created_at"], name: "index_tag_assignments_on_user_id_and_created_at"
-    t.index ["user_id", "tag_id", "created_at"], name: "index_tag_assignments_on_user_id_and_tag_id_and_created_at"
+    t.index %w[user_id created_at], name: "index_tag_assignments_on_user_id_and_created_at"
+    t.index %w[user_id tag_id created_at], name: "index_tag_assignments_on_user_id_and_tag_id_and_created_at"
     t.index ["user_id"], name: "index_tag_assignments_on_user_id"
   end
 
@@ -127,7 +129,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_09_153755) do
     t.datetime "created_at", null: false
     t.string "name", null: false
     t.datetime "updated_at", null: false
-    t.index ["category_id", "name"], name: "index_tags_on_category_id_and_name", unique: true
+    t.index %w[category_id name], name: "index_tags_on_category_id_and_name", unique: true
     t.index ["category_id"], name: "index_tags_on_category_id"
   end
 
@@ -138,7 +140,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_09_153755) do
     t.integer "track_id", null: false
     t.datetime "updated_at", null: false
     t.index ["tag_id"], name: "index_track_tags_on_tag_id"
-    t.index ["track_id", "tag_id"], name: "index_track_tags_on_track_id_and_tag_id", unique: true
+    t.index %w[track_id tag_id], name: "index_track_tags_on_track_id_and_tag_id", unique: true
     t.index ["track_id"], name: "index_track_tags_on_track_id"
   end
 
