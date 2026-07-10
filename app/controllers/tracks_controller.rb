@@ -30,9 +30,7 @@ class TracksController < ApplicationController
   # Laeuft im Hintergrund (DownloadMissingTracksJob, Intent 39) statt den Request zu blockieren -
   # ein Fehler im Job ist dadurch nicht mehr synchron abfangbar, daher der Guard vorab.
   def download
-    if DownloadPlaylistService::DOWNLOAD_LOCK.locked?
-      return redirect_to tracks_path, alert: "Es läuft bereits ein Download - bitte warten, bis er fertig ist"
-    end
+    return redirect_to tracks_path, alert: "Es läuft bereits ein Download - bitte warten, bis er fertig ist" if DownloadPlaylistService::DOWNLOAD_LOCK.locked?
 
     tracks_without_file = Track.for_download.reject(&:track_path)
     DownloadMissingTracksJob.perform_later(tracks_without_file)

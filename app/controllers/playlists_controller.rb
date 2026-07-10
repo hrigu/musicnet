@@ -39,7 +39,7 @@ class PlaylistsController < ApplicationController
   def refresh
     @playlist = Playlist.find(params[:id])
     info = BuildMusicNetService.new(current_user).refresh_playlist(@playlist)
-    set_refresh_flash(info)
+    assign_refresh_flash(info)
     redirect_to playlist_path(@playlist)
   rescue BuildMusicNetService::PlaylistNotFoundError, BuildMusicNetService::SyncAlreadyRunningError => e
     redirect_to playlist_path(@playlist), alert: e.message
@@ -64,7 +64,7 @@ class PlaylistsController < ApplicationController
   def download
     @playlist = Playlist.find(params[:id])
     result = DownloadPlaylistService.new(@playlist).download
-    set_download_flash(result) if result
+    assign_download_flash(result) if result
     redirect_to playlist_path(@playlist)
   rescue DownloadPlaylistService::DownloadAlreadyRunningError => e
     redirect_to playlist_path(@playlist), alert: e.message
@@ -97,7 +97,7 @@ class PlaylistsController < ApplicationController
   RESOURCE_LABELS = { playlists: "Playlists", tracks: "Tracks", artists: "Artists", albums: "Alben" }.freeze
   ACTION_LABELS = { created: "neu", deleted: "gelöscht" }.freeze
 
-  # Bloss Anzahlen, keine Namenslisten wie bei set_download_flash/set_refresh_flash unten - ein
+  # Bloss Anzahlen, keine Namenslisten wie bei assign_download_flash/assign_refresh_flash unten - ein
   # erster Voll-Import kann tausende Namen umfassen (Intent 33), das wuerde das ~4KB-Flash-Cookie-
   # Limit sprengen (CookieOverflow, siehe Intent 38). ServiceInfo#add haengt bei Einzel-Aufrufen
   # (add_new_created_*) flache Namens-Arrays an, bei den Loesch-Pfaden dagegen ein verschachteltes
@@ -127,12 +127,12 @@ class PlaylistsController < ApplicationController
     entries.map { |old_name, new_name| "Playlist \"#{old_name}\" auf \"#{new_name}\" geändert" }.join(", ")
   end
 
-  def set_refresh_flash(info)
+  def assign_refresh_flash(info)
     flash[:refresh_added] = info.added
     flash[:refresh_removed] = info.removed
   end
 
-  def set_download_flash(result)
+  def assign_download_flash(result)
     flash[:download_added] = result.downloaded.first(MAX_FLASH_ENTRIES)
     flash[:download_added_total] = result.downloaded.size
     flash[:download_failed] = result.failed.first(MAX_FLASH_ENTRIES)

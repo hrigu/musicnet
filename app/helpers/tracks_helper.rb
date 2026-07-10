@@ -121,11 +121,11 @@ module TracksHelper
 
   private
 
-  def related_contribution_text(c)
-    base = "#{c.label} (#{c.base_value} vs. #{c.candidate_value}) +#{c.points}"
-    return base if c.weight == 1.0
+  def related_contribution_text(contribution)
+    base = "#{contribution.label} (#{contribution.base_value} vs. #{contribution.candidate_value}) +#{contribution.points}"
+    return base if (contribution.weight - 1.0).abs < 0.0001
 
-    "#{base} ×#{format_weight_factor(c.weight)}=#{format_weight_factor(c.weighted_points)}"
+    "#{base} ×#{format_weight_factor(contribution.weight)}=#{format_weight_factor(contribution.weighted_points)}"
   end
 
   def format_weight_factor(number)

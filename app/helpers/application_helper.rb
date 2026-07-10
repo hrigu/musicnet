@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
 module ApplicationHelper
-  def engergie_to_view(e)
-    (e * 100).round if e
+  def engergie_to_view(energy)
+    (energy * 100).round if energy
   end
 
-  def tempo_to_view(e)
-    e&.round
+  def tempo_to_view(tempo)
+    tempo&.round
   end
 
   # Eine Abfrage pro Request reicht - die Tabelle ist auf QueueEntry::MAX_SIZE Zeilen gedeckelt.

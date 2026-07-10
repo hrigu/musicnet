@@ -6,11 +6,6 @@
 # Note that changes in the inspected code, or installation of new
 # versions of RuboCop, may require this file to be generated again.
 
-# Offense count: 1
-Lint/FloatComparison:
-  Exclude:
-    - 'app/helpers/tracks_helper.rb'
-
 # Offense count: 6
 # Configuration parameters: AllowedMethods, AllowedPatterns, CountRepeatedAttributes, Max.
 Metrics/AbcSize:
@@ -62,25 +57,10 @@ Metrics/ParameterLists:
 Metrics/PerceivedComplexity:
   Max: 9
 
-# Offense count: 2
-Naming/AccessorMethodName:
-  Exclude:
-    - 'app/controllers/playlists_controller.rb'
-
-# Offense count: 3
-# Configuration parameters: MinNameLength, AllowNamesEndingInNumbers, AllowedNames, ForbiddenNames.
-# AllowedNames: as, at, by, cc, db, id, if, in, io, ip, of, on, os, pp, to
-Naming/MethodParameterName:
-  Exclude:
-    - 'app/helpers/application_helper.rb'
-    - 'app/helpers/tracks_helper.rb'
-
-# Offense count: 3
+# Offense count: 1
 # This cop supports safe autocorrection (--autocorrect).
 Style/IfUnlessModifier:
   Exclude:
-    - 'app/controllers/tracks_controller.rb'
-    - 'app/services/download_playlist_service.rb'
     - 'bin/bundle'
 
 # Offense count: 14

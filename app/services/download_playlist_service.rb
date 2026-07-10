@@ -45,9 +45,7 @@ class DownloadPlaylistService
   # Verhindert parallele spotdl-Prozesse. try_lock statt lock, damit der zweite Aufruf
   # sofort mit einer verständlichen Meldung scheitert statt zu warten.
   def with_download_lock
-    unless DOWNLOAD_LOCK.try_lock
-      raise DownloadAlreadyRunningError, "Es läuft bereits ein Download - bitte warten, bis er fertig ist"
-    end
+    raise DownloadAlreadyRunningError, "Es läuft bereits ein Download - bitte warten, bis er fertig ist" unless DOWNLOAD_LOCK.try_lock
 
     begin
       yield
