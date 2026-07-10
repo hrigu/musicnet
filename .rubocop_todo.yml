@@ -13,7 +13,7 @@ Metrics/AbcSize:
     - 'app/controllers/tags_controller.rb'
     - 'app/helpers/playlists_helper.rb'
     - 'app/helpers/tracks_helper.rb'
-    - 'app/models/track.rb'
+    - 'app/models/track/searchable.rb'
     - 'app/services/build_music_net_service.rb'
 
 # Offense count: 99
@@ -22,11 +22,10 @@ Metrics/AbcSize:
 Metrics/BlockLength:
   Max: 737
 
-# Offense count: 3
+# Offense count: 2
 # Configuration parameters: CountComments, Max, CountAsOne.
 Metrics/ClassLength:
   Exclude:
-    - 'app/models/track.rb'
     - 'app/services/build_music_net_service.rb'
     - 'db/migrate/20260707190731_seed_categories_and_tags.rb'
 
@@ -39,13 +38,15 @@ Metrics/CyclomaticComplexity:
 # Configuration parameters: CountComments, Max, CountAsOne, AllowedMethods, AllowedPatterns.
 Metrics/MethodLength:
   Exclude:
-    - 'app/models/track.rb'
+    - 'app/models/track/searchable.rb'
     - 'app/services/build_music_net_service.rb'
 
 # Offense count: 1
 # Configuration parameters: CountComments, CountAsOne.
 Metrics/ModuleLength:
   Max: 119
+  Exclude:
+    - 'app/models/track/searchable.rb'
 
 # Offense count: 3
 # Configuration parameters: CountKeywordArgs, MaxOptionalParameters.
