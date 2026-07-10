@@ -381,7 +381,6 @@ GEM
     snaky_hash (2.0.6)
       hashie (>= 0.1.0, < 6)
       version_gem (>= 1.1.8, < 3)
-    spring (4.7.0)
     sprockets (4.2.2)
       concurrent-ruby (~> 1.0)
       logger
@@ -457,7 +456,6 @@ DEPENDENCIES
   rspotify
   rubocop
   sass-rails
-  spring
   sqlite3
   stimulus-rails
   turbo-rails
