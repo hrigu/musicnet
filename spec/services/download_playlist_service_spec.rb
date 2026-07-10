@@ -24,9 +24,9 @@ RSpec.describe DownloadPlaylistService do
       service.download
 
       expect(service).to have_received(:system).with(
-        "spotdl sync https://open.spotify.com/playlist/abc123 --save-file FusionDark.spotdl " \
-        "--sync-without-deleting --user-auth --format m4a " \
-        "--audio youtube bandcamp --save-errors FusionDark-errors.txt --simple-tui",
+        "spotdl", "sync", "https://open.spotify.com/playlist/abc123", "--save-file", "FusionDark.spotdl",
+        "--sync-without-deleting", "--user-auth", "--format", "m4a",
+        "--audio", "youtube", "bandcamp", "--save-errors", "FusionDark-errors.txt", "--simple-tui",
         chdir: Rails.root.join("downloads/tracks")
       )
     end
@@ -39,9 +39,9 @@ RSpec.describe DownloadPlaylistService do
       service.download
 
       expect(service).to have_received(:system).with(
-        "spotdl sync https://open.spotify.com/playlist/spotify_id_1 --save-file FusionDark.spotdl " \
-        "--sync-without-deleting --user-auth --format m4a " \
-        "--audio youtube bandcamp --save-errors FusionDark-errors.txt --simple-tui",
+        "spotdl", "sync", "https://open.spotify.com/playlist/spotify_id_1", "--save-file", "FusionDark.spotdl",
+        "--sync-without-deleting", "--user-auth", "--format", "m4a",
+        "--audio", "youtube", "bandcamp", "--save-errors", "FusionDark-errors.txt", "--simple-tui",
         chdir: Rails.root.join("downloads/tracks")
       )
     end
@@ -76,7 +76,7 @@ RSpec.describe DownloadPlaylistService do
 
       service.download
 
-      expect(service).to have_received(:system).with(anything, chdir: Rails.root.join("downloads/tracks"))
+      expect(service).to have_received(:system).with(any_args, chdir: Rails.root.join("downloads/tracks"))
     end
 
     it "ruft nach erfolgreichem Download die Audio-Feature-Extraktion für die Playlist-Tracks auf" do

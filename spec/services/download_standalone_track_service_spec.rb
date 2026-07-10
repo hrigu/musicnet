@@ -24,7 +24,8 @@ RSpec.describe DownloadStandaloneTrackService do
     service.download
 
     expect(service).to have_received(:system).with(
-      "spotdl download https://open.spotify.com/track/standalone-dl-1 --format m4a --audio youtube bandcamp --simple-tui",
+      "spotdl", "download", "https://open.spotify.com/track/standalone-dl-1", "--format", "m4a",
+      "--audio", "youtube", "bandcamp", "--simple-tui",
       chdir: Rails.root.join("downloads/tracks")
     )
   end
@@ -37,7 +38,8 @@ RSpec.describe DownloadStandaloneTrackService do
     service.download
 
     expect(service).to have_received(:system).with(
-      "spotdl download https://open.spotify.com/track/standalone-dl-2 --format m4a --audio youtube bandcamp --simple-tui",
+      "spotdl", "download", "https://open.spotify.com/track/standalone-dl-2", "--format", "m4a",
+      "--audio", "youtube", "bandcamp", "--simple-tui",
       chdir: Rails.root.join("downloads/tracks")
     )
   end

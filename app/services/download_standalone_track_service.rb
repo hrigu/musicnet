@@ -18,8 +18,9 @@ class DownloadStandaloneTrackService
   def download
     DownloadPlaylistService::DOWNLOAD_LOCK.synchronize do
       tracks_dir = Rails.root.join(DownloadPlaylistService::TRACKS_DIR)
-      command = "spotdl download #{track_url} --format m4a --audio #{DownloadPlaylistCommandBuilder::AUDIO_PROVIDERS} --simple-tui"
-      result = system(command, chdir: tracks_dir)
+      command = ["spotdl", "download", track_url, "--format", "m4a",
+                 "--audio", *DownloadPlaylistCommandBuilder::AUDIO_PROVIDERS, "--simple-tui"]
+      result = system(*command, chdir: tracks_dir)
       Rails.logger.info(result)
       next false unless result
 

@@ -22,7 +22,7 @@ class DownloadPlaylistService
       tracks_dir = Rails.root.join(TRACKS_DIR)
       builder = DownloadPlaylistCommandBuilder.new(@playlist)
       Rails.logger.info "DownloadPlaylistService#download: current_dir = #{tracks_dir}"
-      result = system(builder.build, chdir: tracks_dir)
+      result = system(*builder.build, chdir: tracks_dir)
       Rails.logger.info(result)
       next unless result
 
