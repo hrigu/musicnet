@@ -17,10 +17,13 @@
         <td><%= library.name %></td>
         <td><%= library.keyword %></td>
         <td class="text-end">
-          <%= link_to "Bearbeiten", edit_library_path(library), class: "btn btn-sm btn-outline-secondary" %>
-          <%= button_to "Löschen", library_path(library), method: :delete,
-                data: { turbo_confirm: "Bibliothek \"#{library.name}\" wirklich löschen?" },
-                class: "btn btn-sm btn-outline-danger" %>
+          <div class="d-flex gap-2 justify-content-end">
+            <%= link_to "Bearbeiten", edit_library_path(library), class: "btn btn-sm btn-outline-secondary" %>
+            <%= button_to "Löschen", library_path(library), method: :delete,
+                  form_class: "d-inline-block",
+                  data: { turbo_confirm: "Bibliothek \"#{library.name}\" wirklich löschen?" },
+                  class: "btn btn-sm btn-outline-danger" %>
+          </div>
         </td>
       </tr>
     <% end %>

@@ -153,3 +153,15 @@ body {
   flex-wrap: wrap;
   row-gap: 0.25rem;
 }
+
+// Pfeil vor dem Kategorienamen zeigt den Auf-/Zuklappzustand (Kategorien & Tags,
+// zwecks Uebersichtlichkeit einklappbar gemacht) - dreht sich passend zu Bootstraps
+// eigenem aria-expanded-Attribut auf dem Toggle-Button, kein zusaetzliches JS noetig.
+.category-collapse-chevron {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+[aria-expanded="false"] .category-collapse-chevron {
+  transform: rotate(-90deg);
+}
