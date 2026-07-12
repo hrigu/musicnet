@@ -28,6 +28,14 @@ RSpec.describe ImportAndDownloadSpotifyTrackJob, type: :job do
       "downloads", target: "download-log",
                    partial: "tracks/spotify_import_progress_entry", locals: { track: track, success: true }
     )
+    expect(Turbo::StreamsChannel).to receive(:broadcast_replace_to).with(
+      "downloads", target: "spotify_track_title_job-spotify-1",
+                   partial: "tracks/spotify_track_title", locals: { playback_name: track.name, local_track: track }
+    )
+    expect(Turbo::StreamsChannel).to receive(:broadcast_replace_to).with(
+      "downloads", target: "spotify_track_status_job-spotify-1",
+                   partial: "tracks/spotify_track_status", locals: { spotify_track_id: track.spotify_id, local_track: track }
+    )
 
     described_class.perform_now("job-spotify-1")
   end
@@ -43,6 +51,7 @@ RSpec.describe ImportAndDownloadSpotifyTrackJob, type: :job do
       "downloads", target: "download-log",
                    partial: "tracks/spotify_import_progress_entry", locals: { track: track, success: false }
     )
+    allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to)
 
     expect { described_class.perform_now("job-spotify-1") }.to_not raise_error
   end

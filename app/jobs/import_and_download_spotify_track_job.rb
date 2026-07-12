@@ -8,6 +8,7 @@ class ImportAndDownloadSpotifyTrackJob < ApplicationJob
   def perform(spotify_track_id)
     track = ImportStandaloneSpotifyTrackService.import(spotify_track_id)
     broadcast_progress(track, safely_download(track))
+    broadcast_row_update(track)
   end
 
   private
@@ -29,6 +30,20 @@ class ImportAndDownloadSpotifyTrackJob < ApplicationJob
     Turbo::StreamsChannel.broadcast_append_to(
       "downloads", target: "download-log",
                    partial: "tracks/spotify_import_progress_entry", locals: { track: track, success: success }
+    )
+  end
+
+  # Aktualisiert die "Zuletzt gespielt"-Zeile (Titel-Link + "in Musicnet"-Badge) live, unabhaengig
+  # vom Download-Erfolg - der Import selbst ist bereits vorher gegluckt, sobald #perform hier
+  # ankommt, und genau der (nicht der Download) entscheidet ueber "in Musicnet".
+  def broadcast_row_update(track)
+    Turbo::StreamsChannel.broadcast_replace_to(
+      "downloads", target: "spotify_track_title_#{track.spotify_id}",
+                   partial: "tracks/spotify_track_title", locals: { playback_name: track.name, local_track: track }
+    )
+    Turbo::StreamsChannel.broadcast_replace_to(
+      "downloads", target: "spotify_track_status_#{track.spotify_id}",
+                   partial: "tracks/spotify_track_status", locals: { spotify_track_id: track.spotify_id, local_track: track }
     )
   end
 end

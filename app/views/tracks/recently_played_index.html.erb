@@ -94,23 +94,14 @@
             <% local_track = @local_tracks_by_spotify_id[playback.id] %>
             <tr>
               <td class="text-muted"><%= l(Time.zone.parse(playback.played_at)) %></td>
-              <td>
-                <% if local_track %>
-                  <%= link_to playback.name, track_path(local_track) %>
-                <% else %>
-                  <%= playback.name %>
-                <% end %>
+              <td id="spotify_track_title_<%= playback.id %>">
+                <%= render "tracks/spotify_track_title", playback_name: playback.name, local_track: local_track %>
               </td>
               <td><%= playback.artists.map(&:name).join(", ") %></td>
               <td><%= playback.album.name %></td>
               <td class="text-muted"><%= playback.popularity %></td>
-              <td>
-                <% if local_track %>
-                  <span class="badge text-bg-secondary">in Musicnet</span>
-                <% else %>
-                  <%= button_to "Herunterladen", import_from_spotify_tracks_path(spotify_track_id: playback.id),
-                        method: :post, class: "btn btn-sm btn-outline-secondary" %>
-                <% end %>
+              <td id="spotify_track_status_<%= playback.id %>">
+                <%= render "tracks/spotify_track_status", spotify_track_id: playback.id, local_track: local_track %>
               </td>
             </tr>
           <% end %>
