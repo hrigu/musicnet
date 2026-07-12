@@ -12,6 +12,10 @@ class TracksController < ApplicationController
     @musicnet_session_groups = DjSessionPlayback.group_into_sessions(musicnet_playbacks.to_a)
     @spotify_tracks = load_spotify_recently_played
     @local_tracks_by_spotify_id = local_tracks_by_spotify_id(@spotify_tracks)
+    # Fuer den "Vorhören"-Button (nur bei noch nicht heruntergeladenen Tracks) - ohne dieses
+    # Preload wuerde jede Zeile track_path einzeln aufloesen, je ein eigener Verzeichnis-Scan
+    # ueber downloads/tracks (siehe Track#track_path/.preload_track_paths).
+    Track.preload_track_paths(@local_tracks_by_spotify_id.values)
   end
 
   def index
@@ -38,14 +42,17 @@ class TracksController < ApplicationController
   end
 
   # Importiert+laedt einen noch nicht lokalen Spotify-Track aus dem "Zuletzt gespielt"-Tab
-  # herunter (Intent 88) - im Hintergrund, gleicher Lock-Guard wie #download, da beide denselben
-  # DOWNLOAD_LOCK teilen.
+  # herunter (Intent 88) - im Hintergrund. Kein Lock-Vorab-Check wie bei #download: mehrere Klicks
+  # duerfen sich problemlos zu einer Warteschlange stapeln, da DownloadStandaloneTrackService#download
+  # den DOWNLOAD_LOCK per Mutex#synchronize (blockierendes Warten) statt #try_lock nimmt - jeder
+  # weitere Job wartet dort einfach, bis der vorherige fertig ist, statt mit einer Exception
+  # abzubrechen (die im async-Job ohnehin unbehandelt bliebe, siehe #download-Kommentar).
   def import_from_spotify
-    if DownloadPlaylistService::DOWNLOAD_LOCK.locked?
-      return redirect_to recently_played_index_tracks_path(tab: "spotify"),
-                         alert: "Es läuft bereits ein Download - bitte warten, bis er fertig ist"
-    end
-
+    # Vor dem perform_later markieren, nicht erst im Job selbst: der Redirect danach ist quasi
+    # sofort da, der :async-Adapter startet den Job aber erst etwas spaeter in einem Thread - ohne
+    # diese Reihenfolge wuerde die neu geladene Seite die Zeile kurzzeitig faelschlicherweise noch
+    # als "nicht pending" rendern.
+    PendingSpotifyImports.add(params[:spotify_track_id])
     ImportAndDownloadSpotifyTrackJob.perform_later(params[:spotify_track_id])
     redirect_to recently_played_index_tracks_path(tab: "spotify")
   end
@@ -89,7 +96,47 @@ class TracksController < ApplicationController
   def load_spotify_recently_played
     return [] unless @active_recently_played_tab == "spotify"
 
-    current_user.spotify_user.recently_played(limit: 50)
+    recently_played = current_user.spotify_user.recently_played(limit: 50)
+    prepend_now_playing(recently_played)
+  end
+
+  # GET /me/player liefert den aktuell aktiven Wiedergabezustand - ein komplett anderer Endpoint als
+  # /me/player/recently-played oben, das nur eine rollierende Historie *abgeschlossener*
+  # Wiedergaben ist und den gerade laufenden Track typischerweise noch nicht enthaelt.
+  #
+  # Bewusst *nicht* ueber RSpotify::User#player/RSpotify::Player: dessen #initialize liest den
+  # Track aus options['track'], Spotifys tatsaechliche JSON-Antwort liefert ihn aber unter 'item'
+  # (siehe Player#currently_playing weiter unten in der Gem, die es richtig macht -
+  # Track.new response["item"]) - player.track ist dadurch in dieser Gem-Version (2.12.4) immer
+  # nil, unabhaengig davon, was tatsaechlich laeuft (verifiziert per Konsole: is_playing true,
+  # device korrekt, track nil). Deshalb hier der rohe JSON-Response direkt ueber das oeffentliche
+  # RSpotify::User.oauth_get (kein eigener API-Call noetig, kein RSpotify.raw_response-Umschalten,
+  # das als globaler Zustand parallele Requests auf anderen Threads beeinflussen wuerde).
+  #
+  # currently_playing_type wird zusaetzlich geprueft (nicht nur item.present?), weil Spotify auch
+  # bei Werbung/Podcast-Episoden ein item mitliefert, dessen Form nicht der eines Tracks entspricht.
+  # 204 (nichts aktiv) liefert send_request als nil zurueck, ebenso bei Pause is_playing == false -
+  # beide Faelle bedeuten hier "nichts voranstellen". Ist der aktuelle Track zufaellig schon der
+  # oberste Recently-Played-Eintrag (z.B. weil Spotify ihn zwischenzeitlich selbst schon als
+  # abgeschlossen gelistet hat), wird er nicht doppelt vorangestellt.
+  def prepend_now_playing(recently_played)
+    response = RSpotify::User.oauth_get(current_user.spotify_user.id, "me/player")
+    return recently_played unless response.is_a?(Hash) && response["is_playing"] &&
+                                  response["currently_playing_type"] == "track" && response["item"]
+
+    now_playing_track = RSpotify::Track.new(response["item"])
+    @now_playing_spotify_id = now_playing_track.id
+    return recently_played if recently_played.first&.id == now_playing_track.id
+
+    [now_playing_track] + recently_played
+  rescue RestClient::Unauthorized => e
+    # Der user-read-playback-state-Scope wurde erst nachtraeglich ergaenzt (siehe
+    # config/initializers/devise.rb) - bereits eingeloggte Sessions haben einen Access-Token ohne
+    # diesen Scope und bekommen fuer /me/player ein 401, bis sie sich einmal neu einloggen. Gleiches
+    # Soft-Failure-Prinzip wie ueberall sonst in dieser App (z.B. try_fetch/prefetch_details): eine
+    # fehlende Randinformation blockiert nie die eigentliche Seite.
+    Rails.logger.warn("TracksController#prepend_now_playing: #{e.message}")
+    recently_played
   end
 
   # Ein einziger Query statt N+1 - @spotify_tracks sind transiente RSpotify::Track-Objekte, kein

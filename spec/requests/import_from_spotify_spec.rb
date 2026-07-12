@@ -19,7 +19,7 @@ RSpec.describe "ImportFromSpotify", type: :request do
       end
     end
 
-    it "zeigt einen Alert und startet keinen Job, wenn bereits ein Download läuft" do
+    it "reiht den Job auch dann ein, wenn bereits ein Download läuft - er wartet dort per Mutex#synchronize" do
       allow(ImportAndDownloadSpotifyTrackJob).to receive(:perform_later)
       DownloadPlaylistService::DOWNLOAD_LOCK.lock
       begin
@@ -29,9 +29,8 @@ RSpec.describe "ImportFromSpotify", type: :request do
       end
 
       aggregate_failures do
-        expect(ImportAndDownloadSpotifyTrackJob).to_not have_received(:perform_later)
+        expect(ImportAndDownloadSpotifyTrackJob).to have_received(:perform_later).with("spotify-track-1")
         expect(response).to redirect_to(recently_played_index_tracks_path(tab: "spotify"))
-        expect(flash[:alert]).to include("läuft bereits")
       end
     end
   end

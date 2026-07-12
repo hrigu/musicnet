@@ -92,18 +92,50 @@
         <% if @spotify_tracks.any? %>
           <% @spotify_tracks.each do |playback| %>
             <% local_track = @local_tracks_by_spotify_id[playback.id] %>
-            <tr>
-              <td class="text-muted"><%= l(Time.zone.parse(playback.played_at)) %></td>
+            <% currently_playing = playback.id == @now_playing_spotify_id %>
+            <% downloaded = local_track&.track_path.present? %>
+            <% preview_collapse_id = "spotify-preview-#{playback.id}" %>
+            <tr class="<%= "table-success" if currently_playing %>">
+              <td class="text-muted">
+                <%# Der aktuell laufende Track kommt ueber GET /me/player (TracksController
+                    #prepend_now_playing), nicht ueber /recently-played - er hat kein played_at,
+                    Time.zone.parse(nil) wuerde hier eine Exception werfen. %>
+                <% if currently_playing %>
+                  <span class="badge text-bg-success">läuft gerade</span>
+                <% else %>
+                  <%= l(Time.zone.parse(playback.played_at)) %>
+                <% end %>
+              </td>
               <td id="spotify_track_title_<%= playback.id %>">
                 <%= render "tracks/spotify_track_title", playback_name: playback.name, local_track: local_track %>
               </td>
               <td><%= playback.artists.map(&:name).join(", ") %></td>
               <td><%= playback.album.name %></td>
               <td class="text-muted"><%= playback.popularity %></td>
-              <td id="spotify_track_status_<%= playback.id %>">
-                <%= render "tracks/spotify_track_status", spotify_track_id: playback.id, local_track: local_track %>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <span id="spotify_track_status_<%= playback.id %>">
+                    <%= render "tracks/spotify_track_status", spotify_track_id: playback.id, local_track: local_track %>
+                  </span>
+                  <%# Solange keine lokale Datei existiert, ist Spotifys eigener Embed-Player die
+                      einzige Anhoer-Moeglichkeit - gleiches Prinzip wie auf der Track-Detailseite
+                      (Intent 64), hier als auf-/zuklappbare Zeile statt eines fixen Blocks, um die
+                      Tabelle nicht pro Zeile permanent aufzublaehen. %>
+                  <% unless downloaded %>
+                    <button type="button" class="btn btn-sm btn-outline-secondary text-nowrap flex-shrink-0"
+                            data-bs-toggle="collapse" data-bs-target="#<%= preview_collapse_id %>"
+                            aria-expanded="false" aria-controls="<%= preview_collapse_id %>">🎧 Vorhören</button>
+                  <% end %>
+                </div>
               </td>
             </tr>
+            <% unless downloaded %>
+              <tr class="collapse" id="<%= preview_collapse_id %>">
+                <td colspan="6">
+                  <%= render partial: "components/spotify_player", locals: { spotify_id: playback.id } %>
+                </td>
+              </tr>
+            <% end %>
           <% end %>
         <% else %>
           <tr>

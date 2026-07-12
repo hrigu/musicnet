@@ -1,6 +1,24 @@
-<% if local_track %>
+<% if PendingSpotifyImports.pending?(spotify_track_id) %>
+  <%# Muss vor der local_track-Pruefung stehen: ImportStandaloneSpotifyTrackService legt die
+      Track-Zeile schon ganz am Anfang des Jobs an, lange bevor der eigentliche spotdl-Download
+      fertig ist (siehe ImportAndDownloadSpotifyTrackJob#perform) - local_track waere also schon
+      waehrend eines laufenden Downloads truthy. Ohne diese Reihenfolge wuerde ein durch einen
+      *anderen* Download ausgeloester voller Seiten-Reload (der pending-Zustand ueberlebt das,
+      Turbo-Stream/Broadcast aber noch nicht abgeschlossen) die Zeile faelschlicherweise schon als
+      "in Musicnet" zeigen, obwohl der Download noch laeuft. Aus demselben Grund: kein
+      data-turbo-submits-with-Aequivalent noetig, dieser Zwischenzustand lebt laenger als nur der
+      POST-Request selbst, siehe PendingSpotifyImports. %>
+  <span class="badge text-bg-secondary">
+    <span class="spinner-border spinner-border-sm" role="status"></span> wird heruntergeladen…
+  </span>
+<% elsif local_track %>
   <span class="badge text-bg-secondary">in Musicnet</span>
 <% else %>
+  <%# Turbo 8s eingebautes data-turbo-submits-with (kein eigenes JS noetig): ersetzt waehrend der
+      In-Flight-Zeit des POST-Requests das Button-innerHTML durch den Spinner und deaktiviert den
+      Button, bis entweder die Redirect-Antwort eintrifft (Seite wird ohnehin neu geladen) oder der
+      Request fehlschlaegt (Button wird dann automatisch wieder aktiviert). %>
   <%= button_to "Herunterladen", import_from_spotify_tracks_path(spotify_track_id: spotify_track_id),
-        method: :post, class: "btn btn-sm btn-outline-secondary" %>
+        method: :post, class: "btn btn-sm btn-outline-secondary",
+        data: { turbo_submits_with: '<span class="spinner-border spinner-border-sm" role="status"></span> wird gestartet…' } %>
 <% end %>

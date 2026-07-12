@@ -9,6 +9,11 @@ class ImportAndDownloadSpotifyTrackJob < ApplicationJob
     track = ImportStandaloneSpotifyTrackService.import(spotify_track_id)
     broadcast_progress(track, safely_download(track))
     broadcast_row_update(track)
+  ensure
+    # Im ensure statt erst nach dem letzten Broadcast: soll auch dann greifen, wenn der Import
+    # selbst (noch vor jedem Broadcast) mit einer Exception scheitert - sonst bliebe die Zeile
+    # dauerhaft auf dem Spinner haengen statt zum "Herunterladen"-Button zurueckzufallen.
+    PendingSpotifyImports.remove(spotify_track_id)
   end
 
   private
